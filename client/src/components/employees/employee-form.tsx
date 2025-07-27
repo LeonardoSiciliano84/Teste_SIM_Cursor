@@ -285,7 +285,12 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
           )}
           <Button 
             type="button"
-            onClick={form.handleSubmit(onSubmit)}
+            onClick={(e) => {
+              e.preventDefault();
+              console.log("Button clicked!");
+              console.log("Form values:", form.getValues());
+              form.handleSubmit(onSubmit)();
+            }}
             disabled={isLoading}
             style={{ backgroundColor: '#0C29AB', color: 'white' }}
             className="hover:opacity-90"
