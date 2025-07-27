@@ -52,7 +52,11 @@ export default function Header() {
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-900">FELKA Transportes</h1>
+            <img 
+              src="/src/assets/felka-logo.svg" 
+              alt="Felka Transportes" 
+              className="h-10 w-auto"
+            />
             <Badge className="bg-green-100 text-green-800">Sistema Online</Badge>
           </div>
 
@@ -67,7 +71,7 @@ export default function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <ChevronDown className="w-4 h-4" />

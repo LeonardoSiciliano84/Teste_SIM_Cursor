@@ -31,9 +31,12 @@ export default function Sidebar() {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0">
-      <div className="flex items-center px-6 py-4 border-b">
-        <Truck className="w-8 h-8 text-primary-600 mr-3" />
-        <h2 className="text-xl font-bold text-gray-900">Felka Transport</h2>
+      <div className="flex items-center justify-center px-6 py-4 border-b bg-gradient-to-r from-blue-400 to-primary">
+        <img 
+          src="/src/assets/felka-logo.svg" 
+          alt="Felka Transportes" 
+          className="h-12 w-auto"
+        />
       </div>
 
       <nav className="mt-6 px-3">
