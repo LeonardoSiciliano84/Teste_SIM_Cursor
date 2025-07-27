@@ -100,9 +100,21 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
     mutationFn: async (data: any) => {
       console.log("Creating employee with data:", data);
       try {
-        const response = await apiRequest("/api/employees", "POST", data);
-        console.log("Employee creation response:", response);
-        return response;
+        const response = await fetch("/api/employees", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log("Employee creation response:", result);
+        return result;
       } catch (error) {
         console.error("Failed to create employee:", error);
         throw error;
@@ -187,11 +199,8 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
     
     console.log("Submitting employee data:", submitData);
     
-    try {
-      createMutation.mutate(submitData);
-    } catch (error) {
-      console.error("Submit error:", error);
-    }
+    console.log("Calling createMutation.mutate with:", submitData);
+    createMutation.mutate(submitData);
   };
 
   const onSubmit = (data: any) => {
