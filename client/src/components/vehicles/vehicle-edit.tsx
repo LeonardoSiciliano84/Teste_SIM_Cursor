@@ -16,7 +16,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
 // Schema para edição (todos os campos opcionais exceto o que queremos validar)
-const editVehicleSchema = insertVehicleSchema.partial();
+const editVehicleSchema = insertVehicleSchema.partial().extend({
+  purchaseDate: z.string().optional(),
+  crlvExpiry: z.string().optional(),
+  tachographExpiry: z.string().optional(),
+  anttExpiry: z.string().optional(),
+  insuranceExpiry: z.string().optional(),
+});
 type EditFormData = z.infer<typeof editVehicleSchema>;
 
 interface VehicleEditProps {
@@ -260,6 +266,10 @@ export default function VehicleEdit({ vehicleId, onCancel }: VehicleEditProps) {
                   <Input id="modelYear" type="number" {...form.register("modelYear", { valueAsNumber: true })} />
                 </div>
                 <div>
+                  <Label htmlFor="manufactureYear">Ano de Fabricação</Label>
+                  <Input id="manufactureYear" type="number" {...form.register("manufactureYear", { valueAsNumber: true })} />
+                </div>
+                <div>
                   <Label htmlFor="status">Status</Label>
                   <Select value={form.watch("status")} onValueChange={(value) => form.setValue("status", value as any)}>
                     <SelectTrigger>
@@ -307,6 +317,14 @@ export default function VehicleEdit({ vehicleId, onCancel }: VehicleEditProps) {
                     </SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <Label htmlFor="installmentCount">Quantidade de Parcelas</Label>
+                  <Input id="installmentCount" type="number" {...form.register("installmentCount", { valueAsNumber: true })} />
+                </div>
+                <div>
+                  <Label htmlFor="installmentValue">Valor da Parcela</Label>
+                  <Input id="installmentValue" {...form.register("installmentValue")} placeholder="R$ 0,00" />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -316,20 +334,84 @@ export default function VehicleEdit({ vehicleId, onCancel }: VehicleEditProps) {
               <CardHeader>
                 <CardTitle>Documentação e Upload</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="crlvExpiry">Vencimento CRLV</Label>
-                    <Input id="crlvExpiry" type="date" {...form.register("crlvExpiry")} />
+              <CardContent className="space-y-6">
+                {/* CRLV */}
+                <div>
+                  <h4 className="font-semibold mb-3">CRLV - Certificado de Registro</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="crlvExpiry">Vencimento CRLV</Label>
+                      <Input id="crlvExpiry" type="date" {...form.register("crlvExpiry")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="crlvUpload">Upload CRLV</Label>
+                      <Input
+                        id="crlvUpload"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileUpload(e, 'crlv')}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="crlvUpload">Upload CRLV</Label>
-                    <Input
-                      id="crlvUpload"
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFileUpload(e, 'crlv')}
-                    />
+                </div>
+
+                {/* Tacógrafo */}
+                <div>
+                  <h4 className="font-semibold mb-3">Tacógrafo</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="tachographExpiry">Vencimento Tacógrafo</Label>
+                      <Input id="tachographExpiry" type="date" {...form.register("tachographExpiry")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="tachographUpload">Upload Tacógrafo</Label>
+                      <Input
+                        id="tachographUpload"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileUpload(e, 'tachograph')}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* ANTT */}
+                <div>
+                  <h4 className="font-semibold mb-3">ANTT - Registro</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="anttExpiry">Vencimento ANTT</Label>
+                      <Input id="anttExpiry" type="date" {...form.register("anttExpiry")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="anttUpload">Upload ANTT</Label>
+                      <Input
+                        id="anttUpload"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileUpload(e, 'antt')}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Seguro */}
+                <div>
+                  <h4 className="font-semibold mb-3">Seguro</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="insuranceExpiry">Vencimento Seguro</Label>
+                      <Input id="insuranceExpiry" type="date" {...form.register("insuranceExpiry")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="insuranceUpload">Upload Apólice</Label>
+                      <Input
+                        id="insuranceUpload"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileUpload(e, 'insurance')}
+                      />
+                    </div>
                   </div>
                 </div>
               </CardContent>
