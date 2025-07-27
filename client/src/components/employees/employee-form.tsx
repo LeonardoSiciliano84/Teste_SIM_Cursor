@@ -97,24 +97,32 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => {
+    mutationFn: async (data: any) => {
       console.log("Creating employee with data:", data);
-      return apiRequest("/api/employees", "POST", data);
+      try {
+        const response = await apiRequest("/api/employees", "POST", data);
+        console.log("Employee creation response:", response);
+        return response;
+      } catch (error) {
+        console.error("Failed to create employee:", error);
+        throw error;
+      }
     },
-    onSuccess: (result) => {
+    onSuccess: (result: any) => {
       console.log("Employee created successfully:", result);
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       toast({ 
         title: "Colaborador criado com sucesso!",
-        description: "O colaborador foi cadastrado no sistema.",
+        description: `${result?.fullName || 'Colaborador'} foi cadastrado no sistema.`,
       });
       onSuccess?.();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating employee:", error);
+      const errorMessage = error?.message || "Erro desconhecido";
       toast({ 
         title: "Erro ao criar colaborador", 
-        description: "Verifique os dados e tente novamente.",
+        description: `Detalhes: ${errorMessage}`,
         variant: "destructive" 
       });
     },
@@ -135,31 +143,45 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
   });
 
   const onSubmit = (data: any) => {
-    console.log("onSubmit called with data:", data);
-    console.log("fullName:", data.fullName);
-    console.log("cpf:", data.cpf);
-    console.log("birthDate:", data.birthDate);
-    console.log("phone:", data.phone);
-    console.log("employeeNumber:", data.employeeNumber);
-    console.log("admissionDate:", data.admissionDate);
-    console.log("position:", data.position);
-    console.log("department:", data.department);
+    console.log("=== FORM SUBMISSION DEBUG ===");
+    console.log("Raw form data:", data);
+    console.log("Form values:");
+    console.log("- fullName:", data.fullName, "(length:", data.fullName?.length, ")");
+    console.log("- cpf:", data.cpf, "(length:", data.cpf?.length, ")");
+    console.log("- birthDate:", data.birthDate, "(length:", data.birthDate?.length, ")");
+    console.log("- phone:", data.phone, "(length:", data.phone?.length, ")");
+    console.log("- employeeNumber:", data.employeeNumber, "(length:", data.employeeNumber?.length, ")");
+    console.log("- admissionDate:", data.admissionDate, "(length:", data.admissionDate?.length, ")");
+    console.log("- position:", data.position, "(length:", data.position?.length, ")");
+    console.log("- department:", data.department, "(length:", data.department?.length, ")");
     
-    // Verificar campos obrigatórios - apenas os essenciais
-    if (!data.fullName || !data.cpf || !data.birthDate || !data.phone) {
+    // Verificar campos obrigatórios com validação melhorada
+    const missingFields = [];
+    if (!data.fullName?.trim()) missingFields.push("Nome Completo");
+    if (!data.cpf?.trim()) missingFields.push("CPF");
+    if (!data.birthDate?.trim()) missingFields.push("Data de Nascimento");
+    if (!data.phone?.trim()) missingFields.push("Telefone");
+    
+    if (missingFields.length > 0) {
       toast({
         title: "Campos obrigatórios faltando",
-        description: "Preencha: Nome Completo, CPF, Data de Nascimento e Telefone.",
+        description: `Preencha: ${missingFields.join(", ")}`,
         variant: "destructive",
       });
       return;
     }
     
-    // Verificar campos profissionais se estiverem vazios
-    if (!data.employeeNumber || !data.admissionDate || !data.position || !data.department) {
+    // Verificar campos profissionais
+    const missingProfessional = [];
+    if (!data.employeeNumber?.trim()) missingProfessional.push("Matrícula");
+    if (!data.admissionDate?.trim()) missingProfessional.push("Data de Admissão");
+    if (!data.position?.trim()) missingProfessional.push("Cargo");
+    if (!data.department?.trim()) missingProfessional.push("Departamento");
+    
+    if (missingProfessional.length > 0) {
       toast({
         title: "Dados profissionais obrigatórios",
-        description: "Preencha: Matrícula, Data de Admissão, Cargo e Departamento na aba Profissionais.",
+        description: `Preencha na aba Profissionais: ${missingProfessional.join(", ")}`,
         variant: "destructive",
       });
       return;
