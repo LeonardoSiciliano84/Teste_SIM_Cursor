@@ -31,11 +31,11 @@ export default function Sidebar() {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0">
-      <div className="flex items-center justify-center px-6 py-4 border-b bg-gradient-to-r from-blue-400 to-primary">
+      <div className="flex items-center justify-center px-6 py-6 border-b bg-white">
         <img 
           src="/src/assets/felka-logo.svg" 
           alt="Felka Transportes" 
-          className="h-12 w-auto"
+          className="h-16 w-auto"
         />
       </div>
 

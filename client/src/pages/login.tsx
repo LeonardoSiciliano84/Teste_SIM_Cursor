@@ -51,11 +51,11 @@ export default function Login() {
         <CardContent className="pt-8 p-8">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-6">
-              <div className="bg-white p-4 rounded-xl shadow-lg">
+              <div className="bg-white p-6 rounded-xl shadow-lg">
                 <img 
                   src="/src/assets/felka-logo.svg" 
                   alt="Felka Transportes" 
-                  className="h-16 w-auto"
+                  className="h-20 w-auto"
                 />
               </div>
             </div>

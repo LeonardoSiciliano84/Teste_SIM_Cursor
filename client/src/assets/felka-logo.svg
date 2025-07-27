@@ -1,34 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="400" height="100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 200" width="500" height="200">
   <defs>
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#0C29AB;stop-opacity:1" />
+    <!-- Gradiente azul da FELKA -->
+    <linearGradient id="felkaBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1e5bb8;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#0C29AB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
     </linearGradient>
   </defs>
   
-  <!-- Background -->
-  <rect width="400" height="100" fill="url(#bgGradient)" rx="8"/>
-  
-  <!-- FELKA Text -->
-  <g fill="white">
+  <!-- FELKA em estilo moderno com perspectiva -->
+  <g fill="url(#felkaBlue)">
     <!-- F -->
-    <path d="M45 20 L45 70 L50 70 L50 48 L75 48 L75 43 L50 43 L50 25 L80 25 L80 20 Z"/>
+    <path d="M20 40 L20 160 L40 160 L40 110 L90 110 L90 90 L40 90 L40 60 L100 60 L100 40 Z"/>
     
     <!-- E -->
-    <path d="M85 20 L85 70 L115 70 L115 65 L90 65 L90 48 L110 48 L110 43 L90 43 L90 25 L115 25 L115 20 Z"/>
+    <path d="M120 40 L120 160 L190 160 L190 140 L140 140 L140 110 L180 110 L180 90 L140 90 L140 60 L190 60 L190 40 Z"/>
     
     <!-- L -->
-    <path d="M120 20 L120 70 L150 70 L150 65 L125 65 L125 20 Z"/>
+    <path d="M210 40 L210 160 L280 160 L280 140 L230 140 L230 40 Z"/>
     
     <!-- K -->
-    <path d="M155 20 L155 70 L160 70 L160 48 L175 70 L182 70 L167 48 L180 20 L173 20 L162 40 L160 40 L160 20 Z"/>
+    <path d="M300 40 L300 160 L320 160 L320 110 L350 160 L375 160 L340 110 L370 40 L345 40 L320 90 L320 40 Z"/>
     
     <!-- A -->
-    <path d="M190 20 L175 70 L180 70 L183 60 L202 60 L205 70 L210 70 L195 20 Z M185 55 L192.5 35 L200 55 Z"/>
+    <path d="M395 40 L360 160 L380 160 L387 135 L428 135 L435 160 L455 160 L420 40 Z M395 115 L407.5 70 L420 115 Z"/>
   </g>
   
-  <!-- TRANSPORTES Text -->
-  <g fill="white" opacity="0.9">
-    <text x="200" y="85" font-family="Arial, sans-serif" font-size="14" font-style="italic" letter-spacing="2px">TRANSPORTES</text>
+  <!-- TRANSPORTES -->
+  <g fill="url(#felkaBlue)" opacity="0.8">
+    <text x="250" y="185" font-family="Arial, sans-serif" font-size="18" font-weight="normal" text-anchor="middle" letter-spacing="4px">TRANSPORTES</text>
   </g>
 </svg>

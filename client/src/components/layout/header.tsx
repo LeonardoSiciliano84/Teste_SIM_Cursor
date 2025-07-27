@@ -55,7 +55,7 @@ export default function Header() {
             <img 
               src="/src/assets/felka-logo.svg" 
               alt="Felka Transportes" 
-              className="h-10 w-auto"
+              className="h-12 w-auto"
             />
             <Badge className="bg-green-100 text-green-800">Sistema Online</Badge>
           </div>
