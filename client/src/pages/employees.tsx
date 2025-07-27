@@ -268,18 +268,16 @@ export function EmployeesPage() {
                   </div>
 
                   <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Abrir modal de visualização ou navegar para detalhes
-                        window.location.href = `/employees/${employee.id}`;
-                      }}
-                      className="flex-1"
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      Ver Detalhes
-                    </Button>
+                    <Link href={`/employees/${employee.id}`} className="flex-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Ver Detalhes
+                      </Button>
+                    </Link>
                     <Button
                       variant="outline"
                       size="sm"
@@ -366,14 +364,15 @@ export function EmployeesPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => window.location.href = `/employees/${employee.id}`}
-                              title="Visualizar Detalhes"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
+                            <Link href={`/employees/${employee.id}`}>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                title="Visualizar Detalhes"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </Link>
                             <Button 
                               variant="outline" 
                               size="sm"

@@ -521,6 +521,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Employee PDF generation
+  app.get("/api/employees/:id/pdf", async (req, res) => {
+    try {
+      const employee = await storage.getEmployee(req.params.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Colaborador não encontrado" });
+      }
+
+      const doc = new PDFDocument();
+      
+      // Configurar headers para download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=ficha_${employee.fullName.replace(/\s+/g, '_')}_${employee.employeeNumber}.pdf`);
+      
+      // Pipe do PDF para a resposta
+      doc.pipe(res);
+
+      // Header do documento
+      doc.fontSize(20).text('FELKA TRANSPORTES', { align: 'center' });
+      doc.fontSize(16).text('FICHA DO COLABORADOR', { align: 'center' });
+      doc.moveDown(2);
+
+      // Informações principais
+      doc.fontSize(14).text('DADOS PESSOAIS', { underline: true });
+      doc.fontSize(12)
+        .text(`Nome Completo: ${employee.fullName}`)
+        .text(`CPF: ${employee.cpf}`)
+        .text(`RG: ${employee.rg || 'N/A'}`)
+        .text(`Matrícula: #${employee.employeeNumber}`)
+        .text(`Data de Nascimento: ${employee.birthDate ? new Date(employee.birthDate).toLocaleDateString('pt-BR') : 'N/A'}`)
+        .text(`Gênero: ${employee.gender || 'N/A'}`)
+        .text(`Estado Civil: ${employee.maritalStatus || 'N/A'}`)
+        .moveDown();
+
+      // Contato
+      doc.fontSize(14).text('DADOS DE CONTATO', { underline: true });
+      doc.fontSize(12)
+        .text(`Telefone: ${employee.phone}`)
+        .text(`E-mail Corporativo: ${employee.email || 'N/A'}`)
+        .text(`E-mail Pessoal: ${employee.personalEmail || 'N/A'}`)
+        .moveDown();
+
+      // Endereço
+      if (employee.address) {
+        doc.fontSize(14).text('ENDEREÇO', { underline: true });
+        doc.fontSize(12)
+          .text(`Endereço: ${employee.address}`)
+          .text(`Cidade: ${employee.city || 'N/A'} - ${employee.state || 'N/A'}`)
+          .text(`CEP: ${employee.zipCode || 'N/A'}`)
+          .moveDown();
+      }
+
+      // Informações Profissionais
+      doc.fontSize(14).text('DADOS PROFISSIONAIS', { underline: true });
+      doc.fontSize(12)
+        .text(`Cargo: ${employee.position}`)
+        .text(`Departamento: ${employee.department}`)
+        .text(`Data de Admissão: ${employee.admissionDate ? new Date(employee.admissionDate).toLocaleDateString('pt-BR') : 'N/A'}`)
+        .text(`Status: ${employee.status === 'active' ? 'Ativo' : 'Inativo'}`)
+        .text(`Gestor: ${employee.manager || 'N/A'}`)
+        .text(`Horário de Trabalho: ${employee.workSchedule || 'N/A'}`)
+        .moveDown();
+
+      // Informações Salariais (se disponível)
+      if (employee.salary) {
+        doc.fontSize(14).text('INFORMAÇÕES SALARIAIS', { underline: true });
+        doc.fontSize(12)
+          .text(`Salário Base: ${new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(Number(employee.salary))}`)
+          .moveDown();
+      }
+
+      // Dados Educacionais (se disponível)
+      if (employee.education) {
+        doc.fontSize(14).text('FORMAÇÃO ACADÊMICA', { underline: true });
+        doc.fontSize(12)
+          .text(`Escolaridade: ${employee.education}`)
+          .text(`Curso: ${employee.course || 'N/A'}`)
+          .text(`Instituição: ${employee.institution || 'N/A'}`)
+          .moveDown();
+      }
+
+      // Footer
+      doc.fontSize(10)
+        .text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, { align: 'center' })
+        .text('Sistema FELKA Transportes - Gestão de RH', { align: 'center' });
+
+      doc.end();
+    } catch (error) {
+      console.error('Erro ao gerar PDF do colaborador:', error);
+      res.status(500).json({ message: "Erro ao gerar PDF" });
+    }
+  });
+
   // Employee Documents routes
   app.get("/api/employees/:id/documents", async (req, res) => {
     try {
