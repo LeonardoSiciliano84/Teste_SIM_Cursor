@@ -13,9 +13,11 @@ export function EmployeeNewPage() {
   };
 
   return (
-    <EmployeeForm 
-      onSuccess={handleSuccess}
-      onCancel={handleCancel}
-    />
+    <div className="container mx-auto py-6">
+      <EmployeeForm 
+        onSuccess={handleSuccess}
+        onCancel={handleCancel}
+      />
+    </div>
   );
 }

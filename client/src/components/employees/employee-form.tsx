@@ -195,7 +195,8 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
           <Button 
             type="submit"
             disabled={isLoading}
-            className="bg-felka-blue hover:bg-felka-blue/90 text-white"
+            style={{ backgroundColor: '#0C29AB', color: 'white' }}
+            className="hover:opacity-90"
           >
             <Save className="h-4 w-4 mr-2" />
             {isLoading ? "Salvando..." : (employee ? "Atualizar" : "Criar Colaborador")}
