@@ -330,7 +330,7 @@ export default function VehicleList({ onCreateVehicle }: VehicleListProps) {
                   >
                     <FileText className="w-4 h-4" />
                   </Button>
-                  <Link href={`/vehicles/${vehicle.id}/edit`}>
+                  <Link href={`/vehicles/edit/${vehicle.id}`}>
                     <Button
                       variant="outline"
                       size="sm"
