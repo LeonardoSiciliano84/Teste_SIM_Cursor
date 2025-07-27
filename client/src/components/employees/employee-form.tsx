@@ -131,10 +131,17 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
     },
     onError: (error: any) => {
       console.error("Error creating employee:", error);
-      const errorMessage = error?.message || "Erro desconhecido";
+      let errorMessage = "Erro desconhecido";
+      
+      if (error?.message?.includes("400")) {
+        errorMessage = "Dados inválidos. Verifique se todos os campos obrigatórios estão preenchidos corretamente.";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({ 
         title: "Erro ao criar colaborador", 
-        description: `Detalhes: ${errorMessage}`,
+        description: errorMessage,
         variant: "destructive" 
       });
     },
@@ -171,10 +178,10 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
       return;
     }
     
-    if (!formValues.employeeNumber || !formValues.position || !formValues.department) {
+    if (!formValues.employeeNumber || !formValues.position || !formValues.department || !formValues.admissionDate) {
       toast({
         title: "Dados profissionais obrigatórios", 
-        description: "Preencha: Matrícula, Cargo e Departamento na aba Profissionais",
+        description: "Preencha: Matrícula, Data de Admissão, Cargo e Departamento na aba Profissionais",
         variant: "destructive",
       });
       return;
@@ -190,7 +197,7 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
       email: formValues.email || "",
       personalEmail: formValues.personalEmail || "",
       employeeNumber: formValues.employeeNumber,
-      admissionDate: formValues.admissionDate || new Date().toISOString().split('T')[0],
+      admissionDate: formValues.admissionDate,
       position: formValues.position,
       department: formValues.department,
       salary: formValues.salary || 0,
