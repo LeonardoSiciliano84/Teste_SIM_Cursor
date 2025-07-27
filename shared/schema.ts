@@ -357,6 +357,10 @@ export const insertEmployeeSchema = createInsertSchema(employees).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  driverLicense: z.string().optional(),
+  driverLicenseCategory: z.string().optional(),
+  driverLicenseExpiry: z.string().optional(),
 });
 
 export const insertEmployeeDependentSchema = createInsertSchema(employeeDependents).omit({

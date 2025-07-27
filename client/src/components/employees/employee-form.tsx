@@ -586,91 +586,197 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
               </Card>
             </TabsContent>
 
-            <TabsContent value="additional" className="space-y-6">
+            {/* Aba de Educação */}
+            <TabsContent value="education" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Informações Adicionais</CardTitle>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Dados Escolares</span>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={addEducationRecord}
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Adicionar Formação
+                    </Button>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="education"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Escolaridade</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecionar escolaridade" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Fundamental">Ensino Fundamental</SelectItem>
-                              <SelectItem value="Médio">Ensino Médio</SelectItem>
-                              <SelectItem value="Superior">Ensino Superior</SelectItem>
-                              <SelectItem value="Pós-graduação">Pós-graduação</SelectItem>
-                              <SelectItem value="Mestrado">Mestrado</SelectItem>
-                              <SelectItem value="Doutorado">Doutorado</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="driverLicense"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>CNH</FormLabel>
+                  <FormField
+                    control={form.control}
+                    name="education"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Escolaridade Principal</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
                           <FormControl>
-                            <Input placeholder="Número da CNH" {...field} />
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecionar escolaridade" />
+                            </SelectTrigger>
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                          <SelectContent>
+                            <SelectItem value="Fundamental Incompleto">Ensino Fundamental Incompleto</SelectItem>
+                            <SelectItem value="Fundamental Completo">Ensino Fundamental Completo</SelectItem>
+                            <SelectItem value="Médio Incompleto">Ensino Médio Incompleto</SelectItem>
+                            <SelectItem value="Médio Completo">Ensino Médio Completo</SelectItem>
+                            <SelectItem value="Superior Incompleto">Ensino Superior Incompleto</SelectItem>
+                            <SelectItem value="Superior Completo">Ensino Superior Completo</SelectItem>
+                            <SelectItem value="Pós-graduação">Pós-graduação</SelectItem>
+                            <SelectItem value="Mestrado">Mestrado</SelectItem>
+                            <SelectItem value="Doutorado">Doutorado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    <FormField
-                      control={form.control}
-                      name="driverLicenseCategory"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Categoria da CNH</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                  {educationRecords.length > 0 && (
+                    <div className="space-y-4">
+                      <Separator />
+                      <h4 className="font-medium text-gray-900">Formações Adicionais</h4>
+                      {educationRecords.map((record, index) => (
+                        <Card key={index} className="p-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <Badge variant="outline">Formação {index + 1}</Badge>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeEducationRecord(index)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-sm font-medium">Nível</label>
+                              <Select 
+                                value={record.level} 
+                                onValueChange={(value) => updateEducationRecord(index, 'level', value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecionar nível" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Técnico">Técnico</SelectItem>
+                                  <SelectItem value="Superior">Superior</SelectItem>
+                                  <SelectItem value="Pós-graduação">Pós-graduação</SelectItem>
+                                  <SelectItem value="MBA">MBA</SelectItem>
+                                  <SelectItem value="Mestrado">Mestrado</SelectItem>
+                                  <SelectItem value="Doutorado">Doutorado</SelectItem>
+                                  <SelectItem value="Curso Livre">Curso Livre</SelectItem>
+                                  <SelectItem value="Certificação">Certificação</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">Instituição</label>
+                              <Input
+                                value={record.institution}
+                                onChange={(e) => updateEducationRecord(index, 'institution', e.target.value)}
+                                placeholder="Nome da instituição"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">Curso</label>
+                              <Input
+                                value={record.course}
+                                onChange={(e) => updateEducationRecord(index, 'course', e.target.value)}
+                                placeholder="Nome do curso"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">Ano de Conclusão</label>
+                              <Input
+                                value={record.completionYear}
+                                onChange={(e) => updateEducationRecord(index, 'completionYear', e.target.value)}
+                                placeholder="2023"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="text-sm font-medium">Status</label>
+                              <Select 
+                                value={record.status} 
+                                onValueChange={(value) => updateEducationRecord(index, 'status', value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="completed">Concluído</SelectItem>
+                                  <SelectItem value="in_progress">Em Andamento</SelectItem>
+                                  <SelectItem value="suspended">Suspenso</SelectItem>
+                                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mt-6 space-y-4">
+                    <h4 className="font-medium text-gray-900">Informações Adicionais</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="driverLicense"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>CNH</FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Categoria" />
-                              </SelectTrigger>
+                              <Input placeholder="Número da CNH" {...field} value={field.value || ""} />
                             </FormControl>
-                            <SelectContent>
-                              <SelectItem value="A">A</SelectItem>
-                              <SelectItem value="B">B</SelectItem>
-                              <SelectItem value="C">C</SelectItem>
-                              <SelectItem value="D">D</SelectItem>
-                              <SelectItem value="E">E</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="driverLicenseExpiry"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Vencimento da CNH</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <FormField
+                        control={form.control}
+                        name="driverLicenseCategory"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Categoria da CNH</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Categoria" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="A">A</SelectItem>
+                                <SelectItem value="B">B</SelectItem>
+                                <SelectItem value="C">C</SelectItem>
+                                <SelectItem value="D">D</SelectItem>
+                                <SelectItem value="E">E</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="driverLicenseExpiry"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Vencimento da CNH</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} value={field.value || ""} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
