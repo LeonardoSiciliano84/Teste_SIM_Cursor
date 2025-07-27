@@ -20,6 +20,8 @@ import {
   Camera
 } from "lucide-react";
 import { type Vehicle } from "@shared/schema";
+import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 interface VehicleDetailsProps {
   vehicle: Vehicle;
@@ -28,6 +30,8 @@ interface VehicleDetailsProps {
 
 export default function VehicleDetails({ vehicle, onBack }: VehicleDetailsProps) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const calculatePaymentProgress = () => {
     if (!vehicle.purchaseDate || !vehicle.installmentCount || !vehicle.installmentValue) {
@@ -82,8 +86,37 @@ export default function VehicleDetails({ vehicle, onBack }: VehicleDetailsProps)
 
   const paymentInfo = calculatePaymentProgress();
 
-  const generatePDF = () => {
-    alert("Funcionalidade de geração de PDF será implementada");
+  const generatePDF = async () => {
+    try {
+      const response = await fetch(`/api/vehicles/${vehicle.id}/pdf`);
+      
+      if (!response.ok) {
+        throw new Error('Erro ao gerar PDF');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ficha_${vehicle.plate}_${vehicle.name.replace(/\s+/g, '_')}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "PDF Gerado",
+        description: `Ficha técnica do veículo ${vehicle.name} foi gerada com sucesso!`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao gerar PDF do veículo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEdit = () => {
+    setLocation(`/vehicles/edit/${vehicle.id}`);
   };
 
   return (
@@ -106,7 +139,7 @@ export default function VehicleDetails({ vehicle, onBack }: VehicleDetailsProps)
             <Download className="w-4 h-4 mr-2" />
             Gerar PDF
           </Button>
-          <Button>
+          <Button onClick={handleEdit}>
             <Edit className="w-4 h-4 mr-2" />
             Editar
           </Button>
