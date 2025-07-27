@@ -17,6 +17,7 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Veículos", href: "/vehicles", icon: Car },
   { name: "Motoristas", href: "/drivers", icon: Users },
+  { name: "Colaboradores", href: "/employees", icon: Users },
   { name: "Rotas", href: "/routes", icon: Map },
   { name: "Reservas", href: "/bookings", icon: Package },
   { name: "Análises", href: "/analytics", icon: BarChart3 },

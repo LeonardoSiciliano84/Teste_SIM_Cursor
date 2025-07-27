@@ -11,7 +11,19 @@ import {
   type InsertBooking,
   type Trip,
   type InsertTrip,
-  type LoginData
+  type LoginData,
+  type Employee,
+  type InsertEmployee,
+  type EmployeeDependent,
+  type InsertEmployeeDependent,
+  type EmployeeDocument,
+  type InsertEmployeeDocument,
+  type EmployeeOccurrence,
+  type InsertEmployeeOccurrence,
+  type EmployeeMovement,
+  type InsertEmployeeMovement,
+  type EmployeeFile,
+  type InsertEmployeeFile
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -62,6 +74,41 @@ export interface IStorage {
     todayTrips: number;
     monthlyRevenue: number;
   }>;
+
+  // Employee methods
+  getEmployees(): Promise<Employee[]>;
+  getEmployee(id: string): Promise<Employee | undefined>;
+  createEmployee(employee: InsertEmployee): Promise<Employee>;
+  updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
+  deleteEmployee(id: string): Promise<boolean>;
+
+  // Employee Dependents methods
+  getEmployeeDependents(employeeId: string): Promise<EmployeeDependent[]>;
+  createEmployeeDependent(dependent: InsertEmployeeDependent): Promise<EmployeeDependent>;
+  updateEmployeeDependent(id: string, dependent: Partial<InsertEmployeeDependent>): Promise<EmployeeDependent | undefined>;
+  deleteEmployeeDependent(id: string): Promise<boolean>;
+
+  // Employee Documents methods
+  getEmployeeDocuments(employeeId: string): Promise<EmployeeDocument[]>;
+  createEmployeeDocument(document: InsertEmployeeDocument): Promise<EmployeeDocument>;
+  updateEmployeeDocument(id: string, document: Partial<InsertEmployeeDocument>): Promise<EmployeeDocument | undefined>;
+  deleteEmployeeDocument(id: string): Promise<boolean>;
+  getExpiringDocuments(days?: number): Promise<EmployeeDocument[]>;
+
+  // Employee Occurrences methods
+  getEmployeeOccurrences(employeeId: string): Promise<EmployeeOccurrence[]>;
+  createEmployeeOccurrence(occurrence: InsertEmployeeOccurrence): Promise<EmployeeOccurrence>;
+  updateEmployeeOccurrence(id: string, occurrence: Partial<InsertEmployeeOccurrence>): Promise<EmployeeOccurrence | undefined>;
+  deleteEmployeeOccurrence(id: string): Promise<boolean>;
+
+  // Employee Movements methods
+  getEmployeeMovements(employeeId: string): Promise<EmployeeMovement[]>;
+  createEmployeeMovement(movement: InsertEmployeeMovement): Promise<EmployeeMovement>;
+
+  // Employee Files methods
+  getEmployeeFiles(employeeId: string): Promise<EmployeeFile[]>;
+  createEmployeeFile(file: InsertEmployeeFile): Promise<EmployeeFile>;
+  deleteEmployeeFile(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -71,6 +118,12 @@ export class MemStorage implements IStorage {
   private routes: Map<string, Route>;
   private bookings: Map<string, Booking>;
   private trips: Map<string, Trip>;
+  private employees: Map<string, Employee>;
+  private employeeDependents: Map<string, EmployeeDependent>;
+  private employeeDocuments: Map<string, EmployeeDocument>;
+  private employeeOccurrences: Map<string, EmployeeOccurrence>;
+  private employeeMovements: Map<string, EmployeeMovement>;
+  private employeeFiles: Map<string, EmployeeFile>;
 
   constructor() {
     this.users = new Map();
@@ -79,8 +132,14 @@ export class MemStorage implements IStorage {
     this.routes = new Map();
     this.bookings = new Map();
     this.trips = new Map();
+    this.employees = new Map();
+    this.employeeDependents = new Map();
+    this.employeeDocuments = new Map();
+    this.employeeOccurrences = new Map();
+    this.employeeMovements = new Map();
+    this.employeeFiles = new Map();
     
-    // Initialize with default admin user
+    // Initialize with default admin user and sample data
     this.initializeDefaultData();
   }
 
@@ -127,6 +186,42 @@ export class MemStorage implements IStorage {
     ];
 
     drivers.forEach(driver => this.drivers.set(driver.id, driver));
+
+    // Dados iniciais de colaboradores
+    const employees = [
+      {
+        id: randomUUID(),
+        fullName: "Maria Silva Santos",
+        cpf: "123.456.789-01",
+        birthDate: "1985-03-15",
+        phone: "(11) 98765-4321",
+        employeeNumber: "EMP-001",
+        admissionDate: "2020-01-15",
+        position: "Analista de RH",
+        department: "Recursos Humanos",
+        status: "active" as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        fullName: "Carlos Oliveira Costa",
+        cpf: "987.654.321-00",
+        birthDate: "1990-07-22",
+        phone: "(11) 97654-3210",
+        employeeNumber: "EMP-002",
+        admissionDate: "2021-05-10",
+        position: "Motorista Sênior",
+        department: "Operações",
+        status: "active" as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    employees.forEach(employee => {
+      this.employees.set(employee.id, employee);
+    });
 
     // Add sample vehicles with complete data
     const driverIds = Array.from(this.drivers.keys());
@@ -471,6 +566,184 @@ export class MemStorage implements IStorage {
       todayTrips,
       monthlyRevenue,
     };
+  }
+
+  // ============= MÉTODOS DE RH =============
+
+  // Employee methods
+  async getEmployees(): Promise<Employee[]> {
+    return Array.from(this.employees.values());
+  }
+
+  async getEmployee(id: string): Promise<Employee | undefined> {
+    return this.employees.get(id);
+  }
+
+  async createEmployee(employee: InsertEmployee): Promise<Employee> {
+    const newEmployee: Employee = {
+      id: randomUUID(),
+      ...employee,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.employees.set(newEmployee.id, newEmployee);
+    return newEmployee;
+  }
+
+  async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
+    const existing = this.employees.get(id);
+    if (!existing) return undefined;
+    
+    const updated: Employee = {
+      ...existing,
+      ...employee,
+      updatedAt: new Date(),
+    };
+    this.employees.set(id, updated);
+    return updated;
+  }
+
+  async deleteEmployee(id: string): Promise<boolean> {
+    return this.employees.delete(id);
+  }
+
+  // Employee Dependents methods
+  async getEmployeeDependents(employeeId: string): Promise<EmployeeDependent[]> {
+    return Array.from(this.employeeDependents.values()).filter(d => d.employeeId === employeeId);
+  }
+
+  async createEmployeeDependent(dependent: InsertEmployeeDependent): Promise<EmployeeDependent> {
+    const newDependent: EmployeeDependent = {
+      id: randomUUID(),
+      ...dependent,
+      createdAt: new Date(),
+    };
+    this.employeeDependents.set(newDependent.id, newDependent);
+    return newDependent;
+  }
+
+  async updateEmployeeDependent(id: string, dependent: Partial<InsertEmployeeDependent>): Promise<EmployeeDependent | undefined> {
+    const existing = this.employeeDependents.get(id);
+    if (!existing) return undefined;
+    
+    const updated = { ...existing, ...dependent };
+    this.employeeDependents.set(id, updated);
+    return updated;
+  }
+
+  async deleteEmployeeDependent(id: string): Promise<boolean> {
+    return this.employeeDependents.delete(id);
+  }
+
+  // Employee Documents methods
+  async getEmployeeDocuments(employeeId: string): Promise<EmployeeDocument[]> {
+    return Array.from(this.employeeDocuments.values()).filter(d => d.employeeId === employeeId);
+  }
+
+  async createEmployeeDocument(document: InsertEmployeeDocument): Promise<EmployeeDocument> {
+    const newDocument: EmployeeDocument = {
+      id: randomUUID(),
+      ...document,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.employeeDocuments.set(newDocument.id, newDocument);
+    return newDocument;
+  }
+
+  async updateEmployeeDocument(id: string, document: Partial<InsertEmployeeDocument>): Promise<EmployeeDocument | undefined> {
+    const existing = this.employeeDocuments.get(id);
+    if (!existing) return undefined;
+    
+    const updated: EmployeeDocument = {
+      ...existing,
+      ...document,
+      updatedAt: new Date(),
+    };
+    this.employeeDocuments.set(id, updated);
+    return updated;
+  }
+
+  async deleteEmployeeDocument(id: string): Promise<boolean> {
+    return this.employeeDocuments.delete(id);
+  }
+
+  async getExpiringDocuments(days: number = 30): Promise<EmployeeDocument[]> {
+    const now = new Date();
+    const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+    
+    return Array.from(this.employeeDocuments.values()).filter(doc => {
+      if (!doc.expiryDate) return false;
+      const expiryDate = typeof doc.expiryDate === 'string' ? new Date(doc.expiryDate) : doc.expiryDate;
+      return expiryDate <= futureDate && expiryDate >= now;
+    });
+  }
+
+  // Employee Occurrences methods
+  async getEmployeeOccurrences(employeeId: string): Promise<EmployeeOccurrence[]> {
+    return Array.from(this.employeeOccurrences.values()).filter(o => o.employeeId === employeeId);
+  }
+
+  async createEmployeeOccurrence(occurrence: InsertEmployeeOccurrence): Promise<EmployeeOccurrence> {
+    const newOccurrence: EmployeeOccurrence = {
+      id: randomUUID(),
+      ...occurrence,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.employeeOccurrences.set(newOccurrence.id, newOccurrence);
+    return newOccurrence;
+  }
+
+  async updateEmployeeOccurrence(id: string, occurrence: Partial<InsertEmployeeOccurrence>): Promise<EmployeeOccurrence | undefined> {
+    const existing = this.employeeOccurrences.get(id);
+    if (!existing) return undefined;
+    
+    const updated: EmployeeOccurrence = {
+      ...existing,
+      ...occurrence,
+      updatedAt: new Date(),
+    };
+    this.employeeOccurrences.set(id, updated);
+    return updated;
+  }
+
+  async deleteEmployeeOccurrence(id: string): Promise<boolean> {
+    return this.employeeOccurrences.delete(id);
+  }
+
+  // Employee Movements methods
+  async getEmployeeMovements(employeeId: string): Promise<EmployeeMovement[]> {
+    return Array.from(this.employeeMovements.values()).filter(m => m.employeeId === employeeId);
+  }
+
+  async createEmployeeMovement(movement: InsertEmployeeMovement): Promise<EmployeeMovement> {
+    const newMovement: EmployeeMovement = {
+      id: randomUUID(),
+      ...movement,
+      createdAt: new Date(),
+    };
+    this.employeeMovements.set(newMovement.id, newMovement);
+    return newMovement;
+  }
+
+  // Employee Files methods
+  async getEmployeeFiles(employeeId: string): Promise<EmployeeFile[]> {
+    return Array.from(this.employeeFiles.values()).filter(f => f.employeeId === employeeId);
+  }
+
+  async createEmployeeFile(file: InsertEmployeeFile): Promise<EmployeeFile> {
+    const newFile: EmployeeFile = {
+      id: randomUUID(),
+      ...file,
+      createdAt: new Date(),
+    };
+    this.employeeFiles.set(newFile.id, newFile);
+    return newFile;
+  }
+
+  async deleteEmployeeFile(id: string): Promise<boolean> {
+    return this.employeeFiles.delete(id);
   }
 }
 

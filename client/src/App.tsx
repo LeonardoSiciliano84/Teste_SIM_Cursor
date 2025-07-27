@@ -12,6 +12,8 @@ import Drivers from "@/pages/drivers";
 import Routes from "@/pages/routes";
 import Bookings from "@/pages/bookings";
 import Analytics from "@/pages/analytics";
+import { EmployeesPage } from "@/pages/employees";
+import { EmployeeNewPage } from "@/pages/employee-new";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import VehicleEdit from "@/components/vehicles/vehicle-edit";
@@ -31,6 +33,8 @@ function Router() {
         )}
       </Route>
       <Route path="/drivers" component={Drivers} />
+      <Route path="/employees" component={EmployeesPage} />
+      <Route path="/employees/new" component={EmployeeNewPage} />
       <Route path="/routes" component={Routes} />
       <Route path="/bookings" component={Bookings} />
       <Route path="/analytics" component={Analytics} />

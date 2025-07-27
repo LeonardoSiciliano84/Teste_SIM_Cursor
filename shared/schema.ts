@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, decimal, integer, boolean, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, decimal, integer, boolean, uuid, date, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -129,6 +129,197 @@ export const trips = pgTable("trips", {
   completedAt: timestamp("completed_at").notNull().default(sql`now()`),
 });
 
+// ============= MÓDULO DE RH E DEPARTAMENTO PESSOAL =============
+
+export const employees = pgTable("employees", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Dados pessoais
+  fullName: text("full_name").notNull(),
+  cpf: text("cpf").notNull().unique(),
+  rg: text("rg"),
+  rgIssuer: text("rg_issuer"),
+  rgIssueDate: date("rg_issue_date"),
+  birthDate: date("birth_date").notNull(),
+  gender: text("gender"), // M, F, Outro
+  maritalStatus: text("marital_status"), // Solteiro, Casado, Divorciado, Viúvo
+  nationality: text("nationality").default("Brasileira"),
+  
+  // Contato
+  phone: text("phone").notNull(),
+  email: text("email"),
+  personalEmail: text("personal_email"),
+  
+  // Endereço
+  address: text("address"),
+  addressNumber: text("address_number"),
+  complement: text("complement"),
+  neighborhood: text("neighborhood"),
+  city: text("city"),
+  state: text("state"),
+  zipCode: text("zip_code"),
+  
+  // Informações profissionais
+  employeeNumber: text("employee_number").notNull().unique(),
+  admissionDate: date("admission_date").notNull(),
+  dismissalDate: date("dismissal_date"),
+  position: text("position").notNull(),
+  department: text("department").notNull(),
+  manager: text("manager"),
+  workSchedule: text("work_schedule"),
+  workLocation: text("work_location"),
+  
+  // Informações salariais
+  salary: decimal("salary", { precision: 10, scale: 2 }),
+  benefits: json("benefits"), // Array de benefícios
+  bankAccount: text("bank_account"),
+  bank: text("bank"),
+  bankAgency: text("bank_agency"),
+  pixKey: text("pix_key"),
+  
+  // Informações escolares
+  education: text("education"), // Fundamental, Médio, Superior, Pós
+  educationInstitution: text("education_institution"),
+  educationCourse: text("education_course"),
+  educationStatus: text("education_status"), // Completo, Incompleto, Cursando
+  
+  // Documentos pessoais
+  voterTitle: text("voter_title"),
+  militaryService: text("military_service"),
+  workCard: text("work_card"),
+  pis: text("pis"),
+  
+  // CNH (se aplicável)
+  driverLicense: text("driver_license"),
+  driverLicenseCategory: text("driver_license_category"),
+  driverLicenseExpiry: date("driver_license_expiry"),
+  
+  // Sistema
+  status: text("status").notNull().default("active"), // active, inactive
+  inactiveReason: text("inactive_reason"),
+  systemUserId: uuid("system_user_id").references(() => users.id),
+  profilePhoto: text("profile_photo"),
+  
+  // Permissões de acesso
+  accessLevel: text("access_level").default("employee"), // employee, supervisor, manager, admin
+  allowedModules: text("allowed_modules").array().default(sql`'{}'`),
+  
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const employeeDependents = pgTable("employee_dependents", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: uuid("employee_id").references(() => employees.id).notNull(),
+  
+  name: text("name").notNull(),
+  cpf: text("cpf"),
+  birthDate: date("birth_date").notNull(),
+  relationship: text("relationship").notNull(), // Filho(a), Cônjuge, Pai, Mãe, etc.
+  isDependent: boolean("is_dependent").default(true),
+  
+  // Documentos
+  birthCertificate: text("birth_certificate"),
+  cpfDocument: text("cpf_document"),
+  schoolEnrollment: text("school_enrollment"),
+  
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const employeeDocuments = pgTable("employee_documents", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: uuid("employee_id").references(() => employees.id).notNull(),
+  
+  documentType: text("document_type").notNull(), // CNH, Exame Médico, Curso, ASO, etc.
+  documentName: text("document_name").notNull(),
+  documentUrl: text("document_url"),
+  expiryDate: date("expiry_date"),
+  issueDate: date("issue_date"),
+  issuer: text("issuer"),
+  
+  // Controle de vencimento
+  notificationSent: boolean("notification_sent").default(false),
+  notificationDate: timestamp("notification_date"),
+  
+  // Histórico
+  previousVersionId: uuid("previous_version_id"),
+  version: integer("version").default(1),
+  
+  status: text("status").default("active"), // active, expired, renewed, archived
+  
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const employeeOccurrences = pgTable("employee_occurrences", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: uuid("employee_id").references(() => employees.id).notNull(),
+  requestedById: uuid("requested_by_id").references(() => employees.id).notNull(),
+  
+  occurrenceType: text("occurrence_type").notNull(), // advertencia_verbal, advertencia_escrita, suspensao, falta, atestado
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  occurrenceDate: date("occurrence_date").notNull(),
+  
+  // Para suspensões
+  suspensionDays: integer("suspension_days"),
+  suspensionStart: date("suspension_start"),
+  suspensionEnd: date("suspension_end"),
+  
+  // Para atestados
+  medicalDays: integer("medical_days"),
+  medicalStart: date("medical_start"),
+  medicalEnd: date("medical_end"),
+  medicalDocument: text("medical_document"),
+  
+  // Assinatura e aprovação
+  employeeSignature: boolean("employee_signature").default(false),
+  employeeSignatureDate: timestamp("employee_signature_date"),
+  managerSignature: boolean("manager_signature").default(false),
+  managerSignatureDate: timestamp("manager_signature_date"),
+  hrSignature: boolean("hr_signature").default(false),
+  hrSignatureDate: timestamp("hr_signature_date"),
+  
+  // Documento gerado
+  documentGenerated: boolean("document_generated").default(false),
+  documentUrl: text("document_url"),
+  
+  status: text("status").default("pending"), // pending, signed, completed, cancelled
+  
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const employeeMovements = pgTable("employee_movements", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: uuid("employee_id").references(() => employees.id).notNull(),
+  
+  movementType: text("movement_type").notNull(), // promocao, transferencia, mudanca_salario, mudanca_cargo
+  previousValue: text("previous_value"),
+  newValue: text("new_value"),
+  reason: text("reason").notNull(),
+  effectiveDate: date("effective_date").notNull(),
+  approvedById: uuid("approved_by_id").references(() => employees.id),
+  
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const employeeFiles = pgTable("employee_files", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: uuid("employee_id").references(() => employees.id).notNull(),
+  
+  fileName: text("file_name").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileType: text("file_type"), // PDF, DOC, DOCX, JPG, PNG
+  fileSize: integer("file_size"),
+  category: text("category"), // contrato, exame, curso, documento_pessoal, outros
+  description: text("description"),
+  
+  uploadedById: uuid("uploaded_by_id").references(() => employees.id),
+  
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -160,6 +351,41 @@ export const insertTripSchema = createInsertSchema(trips).omit({
   id: true,
 });
 
+// ============= SCHEMAS DE RH =============
+
+export const insertEmployeeSchema = createInsertSchema(employees).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertEmployeeDependentSchema = createInsertSchema(employeeDependents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertEmployeeDocumentSchema = createInsertSchema(employeeDocuments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertEmployeeOccurrenceSchema = createInsertSchema(employeeOccurrences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertEmployeeMovementSchema = createInsertSchema(employeeMovements).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertEmployeeFileSchema = createInsertSchema(employeeFiles).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Login schema
 export const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -186,3 +412,23 @@ export type InsertTrip = z.infer<typeof insertTripSchema>;
 export type Trip = typeof trips.$inferSelect;
 
 export type LoginData = z.infer<typeof loginSchema>;
+
+// ============= TIPOS DE RH =============
+
+export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
+export type Employee = typeof employees.$inferSelect;
+
+export type InsertEmployeeDependent = z.infer<typeof insertEmployeeDependentSchema>;
+export type EmployeeDependent = typeof employeeDependents.$inferSelect;
+
+export type InsertEmployeeDocument = z.infer<typeof insertEmployeeDocumentSchema>;
+export type EmployeeDocument = typeof employeeDocuments.$inferSelect;
+
+export type InsertEmployeeOccurrence = z.infer<typeof insertEmployeeOccurrenceSchema>;
+export type EmployeeOccurrence = typeof employeeOccurrences.$inferSelect;
+
+export type InsertEmployeeMovement = z.infer<typeof insertEmployeeMovementSchema>;
+export type EmployeeMovement = typeof employeeMovements.$inferSelect;
+
+export type InsertEmployeeFile = z.infer<typeof insertEmployeeFileSchema>;
+export type EmployeeFile = typeof employeeFiles.$inferSelect;

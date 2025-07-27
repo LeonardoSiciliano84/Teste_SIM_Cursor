@@ -8,7 +8,13 @@ import {
   insertDriverSchema, 
   insertRouteSchema, 
   insertBookingSchema,
-  loginSchema 
+  loginSchema,
+  insertEmployeeSchema,
+  insertEmployeeDependentSchema,
+  insertEmployeeDocumentSchema,
+  insertEmployeeOccurrenceSchema,
+  insertEmployeeMovementSchema,
+  insertEmployeeFileSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -447,6 +453,159 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(tripCategoriesData);
     } catch (error) {
       res.status(500).json({ message: "Erro ao carregar categorias de viagem" });
+    }
+  });
+
+  // ============= ROTAS DE RH =============
+
+  // Employee routes
+  app.get("/api/employees", async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      res.json(employees);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao carregar colaboradores" });
+    }
+  });
+
+  app.get("/api/employees/:id", async (req, res) => {
+    try {
+      const employee = await storage.getEmployee(req.params.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Colaborador não encontrado" });
+      }
+      res.json(employee);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao carregar colaborador" });
+    }
+  });
+
+  app.post("/api/employees", async (req, res) => {
+    try {
+      const employeeData = insertEmployeeSchema.parse(req.body);
+      const employee = await storage.createEmployee(employeeData);
+      res.status(201).json(employee);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Erro ao criar colaborador" });
+    }
+  });
+
+  app.patch("/api/employees/:id", async (req, res) => {
+    try {
+      const employeeData = insertEmployeeSchema.partial().parse(req.body);
+      const employee = await storage.updateEmployee(req.params.id, employeeData);
+      if (!employee) {
+        return res.status(404).json({ message: "Colaborador não encontrado" });
+      }
+      res.json(employee);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Erro ao atualizar colaborador" });
+    }
+  });
+
+  app.delete("/api/employees/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteEmployee(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Colaborador não encontrado" });
+      }
+      res.json({ message: "Colaborador removido com sucesso" });
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao remover colaborador" });
+    }
+  });
+
+  // Employee Documents routes
+  app.get("/api/employees/:id/documents", async (req, res) => {
+    try {
+      const documents = await storage.getEmployeeDocuments(req.params.id);
+      res.json(documents);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao carregar documentos" });
+    }
+  });
+
+  app.get("/api/employees/documents/expiring", async (req, res) => {
+    try {
+      const days = req.query.days ? parseInt(req.query.days as string) : 30;
+      const documents = await storage.getExpiringDocuments(days);
+      res.json(documents);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao carregar documentos vencendo" });
+    }
+  });
+
+  app.post("/api/employees/:id/documents", async (req, res) => {
+    try {
+      const documentData = insertEmployeeDocumentSchema.parse({
+        ...req.body,
+        employeeId: req.params.id
+      });
+      const document = await storage.createEmployeeDocument(documentData);
+      res.status(201).json(document);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Erro ao criar documento" });
+    }
+  });
+
+  // Employee Dependents routes
+  app.get("/api/employees/:id/dependents", async (req, res) => {
+    try {
+      const dependents = await storage.getEmployeeDependents(req.params.id);
+      res.json(dependents);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao carregar dependentes" });
+    }
+  });
+
+  app.post("/api/employees/:id/dependents", async (req, res) => {
+    try {
+      const dependentData = insertEmployeeDependentSchema.parse({
+        ...req.body,
+        employeeId: req.params.id
+      });
+      const dependent = await storage.createEmployeeDependent(dependentData);
+      res.status(201).json(dependent);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Erro ao criar dependente" });
+    }
+  });
+
+  // Employee Occurrences routes
+  app.get("/api/employees/:id/occurrences", async (req, res) => {
+    try {
+      const occurrences = await storage.getEmployeeOccurrences(req.params.id);
+      res.json(occurrences);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao carregar ocorrências" });
+    }
+  });
+
+  app.post("/api/employees/:id/occurrences", async (req, res) => {
+    try {
+      const occurrenceData = insertEmployeeOccurrenceSchema.parse({
+        ...req.body,
+        employeeId: req.params.id
+      });
+      const occurrence = await storage.createEmployeeOccurrence(occurrenceData);
+      res.status(201).json(occurrence);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Erro ao criar ocorrência" });
     }
   });
 

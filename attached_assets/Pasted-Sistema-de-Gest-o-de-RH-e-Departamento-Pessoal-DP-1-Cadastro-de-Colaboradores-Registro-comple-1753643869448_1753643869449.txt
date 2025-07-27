@@ -1,0 +1,39 @@
+Sistema de Gestão de RH e Departamento Pessoal (DP)
+1. Cadastro de Colaboradores
+•	Registro completo dos colaboradores com campos para dados pessoais, profissionais, escolares e informações de dependentes.
+•	Sistema de permissões de acesso ao sistema e às páginas, com base em perfis hierárquicos, utilizando padrões modernos de segurança e autenticação (como integração com Clerk ou protocolos similares com criptografia).
+•	Inclusão de informações salariais, cargos, benefícios e histórico de movimentações internas.
+2. Gestão de Documentos
+•	Upload e gerenciamento de documentos pessoais do colaborador e de seus dependentes.
+•	Controle de documentos com vencimento (ex: CNH, exames médicos, cursos obrigatórios), com campos para:
+o	Tipo de documento
+o	Data de vencimento
+o	Upload de arquivo
+o	Notificações automáticas por e-mail e alertas visuais no sistema
+o	Opção de renovação com reanexo e atualização da data
+o	Histórico de alterações
+3. Gerador de Ocorrências
+•	Ferramenta para registro e gestão de ocorrências com formulário pré-preenchido.
+•	Funcionamento:
+o	O gestor solicita a ocorrência (ex: advertência, suspensão, etc.)
+o	O RH seleciona o nome do colaborador, o gestor solicitante e o tipo de ocorrência
+o	O sistema gera automaticamente o documento correspondente para assinatura digital ou física
+o	O evento é registrado no histórico do colaborador
+•	Tipos de ocorrências contempladas:
+o	Advertência verbal ou escrita
+o	Suspensão
+o	Registro de faltas
+o	Entrega de atestados
+•	Relatório completo do histórico de ocorrências, com possibilidade de impressão.
+4. Funcionalidades Adicionais
+•	Anexos Gerais: Upload de documentos diversos vinculados ao colaborador ou dependentes.
+•	Controle de Ativos de Cadastro:
+o	Desativação de colaboradores com campo obrigatório para motivo
+o	Reativação com motivo documentado
+•	Exclusões Controladas: Permite a exclusão de documentos, cursos e dados de dependentes com rastreabilidade.
+•	Exportações:
+o	Impressão da ficha completa do colaborador
+o	Geração de ficha com histórico de ocorrências
+o	Exportação da base de colaboradores para arquivo .xlsx com filtros configuráveis
+
+________________________________________
