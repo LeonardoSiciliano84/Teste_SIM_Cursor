@@ -15,7 +15,9 @@ import {
   Users,
   FileText,
   Calendar,
-  Settings
+  Settings,
+  Eye,
+  Printer
 } from "lucide-react";
 import { type Employee, type EmployeeDocument } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -24,6 +26,38 @@ export function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const queryClient = useQueryClient();
+
+  // Função para gerar PDF da ficha do colaborador
+  const generateEmployeePDF = async (employee: Employee) => {
+    try {
+      const response = await fetch(`/api/employees/${employee.id}/pdf`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf',
+        },
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ficha-colaborador-${employee.fullName.replace(/\s+/g, '-')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        console.error('Erro ao gerar PDF');
+        // Temporariamente mostrar alerta
+        alert('Funcionalidade de impressão será implementada em breve');
+      }
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      // Temporariamente mostrar alerta
+      alert('Funcionalidade de impressão será implementada em breve');
+    }
+  };
 
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
@@ -233,15 +267,37 @@ export function EmployeesPage() {
                     )}
                   </div>
 
-                  <div className="flex gap-2">
-                    <Link href={`/employees/${employee.id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full">
-                        Ver Detalhes
-                      </Button>
-                    </Link>
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Abrir modal de visualização ou navegar para detalhes
+                        window.location.href = `/employees/${employee.id}`;
+                      }}
+                      className="flex-1"
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Ver Detalhes
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Implementar geração de PDF da ficha do colaborador
+                        generateEmployeePDF(employee);
+                      }}
+                      title="Imprimir Ficha"
+                    >
+                      <Printer className="w-4 h-4" />
+                    </Button>
                     <Link href={`/employees/edit/${employee.id}`}>
-                      <Button variant="outline" size="sm">
-                        <Settings className="h-4 w-4" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        title="Editar Colaborador"
+                      >
+                        <Settings className="w-4 h-4" />
                       </Button>
                     </Link>
                   </div>
@@ -310,11 +366,30 @@ export function EmployeesPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex gap-2">
-                            <Link href={`/employees/${employee.id}`}>
-                              <Button variant="outline" size="sm">Ver</Button>
-                            </Link>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => window.location.href = `/employees/${employee.id}`}
+                              title="Visualizar Detalhes"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => generateEmployeePDF(employee)}
+                              title="Imprimir Ficha"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </Button>
                             <Link href={`/employees/edit/${employee.id}`}>
-                              <Button variant="outline" size="sm">Editar</Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                title="Editar Colaborador"
+                              >
+                                <Settings className="w-4 h-4" />
+                              </Button>
                             </Link>
                           </div>
                         </td>
