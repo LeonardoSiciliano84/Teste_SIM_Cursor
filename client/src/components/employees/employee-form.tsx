@@ -117,6 +117,10 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
         return result;
       } catch (error) {
         console.error("Failed to create employee:", error);
+        // Capturar detalhes do erro se disponível
+        if ((error as Error).message.includes("400")) {
+          console.log("400 error detected, will be handled in onError");
+        }
         throw error;
       }
     },
@@ -129,12 +133,31 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
       });
       onSuccess?.();
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
       console.error("Error creating employee:", error);
       let errorMessage = "Erro desconhecido";
       
       if (error?.message?.includes("400")) {
-        errorMessage = "Dados inválidos. Verifique se todos os campos obrigatórios estão preenchidos corretamente.";
+        // Tentar capturar detalhes específicos do erro de validação
+        try {
+          const response = await fetch("/api/employees", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}), // Enviar dados vazios para ver quais campos são obrigatórios
+          });
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.log("Validation error details:", errorData);
+            if (errorData.errors && errorData.errors.length > 0) {
+              const missingFields = errorData.errors.map(err => err.path[0]).join(", ");
+              errorMessage = `Campos obrigatórios faltando: ${missingFields}`;
+            } else {
+              errorMessage = "Dados inválidos. Verifique todos os campos obrigatórios.";
+            }
+          }
+        } catch (e) {
+          errorMessage = "Dados inválidos. Verifique se todos os campos obrigatórios estão preenchidos corretamente.";
+        }
       } else if (error?.message) {
         errorMessage = error.message;
       }
@@ -167,12 +190,17 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
     
     const formValues = form.getValues();
     console.log("Current form values:", formValues);
+    console.log("Form values breakdown:");
+    Object.keys(formValues).forEach(key => {
+      const value = (formValues as any)[key];
+      console.log(`- ${key}:`, value, `(type: ${typeof value}, empty: ${!value})`);
+    });
     
     // Validação básica
-    if (!formValues.fullName || !formValues.cpf || !formValues.phone) {
+    if (!formValues.fullName || !formValues.cpf || !formValues.phone || !formValues.birthDate) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha: Nome Completo, CPF e Telefone na aba Pessoais",
+        description: "Preencha: Nome Completo, CPF, Telefone e Data de Nascimento na aba Pessoais",
         variant: "destructive",
       });
       return;
@@ -187,20 +215,20 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
       return;
     }
     
-    // Dados limpos para envio
+    // Dados limpos para envio - garantindo que campos obrigatórios não sejam vazios
     const submitData = {
-      fullName: formValues.fullName,
-      cpf: formValues.cpf,
-      rg: formValues.rg || "",
-      birthDate: formValues.birthDate || "",
-      phone: formValues.phone,
-      email: formValues.email || "",
-      personalEmail: formValues.personalEmail || "",
-      employeeNumber: formValues.employeeNumber,
-      admissionDate: formValues.admissionDate,
-      position: formValues.position,
-      department: formValues.department,
-      salary: formValues.salary || 0,
+      fullName: formValues.fullName.trim(),
+      cpf: formValues.cpf.trim(),
+      rg: formValues.rg?.trim() || "",
+      birthDate: formValues.birthDate.trim(),
+      phone: formValues.phone.trim(),
+      email: formValues.email?.trim() || "",
+      personalEmail: formValues.personalEmail?.trim() || "",
+      employeeNumber: formValues.employeeNumber.trim(),
+      admissionDate: formValues.admissionDate.trim(),
+      position: formValues.position.trim(),
+      department: formValues.department.trim(),
+      salary: Number(formValues.salary) || 0,
       status: "active"
     };
     
