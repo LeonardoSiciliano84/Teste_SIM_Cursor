@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import multer from "multer";
+import PDFDocument from "pdfkit";
 import { storage } from "./storage";
 import { 
   insertVehicleSchema, 
@@ -9,6 +11,22 @@ import {
   loginSchema 
 } from "@shared/schema";
 import { z } from "zod";
+
+// Configuração do multer para upload de arquivos
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(null, false);
+    }
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
@@ -101,6 +119,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Erro ao deletar veículo" });
+    }
+  });
+
+  // Rota para geração de PDF do veículo
+  app.get("/api/vehicles/:id/pdf", async (req, res) => {
+    try {
+      const vehicle = await storage.getVehicle(req.params.id);
+      if (!vehicle) {
+        return res.status(404).json({ message: "Veículo não encontrado" });
+      }
+
+      const doc = new PDFDocument();
+      
+      // Configurar headers para download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=ficha_${vehicle.plate}_${vehicle.name.replace(/\s+/g, '_')}.pdf`);
+      
+      // Pipe do PDF para a resposta
+      doc.pipe(res);
+
+      // Header do documento
+      doc.fontSize(20).text('FELKA TRANSPORTES', { align: 'center' });
+      doc.fontSize(16).text('FICHA TÉCNICA DO VEÍCULO', { align: 'center' });
+      doc.moveDown(2);
+
+      // Informações principais
+      doc.fontSize(14).text('DADOS PRINCIPAIS', { underline: true });
+      doc.fontSize(12)
+        .text(`Nome: ${vehicle.name}`)
+        .text(`Placa: ${vehicle.plate}`)
+        .text(`Marca: ${vehicle.brand || 'N/A'}`)
+        .text(`Modelo: ${vehicle.model}`)
+        .text(`Ano: ${vehicle.modelYear || 'N/A'}`)
+        .text(`Status: ${vehicle.status}`)
+        .text(`Localização: ${vehicle.currentLocation || 'N/A'}`)
+        .moveDown();
+
+      // Informações financeiras
+      doc.fontSize(14).text('INFORMAÇÕES FINANCEIRAS', { underline: true });
+      doc.fontSize(12)
+        .text(`Valor de Compra: R$ ${vehicle.purchaseValue ? parseFloat(vehicle.purchaseValue).toLocaleString('pt-BR') : 'N/A'}`)
+        .text(`Valor FIPE: R$ ${vehicle.fipeValue ? parseFloat(vehicle.fipeValue).toLocaleString('pt-BR') : 'N/A'}`)
+        .text(`Instituição Financeira: ${vehicle.financialInstitution || 'N/A'}`)
+        .text(`Tipo de Contrato: ${vehicle.contractType || 'N/A'}`)
+        .text(`Parcelas: ${vehicle.installmentCount || 'N/A'}`)
+        .text(`Valor da Parcela: R$ ${vehicle.installmentValue ? parseFloat(vehicle.installmentValue).toLocaleString('pt-BR') : 'N/A'}`)
+        .moveDown();
+
+      // Especificações técnicas
+      doc.fontSize(14).text('ESPECIFICAÇÕES TÉCNICAS', { underline: true });
+      doc.fontSize(12)
+        .text(`Largura: ${vehicle.bodyWidth || 'N/A'} m`)
+        .text(`Comprimento: ${vehicle.bodyLength || 'N/A'} m`)
+        .text(`Altura do Piso: ${vehicle.floorHeight || 'N/A'} m`)
+        .text(`Capacidade de Carga: ${vehicle.loadCapacity || 'N/A'} kg`)
+        .text(`Capacidade do Tanque: ${vehicle.fuelTankCapacity || 'N/A'} L`)
+        .text(`Consumo: ${vehicle.fuelConsumption || 'N/A'} km/L`)
+        .moveDown();
+
+      // Documentação
+      doc.fontSize(14).text('DOCUMENTAÇÃO', { underline: true });
+      doc.fontSize(12)
+        .text(`CRLV: ${vehicle.crlvExpiry ? `Vence em ${new Date(vehicle.crlvExpiry).toLocaleDateString('pt-BR')}` : 'N/A'}`)
+        .text(`Tacógrafo: ${vehicle.tachographExpiry ? `Vence em ${new Date(vehicle.tachographExpiry).toLocaleDateString('pt-BR')}` : 'N/A'}`)
+        .text(`ANTT: ${vehicle.anttExpiry ? `Vence em ${new Date(vehicle.anttExpiry).toLocaleDateString('pt-BR')}` : 'N/A'}`)
+        .text(`Seguro: ${vehicle.insuranceExpiry ? `Vence em ${new Date(vehicle.insuranceExpiry).toLocaleDateString('pt-BR')}` : 'N/A'}`)
+        .moveDown();
+
+      // Footer
+      doc.fontSize(10)
+        .text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, { align: 'center' })
+        .text('Sistema FELKA Transportes', { align: 'center' });
+
+      doc.end();
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      res.status(500).json({ message: "Erro ao gerar PDF" });
+    }
+  });
+
+  // Rota para upload de documentos
+  app.post("/api/vehicles/:id/upload", upload.array('files', 10), async (req, res) => {
+    try {
+      const vehicle = await storage.getVehicle(req.params.id);
+      if (!vehicle) {
+        return res.status(404).json({ message: "Veículo não encontrado" });
+      }
+
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: "Nenhum arquivo enviado" });
+      }
+
+      // Em um sistema real, você salvaria os arquivos no disco ou cloud storage
+      // Aqui vamos simular o processo
+      const uploadedFiles = files.map(file => ({
+        filename: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        uploadDate: new Date(),
+      }));
+
+      res.json({ 
+        message: `${files.length} arquivo(s) enviado(s) com sucesso`,
+        files: uploadedFiles 
+      });
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      res.status(500).json({ message: "Erro no upload de arquivos" });
     }
   });
 

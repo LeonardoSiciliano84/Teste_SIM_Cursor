@@ -15,6 +15,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { 
   User, 
@@ -108,6 +109,9 @@ export default function Header() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Perfil do Usuário</DialogTitle>
+            <DialogDescription>
+              Visualize e gerencie as informações da sua conta
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             <div className="flex items-center space-x-4">
@@ -170,6 +174,9 @@ export default function Header() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Configurações de Segurança</DialogTitle>
+            <DialogDescription>
+              Gerencie as configurações de segurança da sua conta
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             <div className="space-y-4">

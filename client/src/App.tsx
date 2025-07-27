@@ -14,6 +14,7 @@ import Bookings from "@/pages/bookings";
 import Analytics from "@/pages/analytics";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
+import VehicleEdit from "@/components/vehicles/vehicle-edit";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -21,6 +22,14 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/vehicles" component={Vehicles} />
+      <Route path="/vehicles/edit/:id">
+        {(params) => (
+          <VehicleEdit 
+            vehicleId={params.id} 
+            onCancel={() => {}} 
+          />
+        )}
+      </Route>
       <Route path="/drivers" component={Drivers} />
       <Route path="/routes" component={Routes} />
       <Route path="/bookings" component={Bookings} />

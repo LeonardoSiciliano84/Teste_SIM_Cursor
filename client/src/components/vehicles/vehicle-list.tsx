@@ -36,7 +36,7 @@ export default function VehicleList({ onCreateVehicle }: VehicleListProps) {
   const [typeFilter, setTypeFilter] = useState("all");
   const { toast } = useToast();
 
-  const { data: vehicles = [], isLoading } = useQuery({
+  const { data: vehicles = [], isLoading } = useQuery<Vehicle[]>({
     queryKey: ["/api/vehicles"],
   });
 
@@ -78,48 +78,33 @@ export default function VehicleList({ onCreateVehicle }: VehicleListProps) {
     return Math.round((paidInstallments / vehicle.installmentCount) * 100);
   };
 
-  const generateVehiclePDF = (vehicle: Vehicle) => {
-    // Simular geração de PDF individual
-    const pdfContent = `
-FICHA TÉCNICA DO VEÍCULO
-========================
+  const generateVehiclePDF = async (vehicle: Vehicle) => {
+    try {
+      const response = await fetch(`/api/vehicles/${vehicle.id}/pdf`);
+      
+      if (!response.ok) {
+        throw new Error('Erro ao gerar PDF');
+      }
 
-Nome: ${vehicle.name}
-Placa: ${vehicle.plate}
-Marca: ${vehicle.brand || 'N/A'}
-Modelo: ${vehicle.model}
-Ano: ${vehicle.modelYear || 'N/A'}
-Status: ${vehicle.status}
-Localização: ${vehicle.currentLocation || 'N/A'}
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ficha_${vehicle.plate}_${vehicle.name.replace(/\s+/g, '_')}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
 
-INFORMAÇÕES FINANCEIRAS
-=======================
-Valor de Compra: R$ ${vehicle.purchaseValue ? parseFloat(vehicle.purchaseValue).toLocaleString('pt-BR') : 'N/A'}
-Valor FIPE: R$ ${vehicle.fipeValue ? parseFloat(vehicle.fipeValue).toLocaleString('pt-BR') : 'N/A'}
-Instituição Financeira: ${vehicle.financialInstitution || 'N/A'}
-
-ESPECIFICAÇÕES TÉCNICAS
-=======================
-Largura: ${vehicle.bodyWidth || 'N/A'} m
-Comprimento: ${vehicle.bodyLength || 'N/A'} m
-Capacidade de Carga: ${vehicle.loadCapacity || 'N/A'} kg
-Consumo: ${vehicle.fuelConsumption || 'N/A'} km/L
-
-Gerado em: ${new Date().toLocaleString('pt-BR')}
-    `;
-
-    const blob = new Blob([pdfContent], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ficha_${vehicle.plate}_${vehicle.name.replace(/\s+/g, '_')}.txt`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-
-    toast({
-      title: "PDF Gerado",
-      description: `Ficha técnica do veículo ${vehicle.name} foi gerada com sucesso!`,
-    });
+      toast({
+        title: "PDF Gerado",
+        description: `Ficha técnica do veículo ${vehicle.name} foi gerada com sucesso!`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao gerar PDF do veículo",
+        variant: "destructive",
+      });
+    }
   };
 
   const exportToExcel = () => {
