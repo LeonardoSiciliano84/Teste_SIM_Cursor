@@ -7,6 +7,9 @@ This is a comprehensive transport management system built with a React frontend 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Visual identity: FELKA corporate branding with blue color scheme (#0C29AB)
+Logo implementation: FELKA logo in sidebar and header areas
+Interface language: Portuguese Brazilian
 
 ## System Architecture
 

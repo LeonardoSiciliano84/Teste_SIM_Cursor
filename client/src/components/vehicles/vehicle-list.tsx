@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -329,16 +330,14 @@ export default function VehicleList({ onCreateVehicle }: VehicleListProps) {
                   >
                     <FileText className="w-4 h-4" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      // Implementar edição de veículo
-                      window.open(`/vehicles/edit/${vehicle.id}`, '_self');
-                    }}
-                  >
-                    <Settings className="w-4 h-4" />
-                  </Button>
+                  <Link href={`/vehicles/${vehicle.id}/edit`}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>

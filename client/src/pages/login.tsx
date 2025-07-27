@@ -46,15 +46,21 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 to-primary-700 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-400 via-primary to-blue-800 p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardContent className="pt-8 p-8">
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <Truck className="w-10 h-10 text-primary-600 mr-2" />
-              <h1 className="text-2xl font-bold text-gray-900">Felka Transport</h1>
+            <div className="flex justify-center mb-6">
+              <div className="bg-white p-4 rounded-xl shadow-lg">
+                <img 
+                  src="/src/assets/felka-logo.svg" 
+                  alt="Felka Transportes" 
+                  className="h-16 w-auto"
+                />
+              </div>
             </div>
-            <p className="text-gray-600">Sistema de Gestão de Transporte</p>
+            <h1 className="text-2xl font-bold text-gray-900">Sistema FELKA Transportes</h1>
+            <p className="text-gray-600">Gestão Completa de Frota</p>
           </div>
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -97,14 +103,14 @@ export default function Login() {
                   Lembrar-me
                 </Label>
               </div>
-              <a href="#" className="text-sm text-primary-600 hover:text-primary-500">
+              <a href="#" className="text-sm text-primary hover:text-primary/80">
                 Esqueceu a senha?
               </a>
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-primary-600 hover:bg-primary-700"
+              className="w-full bg-primary hover:bg-primary/90"
               disabled={isLoading}
             >
               {isLoading ? "Entrando..." : "Entrar"}
@@ -114,7 +120,7 @@ export default function Login() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Não tem uma conta?{" "}
-              <a href="#" className="text-primary-600 hover:text-primary-500 font-medium">
+              <a href="#" className="text-primary hover:text-primary/80 font-medium">
                 Cadastre-se
               </a>
             </p>
