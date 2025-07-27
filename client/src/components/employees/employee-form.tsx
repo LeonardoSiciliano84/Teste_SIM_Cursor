@@ -78,12 +78,12 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
       admissionDate: employee?.admissionDate || "",
       position: employee?.position || "",
       department: employee?.department || "",
-      salary: employee?.salary || "",
-
+      salary: employee?.salary || 0,
+      workSchedule: employee?.workSchedule || "",
       workLocation: employee?.workLocation || "",
       manager: employee?.manager || "",
       email: employee?.email || "",
-      accessLevel: employee?.accessLevel || "employee",
+      accessLevel: employee?.accessLevel || "user",
       
       // Dados Escolares
       education: employee?.education || "",
@@ -134,12 +134,30 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
 
   const onSubmit = (data: any) => {
     console.log("onSubmit called with data:", data);
+    console.log("fullName:", data.fullName);
+    console.log("cpf:", data.cpf);
+    console.log("birthDate:", data.birthDate);
+    console.log("phone:", data.phone);
+    console.log("employeeNumber:", data.employeeNumber);
+    console.log("admissionDate:", data.admissionDate);
+    console.log("position:", data.position);
+    console.log("department:", data.department);
     
-    // Verificar campos obrigatórios
-    if (!data.fullName || !data.cpf || !data.birthDate || !data.phone || !data.employeeNumber || !data.admissionDate || !data.position || !data.department) {
+    // Verificar campos obrigatórios - apenas os essenciais
+    if (!data.fullName || !data.cpf || !data.birthDate || !data.phone) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos obrigatórios.",
+        title: "Campos obrigatórios faltando",
+        description: "Preencha: Nome Completo, CPF, Data de Nascimento e Telefone.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Verificar campos profissionais se estiverem vazios
+    if (!data.employeeNumber || !data.admissionDate || !data.position || !data.department) {
+      toast({
+        title: "Dados profissionais obrigatórios",
+        description: "Preencha: Matrícula, Data de Admissão, Cargo e Departamento na aba Profissionais.",
         variant: "destructive",
       });
       return;
