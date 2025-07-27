@@ -95,14 +95,26 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/employees", "POST", data),
-    onSuccess: () => {
+    mutationFn: (data: any) => {
+      console.log("Creating employee with data:", data);
+      return apiRequest("/api/employees", "POST", data);
+    },
+    onSuccess: (result) => {
+      console.log("Employee created successfully:", result);
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
-      toast({ title: "Colaborador criado com sucesso!" });
+      toast({ 
+        title: "Colaborador criado com sucesso!",
+        description: "O colaborador foi cadastrado no sistema.",
+      });
       onSuccess?.();
     },
-    onError: () => {
-      toast({ title: "Erro ao criar colaborador", variant: "destructive" });
+    onError: (error) => {
+      console.error("Error creating employee:", error);
+      toast({ 
+        title: "Erro ao criar colaborador", 
+        description: "Verifique os dados e tente novamente.",
+        variant: "destructive" 
+      });
     },
   });
 
@@ -121,13 +133,48 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
   });
 
   const onSubmit = (data: any) => {
-    // Adicionar dependentes e outros dados ao formulário
+    console.log("onSubmit called with data:", data);
+    
+    // Verificar campos obrigatórios
+    if (!data.fullName || !data.cpf || !data.birthDate || !data.phone || !data.employeeNumber || !data.admissionDate || !data.position || !data.department) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Preparar dados para envio
     const completeData = {
-      ...data,
+      fullName: data.fullName,
+      cpf: data.cpf,
+      rg: data.rg || "",
+      birthDate: data.birthDate,
+      gender: data.gender || "",
+      maritalStatus: data.maritalStatus || "",
+      phone: data.phone,
+      email: data.email || "",
+      personalEmail: data.personalEmail || "",
+      address: data.address || "",
+      city: data.city || "",
+      state: data.state || "",
+      zipCode: data.zipCode || "",
+      employeeNumber: data.employeeNumber,
+      admissionDate: data.admissionDate,
+      position: data.position,
+      department: data.department,
+      salary: data.salary || 0,
+      workSchedule: data.workSchedule || "",
+      status: data.status || "active",
+      education: data.education || "",
+      accessLevel: data.accessLevel || "user",
       dependents,
       educationRecords,
       movementHistory
     };
+    
+    console.log("Complete data to submit:", completeData);
     
     if (employee) {
       updateMutation.mutate(completeData);
@@ -193,7 +240,8 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
             </Button>
           )}
           <Button 
-            type="submit"
+            type="button"
+            onClick={form.handleSubmit(onSubmit)}
             disabled={isLoading}
             style={{ backgroundColor: '#0C29AB', color: 'white' }}
             className="hover:opacity-90"
