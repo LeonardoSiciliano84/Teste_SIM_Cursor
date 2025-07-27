@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { type User } from "@shared/schema";
 
 export interface AuthState {
@@ -57,3 +58,22 @@ class AuthManager {
 }
 
 export const authManager = new AuthManager();
+
+// Hook personalizado para usar autenticação
+export const useAuth = () => {
+  const [authState, setAuthState] = useState<AuthState>(authManager.getState());
+
+  useEffect(() => {
+    const unsubscribe = authManager.subscribe(setAuthState);
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  return {
+    user: authState.user,
+    isAuthenticated: authState.isAuthenticated,
+    login: authManager.login.bind(authManager),
+    logout: authManager.logout.bind(authManager),
+  };
+};

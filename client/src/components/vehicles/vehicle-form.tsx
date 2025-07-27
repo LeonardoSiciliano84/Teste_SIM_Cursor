@@ -95,10 +95,19 @@ export default function VehicleForm({ onSuccess, onCancel }: VehicleFormProps) {
         insuranceExpiry: data.insuranceExpiry ? new Date(data.insuranceExpiry) : undefined,
       };
       
-      return await apiRequest("/api/vehicles", {
+      const response = await fetch("/api/vehicles", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(processedData),
       });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}: ${response.statusText}`);
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/vehicles"] });
@@ -508,6 +517,87 @@ export default function VehicleForm({ onSuccess, onCancel }: VehicleFormProps) {
                     placeholder="15000.00"
                   />
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">Upload de Documentos</h4>
+                    
+                    <div>
+                      <Label htmlFor="crlvUpload">Documento CRLV</Label>
+                      <Input
+                        id="crlvUpload"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // Simular upload
+                            toast({
+                              title: "Upload simulado",
+                              description: `Arquivo ${file.name} seria enviado para o servidor`,
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="tachographUpload">Certificação Tacógrafo</Label>
+                      <Input
+                        id="tachographUpload"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            toast({
+                              title: "Upload simulado",
+                              description: `Arquivo ${file.name} seria enviado para o servidor`,
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="anttUpload">Registro ANTT</Label>
+                      <Input
+                        id="anttUpload"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            toast({
+                              title: "Upload simulado",
+                              description: `Arquivo ${file.name} seria enviado para o servidor`,
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="insuranceUpload">Apólice de Seguro</Label>
+                      <Input
+                        id="insuranceUpload"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            toast({
+                              title: "Upload simulado",
+                              description: `Arquivo ${file.name} seria enviado para o servidor`,
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -583,6 +673,48 @@ export default function VehicleForm({ onSuccess, onCancel }: VehicleFormProps) {
                     {...form.register("fuelConsumption")}
                     placeholder="4.5"
                   />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Fotos do Veículo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="vehiclePhotos">Adicionar Fotos</Label>
+                    <Input
+                      id="vehiclePhotos"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length > 0) {
+                          toast({
+                            title: "Upload simulado",
+                            description: `${files.length} foto(s) seriam enviadas para o servidor`,
+                          });
+                        }
+                      }}
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Selecione múltiplas fotos do veículo (frente, traseira, laterais, interior)
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((index) => (
+                      <div key={index} className="aspect-square bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                        <div className="text-center">
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-xs text-gray-500">Foto {index}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -13,7 +13,7 @@ import Routes from "@/pages/routes";
 import Bookings from "@/pages/bookings";
 import Analytics from "@/pages/analytics";
 import Sidebar from "@/components/layout/sidebar";
-import TopNav from "@/components/layout/top-nav";
+import Header from "@/components/layout/header";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,12 +33,14 @@ function Router() {
 function AuthenticatedApp() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar />
-      <div className="lg:pl-64">
-        <TopNav />
-        <main className="p-4 sm:p-6 lg:p-8">
-          <Router />
-        </main>
+      <Header />
+      <div className="flex">
+        <Sidebar />
+        <div className="flex-1 lg:pl-64">
+          <main className="p-4 sm:p-6 lg:p-8">
+            <Router />
+          </main>
+        </div>
       </div>
     </div>
   );

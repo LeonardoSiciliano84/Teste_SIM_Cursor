@@ -291,6 +291,7 @@ export class MemStorage implements IStorage {
       currentLocation: insertVehicle.currentLocation || null,
       driverId: insertVehicle.driverId || null,
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
     this.vehicles.set(id, vehicle);
     return vehicle;
