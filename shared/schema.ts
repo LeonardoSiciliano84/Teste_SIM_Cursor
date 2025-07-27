@@ -230,22 +230,28 @@ export const employeeDocuments = pgTable("employee_documents", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: uuid("employee_id").references(() => employees.id).notNull(),
   
-  documentType: text("document_type").notNull(), // CNH, Exame Médico, Curso, ASO, etc.
-  documentName: text("document_name").notNull(),
-  documentUrl: text("document_url"),
+  documentType: text("document_type").notNull(), // CNH, RG, CPF, Carteira de Trabalho, etc.
+  description: text("description").notNull(),
+  documentNumber: text("document_number"),
+  issuedDate: date("issued_date"),
   expiryDate: date("expiry_date"),
-  issueDate: date("issue_date"),
-  issuer: text("issuer"),
+  issuer: text("issuer"), // Órgão emissor
   
-  // Controle de vencimento
-  notificationSent: boolean("notification_sent").default(false),
-  notificationDate: timestamp("notification_date"),
+  // Arquivo
+  filename: text("filename"),
+  fileUrl: text("file_url"),
+  fileSize: integer("file_size"),
+  mimeType: text("mime_type"),
   
-  // Histórico
-  previousVersionId: uuid("previous_version_id"),
-  version: integer("version").default(1),
+  // Controle
+  status: text("status").default("active"), // active, expired, renewed
+  isActive: boolean("is_active").default(true),
+  renewalNotified: boolean("renewal_notified").default(false),
   
-  status: text("status").default("active"), // active, expired, renewed, archived
+  // Histórico de alterações
+  previousVersionId: uuid("previous_version_id").references(() => employeeDocuments.id),
+  changeReason: text("change_reason"), // renovação, correção, etc.
+  changedBy: uuid("changed_by").references(() => users.id),
   
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
@@ -416,6 +422,12 @@ export const insertEmployeeDocumentSchema = createInsertSchema(employeeDocuments
   id: true,
   createdAt: true,
   updatedAt: true,
+  filename: true,
+  fileUrl: true,
+  fileSize: true,
+  mimeType: true,
+  previousVersionId: true,
+  changedBy: true,
 });
 
 export const insertEmployeeOccurrenceSchema = createInsertSchema(employeeOccurrences).omit({

@@ -90,8 +90,9 @@ export interface IStorage {
 
   // Employee Documents methods
   getEmployeeDocuments(employeeId: string): Promise<EmployeeDocument[]>;
-  createEmployeeDocument(document: InsertEmployeeDocument): Promise<EmployeeDocument>;
-  updateEmployeeDocument(id: string, document: Partial<InsertEmployeeDocument>): Promise<EmployeeDocument | undefined>;
+  getEmployeeDocument(documentId: string): Promise<EmployeeDocument | undefined>;
+  createEmployeeDocument(document: any): Promise<EmployeeDocument>;
+  updateEmployeeDocument(id: string, document: Partial<any>): Promise<EmployeeDocument | undefined>;
   deleteEmployeeDocument(id: string): Promise<boolean>;
   getExpiringDocuments(days?: number): Promise<EmployeeDocument[]>;
 
@@ -640,10 +641,30 @@ export class MemStorage implements IStorage {
     return Array.from(this.employeeDocuments.values()).filter(d => d.employeeId === employeeId);
   }
 
-  async createEmployeeDocument(document: InsertEmployeeDocument): Promise<EmployeeDocument> {
+  async getEmployeeDocument(documentId: string): Promise<EmployeeDocument | undefined> {
+    return this.employeeDocuments.get(documentId);
+  }
+
+  async createEmployeeDocument(document: any): Promise<EmployeeDocument> {
     const newDocument: EmployeeDocument = {
       id: randomUUID(),
-      ...document,
+      employeeId: document.employeeId,
+      documentType: document.documentType,
+      description: document.description,
+      documentNumber: document.documentNumber || null,
+      issuedDate: document.issuedDate || null,
+      expiryDate: document.expiryDate || null,
+      issuer: document.issuer || null,
+      filename: document.filename || null,
+      fileUrl: document.fileUrl || null,
+      fileSize: document.fileSize || null,
+      mimeType: document.mimeType || null,
+      status: document.status || "active",
+      isActive: document.isActive !== false,
+      renewalNotified: document.renewalNotified || false,
+      previousVersionId: document.previousVersionId || null,
+      changeReason: document.changeReason || null,
+      changedBy: document.changedBy || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

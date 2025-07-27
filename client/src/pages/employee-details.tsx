@@ -19,6 +19,7 @@ import {
   CreditCard
 } from "lucide-react";
 import { type Employee } from "@shared/schema";
+import { DocumentManagement } from "@/components/employees/document-management";
 
 export function EmployeeDetailsPage() {
   const { id } = useParams();
@@ -347,18 +348,7 @@ export function EmployeeDetailsPage() {
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Documentos e Arquivos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>Nenhum documento anexado</p>
-                <p className="text-sm">Os documentos do colaborador aparecerão aqui</p>
-              </div>
-            </CardContent>
-          </Card>
+          <DocumentManagement employeeId={id!} employeeName={employee.fullName} />
         </TabsContent>
       </Tabs>
     </div>

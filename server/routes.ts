@@ -19,19 +19,9 @@ import {
 import { z } from "zod";
 
 // Configuração do multer para upload de arquivos
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(null, false);
-    }
-  }
+const upload = multer({ 
+  dest: 'uploads/',
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -650,6 +640,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
       }
       res.status(500).json({ message: "Erro ao criar documento" });
+    }
+  });
+
+  // Upload de documento com arquivo
+  app.post("/api/employees/:id/documents/upload", upload.single('file'), async (req, res) => {
+    try {
+      const employee = await storage.getEmployee(req.params.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Colaborador não encontrado" });
+      }
+
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ message: "Nenhum arquivo enviado" });
+      }
+
+      const documentData = JSON.parse(req.body.documentData);
+      const fullDocumentData = {
+        ...documentData,
+        employeeId: req.params.id,
+        filename: file.originalname,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+        // Em produção, salvar arquivo em storage e definir fileUrl
+        fileUrl: `/uploads/documents/${req.params.id}/${file.originalname}`,
+      };
+
+      const document = await storage.createEmployeeDocument(fullDocumentData);
+      res.status(201).json(document);
+    } catch (error) {
+      console.error('Erro no upload de documento:', error);
+      res.status(500).json({ message: "Erro ao fazer upload do documento" });
+    }
+  });
+
+  // Download de documento
+  app.get("/api/employees/:id/documents/:documentId/download", async (req, res) => {
+    try {
+      const document = await storage.getEmployeeDocument(req.params.documentId);
+      if (!document || document.employeeId !== req.params.id) {
+        return res.status(404).json({ message: "Documento não encontrado" });
+      }
+
+      // Em produção, buscar arquivo do storage e retornar
+      res.status(200).json({ message: "Download simulado", filename: document.filename });
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao baixar documento" });
+    }
+  });
+
+  // Deletar documento
+  app.delete("/api/employees/:id/documents/:documentId", async (req, res) => {
+    try {
+      const success = await storage.deleteEmployeeDocument(req.params.documentId);
+      if (!success) {
+        return res.status(404).json({ message: "Documento não encontrado" });
+      }
+      res.json({ message: "Documento removido com sucesso" });
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao remover documento" });
     }
   });
 
