@@ -28,6 +28,8 @@ interface Dependent {
   relationship: string;
   cpf: string;
   birthDate: string;
+  phone?: string;
+  email?: string;
 }
 
 interface EducationRecord {
@@ -207,7 +209,9 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
       name: "",
       relationship: "",
       cpf: "",
-      birthDate: ""
+      birthDate: "",
+      phone: "",
+      email: ""
     }]);
   };
 
@@ -400,6 +404,34 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
                               <SelectItem value="União Estável">União Estável</SelectItem>
                             </SelectContent>
                           </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Telefone *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="(11) 99999-9999" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="personalEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Pessoal</FormLabel>
+                          <FormControl>
+                            <Input placeholder="email@exemplo.com" {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -906,6 +938,22 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
                                 type="date"
                                 value={dependent.birthDate}
                                 onChange={(e) => updateDependent(index, 'birthDate', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">Telefone</label>
+                              <Input
+                                value={(dependent as any).phone || ""}
+                                onChange={(e) => updateDependent(index, 'phone' as keyof Dependent, e.target.value)}
+                                placeholder="(11) 99999-9999"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">Email</label>
+                              <Input
+                                value={(dependent as any).email || ""}
+                                onChange={(e) => updateDependent(index, 'email' as keyof Dependent, e.target.value)}
+                                placeholder="email@exemplo.com"
                               />
                             </div>
                           </div>
