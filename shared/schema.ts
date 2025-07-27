@@ -14,15 +14,67 @@ export const users = pgTable("users", {
 
 export const vehicles = pgTable("vehicles", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Identificação básica
   name: text("name").notNull(),
   plate: text("plate").notNull().unique(),
-  type: text("type").notNull(), // 'truck', 'van', 'trailer'
+  brand: text("brand").notNull(),
   model: text("model").notNull(),
-  year: integer("year").notNull(),
-  status: text("status").notNull().default("active"), // 'active', 'maintenance', 'inactive'
+  renavam: text("renavam"),
+  chassis: text("chassis"),
+  modelYear: integer("model_year").notNull(),
+  manufactureYear: integer("manufacture_year").notNull(),
+  
+  // Tipo e classificação
+  vehicleType: text("vehicle_type").notNull(), // Tração, Semirreboque, Equipamento
+  classification: text("classification").notNull(), // Passeio, Moto, Empilhadeira, etc.
+  
+  // Manutenção
+  preventiveMaintenanceKm: integer("preventive_maintenance_km").default(10000),
+  tireRotationKm: integer("tire_rotation_km").default(10000),
+  
+  // Informações Financeiras
+  purchaseDate: timestamp("purchase_date"),
+  purchaseValue: decimal("purchase_value", { precision: 12, scale: 2 }),
+  financialInstitution: text("financial_institution"),
+  contractType: text("contract_type"), // CDC, Leasing, Consórcio
+  contractNumber: text("contract_number"),
+  contractDocument: text("contract_document"), // URL do arquivo
+  installmentCount: integer("installment_count"),
+  installmentValue: decimal("installment_value", { precision: 12, scale: 2 }),
+  
+  // Documentação
+  crlvDocument: text("crlv_document"), // URL
+  crlvExpiry: timestamp("crlv_expiry"),
+  tachographDocument: text("tachograph_document"),
+  tachographExpiry: timestamp("tachograph_expiry"),
+  anttDocument: text("antt_document"),
+  anttExpiry: timestamp("antt_expiry"),
+  insuranceDocument: text("insurance_document"),
+  insuranceValue: decimal("insurance_value", { precision: 12, scale: 2 }),
+  insuranceExpiry: timestamp("insurance_expiry"),
+  
+  // FIPE
+  fipeCode: text("fipe_code"),
+  fipeValue: decimal("fipe_value", { precision: 12, scale: 2 }),
+  fipeLastUpdate: timestamp("fipe_last_update"),
+  
+  // Informações Técnicas
+  photos: text("photos").array(), // Array de URLs das fotos
+  bodyWidth: decimal("body_width", { precision: 8, scale: 2 }), // em metros
+  floorHeight: decimal("floor_height", { precision: 8, scale: 2 }), // em metros
+  bodyLength: decimal("body_length", { precision: 8, scale: 2 }), // em metros
+  loadCapacity: decimal("load_capacity", { precision: 10, scale: 2 }), // em kg
+  fuelTankCapacity: decimal("fuel_tank_capacity", { precision: 8, scale: 2 }), // em litros
+  fuelConsumption: decimal("fuel_consumption", { precision: 6, scale: 2 }), // km/L
+  
+  // Status e controle
+  status: text("status").notNull().default("active"), // active, inactive
+  inactiveReason: text("inactive_reason"),
   currentLocation: text("current_location"),
   driverId: uuid("driver_id").references(() => drivers.id),
+  
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
 export const drivers = pgTable("drivers", {
@@ -86,6 +138,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export const insertVehicleSchema = createInsertSchema(vehicles).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 export const insertDriverSchema = createInsertSchema(drivers).omit({
