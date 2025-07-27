@@ -96,13 +96,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/vehicles/:id", async (req, res) => {
     try {
-      const vehicleData = insertVehicleSchema.partial().parse(req.body);
+      // Preparar dados para validação, convertendo strings de data para Date objects
+      const bodyData = { ...req.body };
+      
+      // Converter campos de data se existirem
+      const dateFields = ['purchaseDate', 'crlvExpiry', 'tachographExpiry', 'anttExpiry', 'insuranceExpiry'];
+      dateFields.forEach(field => {
+        if (bodyData[field] && typeof bodyData[field] === 'string') {
+          bodyData[field] = new Date(bodyData[field]);
+        }
+      });
+
+      const vehicleData = insertVehicleSchema.partial().parse(bodyData);
       const vehicle = await storage.updateVehicle(req.params.id, vehicleData);
       if (!vehicle) {
         return res.status(404).json({ message: "Veículo não encontrado" });
       }
       res.json(vehicle);
     } catch (error) {
+      console.error('Erro ao atualizar veículo:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
       }
