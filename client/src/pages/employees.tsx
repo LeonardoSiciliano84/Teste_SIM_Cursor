@@ -88,7 +88,7 @@ export function EmployeesPage() {
             Exportar Dados
           </Button>
           <Link href="/employees/new">
-            <Button className="gap-2 bg-felka-blue hover:bg-felka-blue/90">
+            <Button className="gap-2 bg-felka-blue hover:bg-felka-blue/90 text-white">
               <Plus className="h-4 w-4" />
               Novo Colaborador
             </Button>

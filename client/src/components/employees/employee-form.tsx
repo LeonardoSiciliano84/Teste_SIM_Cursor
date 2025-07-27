@@ -193,12 +193,12 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
             </Button>
           )}
           <Button 
-            onClick={form.handleSubmit(onSubmit)}
+            type="submit"
             disabled={isLoading}
-            className="bg-felka-blue hover:bg-felka-blue/90"
+            className="bg-felka-blue hover:bg-felka-blue/90 text-white"
           >
             <Save className="h-4 w-4 mr-2" />
-            {employee ? "Atualizar" : "Salvar"}
+            {isLoading ? "Salvando..." : (employee ? "Atualizar" : "Criar Colaborador")}
           </Button>
         </div>
       </div>
@@ -724,58 +724,31 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
                   <div className="mt-6 space-y-4">
                     <h4 className="font-medium text-gray-900">Informações Adicionais</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="driverLicense"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>CNH</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Número da CNH" {...field} value={field.value || ""} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div>
+                        <label className="text-sm font-medium">CNH</label>
+                        <Input placeholder="Número da CNH" />
+                      </div>
 
-                      <FormField
-                        control={form.control}
-                        name="driverLicenseCategory"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Categoria da CNH</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Categoria" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="A">A</SelectItem>
-                                <SelectItem value="B">B</SelectItem>
-                                <SelectItem value="C">C</SelectItem>
-                                <SelectItem value="D">D</SelectItem>
-                                <SelectItem value="E">E</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div>
+                        <label className="text-sm font-medium">Categoria da CNH</label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="A">A</SelectItem>
+                            <SelectItem value="B">B</SelectItem>
+                            <SelectItem value="C">C</SelectItem>
+                            <SelectItem value="D">D</SelectItem>
+                            <SelectItem value="E">E</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                      <FormField
-                        control={form.control}
-                        name="driverLicenseExpiry"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Vencimento da CNH</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} value={field.value || ""} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div>
+                        <label className="text-sm font-medium">Vencimento da CNH</label>
+                        <Input type="date" />
+                      </div>
                     </div>
                   </div>
                 </CardContent>
