@@ -196,20 +196,20 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
       console.log(`- ${key}:`, value, `(type: ${typeof value}, empty: ${!value})`);
     });
     
-    // Validação básica
-    if (!formValues.fullName || !formValues.cpf || !formValues.phone || !formValues.birthDate) {
+    // Validação simplificada - apenas campos essenciais
+    if (!formValues.fullName || !formValues.cpf || !formValues.phone) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha: Nome Completo, CPF, Telefone e Data de Nascimento na aba Pessoais",
+        description: "Preencha: Nome Completo, CPF e Telefone",
         variant: "destructive",
       });
       return;
     }
     
-    if (!formValues.employeeNumber || !formValues.position || !formValues.department || !formValues.admissionDate) {
+    if (!formValues.employeeNumber || !formValues.position || !formValues.department) {
       toast({
         title: "Dados profissionais obrigatórios", 
-        description: "Preencha: Matrícula, Data de Admissão, Cargo e Departamento na aba Profissionais",
+        description: "Preencha: Matrícula, Cargo e Departamento",
         variant: "destructive",
       });
       return;

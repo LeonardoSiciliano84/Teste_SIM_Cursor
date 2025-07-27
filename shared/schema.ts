@@ -140,7 +140,7 @@ export const employees = pgTable("employees", {
   rg: text("rg"),
   rgIssuer: text("rg_issuer"),
   rgIssueDate: date("rg_issue_date"),
-  birthDate: date("birth_date").notNull(),
+  birthDate: date("birth_date"),
   gender: text("gender"), // M, F, Outro
   maritalStatus: text("marital_status"), // Solteiro, Casado, Divorciado, Viúvo
   nationality: text("nationality").default("Brasileira"),
@@ -161,7 +161,7 @@ export const employees = pgTable("employees", {
   
   // Informações profissionais
   employeeNumber: text("employee_number").notNull().unique(),
-  admissionDate: date("admission_date").notNull(),
+  admissionDate: date("admission_date"),
   dismissalDate: date("dismissal_date"),
   position: text("position").notNull(),
   department: text("department").notNull(),
@@ -353,14 +353,58 @@ export const insertTripSchema = createInsertSchema(trips).omit({
 
 // ============= SCHEMAS DE RH =============
 
-export const insertEmployeeSchema = createInsertSchema(employees).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
+export const insertEmployeeSchema = z.object({
+  fullName: z.string().min(1, "Nome é obrigatório"),
+  cpf: z.string().min(1, "CPF é obrigatório"),
+  phone: z.string().min(1, "Telefone é obrigatório"),
+  employeeNumber: z.string().min(1, "Matrícula é obrigatória"),
+  position: z.string().min(1, "Cargo é obrigatório"),
+  department: z.string().min(1, "Departamento é obrigatório"),
+  // Todos os outros campos opcionais
+  rg: z.string().optional(),
+  rgIssuer: z.string().optional(),
+  rgIssueDate: z.string().optional(),
+  birthDate: z.string().optional(),
+  gender: z.string().optional(),
+  maritalStatus: z.string().optional(),
+  nationality: z.string().optional(),
+  email: z.string().optional(),
+  personalEmail: z.string().optional(),
+  address: z.string().optional(),
+  addressNumber: z.string().optional(),
+  complement: z.string().optional(),
+  neighborhood: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  admissionDate: z.string().optional(),
+  dismissalDate: z.string().optional(),
+  manager: z.string().optional(),
+  workSchedule: z.string().optional(),
+  workLocation: z.string().optional(),
+  salary: z.number().optional(),
+  benefits: z.any().optional(),
+  bankAccount: z.string().optional(),
+  bank: z.string().optional(),
+  bankAgency: z.string().optional(),
+  pixKey: z.string().optional(),
+  education: z.string().optional(),
+  educationInstitution: z.string().optional(),
+  educationCourse: z.string().optional(),
+  educationStatus: z.string().optional(),
+  voterTitle: z.string().optional(),
+  militaryService: z.string().optional(),
+  workCard: z.string().optional(),
+  pis: z.string().optional(),
   driverLicense: z.string().optional(),
   driverLicenseCategory: z.string().optional(),
   driverLicenseExpiry: z.string().optional(),
+  status: z.string().optional(),
+  inactiveReason: z.string().optional(),
+  systemUserId: z.string().optional(),
+  profilePhoto: z.string().optional(),
+  accessLevel: z.string().optional(),
+  allowedModules: z.array(z.string()).optional(),
 });
 
 export const insertEmployeeDependentSchema = createInsertSchema(employeeDependents).omit({
