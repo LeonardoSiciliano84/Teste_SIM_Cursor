@@ -142,87 +142,61 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
     },
   });
 
-  const onSubmit = (data: any) => {
-    console.log("=== FORM SUBMISSION DEBUG ===");
-    console.log("Raw form data:", data);
-    console.log("Form values:");
-    console.log("- fullName:", data.fullName, "(length:", data.fullName?.length, ")");
-    console.log("- cpf:", data.cpf, "(length:", data.cpf?.length, ")");
-    console.log("- birthDate:", data.birthDate, "(length:", data.birthDate?.length, ")");
-    console.log("- phone:", data.phone, "(length:", data.phone?.length, ")");
-    console.log("- employeeNumber:", data.employeeNumber, "(length:", data.employeeNumber?.length, ")");
-    console.log("- admissionDate:", data.admissionDate, "(length:", data.admissionDate?.length, ")");
-    console.log("- position:", data.position, "(length:", data.position?.length, ")");
-    console.log("- department:", data.department, "(length:", data.department?.length, ")");
+  // Função de submit simplificada
+  const handleCreateEmployee = async () => {
+    console.log("=== MANUAL SUBMIT TRIGGERED ===");
     
-    // Verificar campos obrigatórios com validação melhorada
-    const missingFields = [];
-    if (!data.fullName?.trim()) missingFields.push("Nome Completo");
-    if (!data.cpf?.trim()) missingFields.push("CPF");
-    if (!data.birthDate?.trim()) missingFields.push("Data de Nascimento");
-    if (!data.phone?.trim()) missingFields.push("Telefone");
+    const formValues = form.getValues();
+    console.log("Current form values:", formValues);
     
-    if (missingFields.length > 0) {
+    // Validação básica
+    if (!formValues.fullName || !formValues.cpf || !formValues.phone) {
       toast({
-        title: "Campos obrigatórios faltando",
-        description: `Preencha: ${missingFields.join(", ")}`,
+        title: "Campos obrigatórios",
+        description: "Preencha: Nome Completo, CPF e Telefone na aba Pessoais",
         variant: "destructive",
       });
       return;
     }
     
-    // Verificar campos profissionais
-    const missingProfessional = [];
-    if (!data.employeeNumber?.trim()) missingProfessional.push("Matrícula");
-    if (!data.admissionDate?.trim()) missingProfessional.push("Data de Admissão");
-    if (!data.position?.trim()) missingProfessional.push("Cargo");
-    if (!data.department?.trim()) missingProfessional.push("Departamento");
-    
-    if (missingProfessional.length > 0) {
+    if (!formValues.employeeNumber || !formValues.position || !formValues.department) {
       toast({
-        title: "Dados profissionais obrigatórios",
-        description: `Preencha na aba Profissionais: ${missingProfessional.join(", ")}`,
+        title: "Dados profissionais obrigatórios", 
+        description: "Preencha: Matrícula, Cargo e Departamento na aba Profissionais",
         variant: "destructive",
       });
       return;
     }
     
-    // Preparar dados para envio
-    const completeData = {
-      fullName: data.fullName,
-      cpf: data.cpf,
-      rg: data.rg || "",
-      birthDate: data.birthDate,
-      gender: data.gender || "",
-      maritalStatus: data.maritalStatus || "",
-      phone: data.phone,
-      email: data.email || "",
-      personalEmail: data.personalEmail || "",
-      address: data.address || "",
-      city: data.city || "",
-      state: data.state || "",
-      zipCode: data.zipCode || "",
-      employeeNumber: data.employeeNumber,
-      admissionDate: data.admissionDate,
-      position: data.position,
-      department: data.department,
-      salary: data.salary || 0,
-      workSchedule: data.workSchedule || "",
-      status: data.status || "active",
-      education: data.education || "",
-      accessLevel: data.accessLevel || "user",
-      dependents,
-      educationRecords,
-      movementHistory
+    // Dados limpos para envio
+    const submitData = {
+      fullName: formValues.fullName,
+      cpf: formValues.cpf,
+      rg: formValues.rg || "",
+      birthDate: formValues.birthDate || "",
+      phone: formValues.phone,
+      email: formValues.email || "",
+      personalEmail: formValues.personalEmail || "",
+      employeeNumber: formValues.employeeNumber,
+      admissionDate: formValues.admissionDate || new Date().toISOString().split('T')[0],
+      position: formValues.position,
+      department: formValues.department,
+      salary: formValues.salary || 0,
+      status: "active"
     };
     
-    console.log("Complete data to submit:", completeData);
+    console.log("Submitting employee data:", submitData);
     
-    if (employee) {
-      updateMutation.mutate(completeData);
-    } else {
-      createMutation.mutate(completeData);
+    try {
+      createMutation.mutate(submitData);
+    } catch (error) {
+      console.error("Submit error:", error);
     }
+  };
+
+  const onSubmit = (data: any) => {
+    console.log("Form onSubmit called with:", data);
+    handleCreateEmployee();
   };
 
   // Funções para gerenciar dependentes
@@ -285,11 +259,9 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
           )}
           <Button 
             type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              console.log("Button clicked!");
-              console.log("Form values:", form.getValues());
-              form.handleSubmit(onSubmit)();
+            onClick={() => {
+              console.log("=== BUTTON CLICK DETECTED ===");
+              handleCreateEmployee();
             }}
             disabled={isLoading}
             style={{ backgroundColor: '#0C29AB', color: 'white' }}
@@ -302,7 +274,7 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="personal" className="flex items-center gap-2">
@@ -1130,7 +1102,7 @@ export function EmployeeForm({ employee, onSuccess, onCancel }: EmployeeFormProp
               </Card>
             )}
           </Tabs>
-        </form>
+        </div>
       </Form>
     </div>
   );
