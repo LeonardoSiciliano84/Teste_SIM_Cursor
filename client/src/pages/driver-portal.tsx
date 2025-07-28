@@ -353,57 +353,87 @@ export default function DriverPortal() {
           </CardContent>
         </Card>
 
-        {/* Botões de Acesso Rápido */}
-        {selectedVehicle && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800 text-center">
-              Acesso Rápido
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-3">
-              {/* Botão 1: Checklist */}
-              <Button 
-                className="h-20 flex flex-col items-center justify-center bg-green-600 hover:bg-green-700 text-white"
-                onClick={() => setShowPreChecklistWarning(true)}
-              >
-                <CheckSquare className="h-6 w-6 mb-1" />
-                <span className="text-xs text-center">Checklist</span>
-              </Button>
+        {/* Botões de Acesso Rápido - Sempre visíveis */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800 text-center">
+            Acesso Rápido
+          </h3>
+          
+          <div className="grid grid-cols-2 gap-3">
+            {/* Botão 1: Checklist */}
+            <Button 
+              className="h-20 flex flex-col items-center justify-center bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => {
+                if (!selectedVehicle) {
+                  toast({ 
+                    title: "Aviso", 
+                    description: "Selecione um veículo primeiro",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                setShowPreChecklistWarning(true);
+              }}
+            >
+              <CheckSquare className="h-6 w-6 mb-1" />
+              <span className="text-xs text-center">Checklist</span>
+            </Button>
 
-              {/* Botão 2: Solicitar Manutenção */}
-              <Button 
-                className="h-20 flex flex-col items-center justify-center bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => setShowMaintenanceRequest(true)}
-              >
-                <Wrench className="h-6 w-6 mb-1" />
-                <span className="text-xs text-center">Solicitar Manutenção</span>
-              </Button>
+            {/* Botão 2: Solicitar Manutenção */}
+            <Button 
+              className="h-20 flex flex-col items-center justify-center bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setShowMaintenanceRequest(true)}
+            >
+              <Wrench className="h-6 w-6 mb-1" />
+              <span className="text-xs text-center">Solicitar Manutenção</span>
+            </Button>
 
-              {/* Botão 3: Comunicar Manutenção */}
-              <Button 
-                className="h-20 flex flex-col items-center justify-center bg-orange-600 hover:bg-orange-700 text-white"
-                onClick={() => setShowMaintenanceCommunication(true)}
-              >
-                <Phone className="h-6 w-6 mb-1" />
-                <span className="text-xs text-center">Comunicar Manutenção</span>
-              </Button>
+            {/* Botão 3: Comunicar Manutenção */}
+            <Button 
+              className="h-20 flex flex-col items-center justify-center bg-orange-600 hover:bg-orange-700 text-white"
+              onClick={() => {
+                if (!selectedVehicle) {
+                  toast({ 
+                    title: "Aviso", 
+                    description: "Selecione um veículo primeiro",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                setShowMaintenanceCommunication(true);
+              }}
+            >
+              <Phone className="h-6 w-6 mb-1" />
+              <span className="text-xs text-center">Comunicar Manutenção</span>
+            </Button>
 
-              {/* Botão 4: Registrar Manutenção em Viagem */}
-              <Button 
-                className="h-20 flex flex-col items-center justify-center bg-purple-600 hover:bg-purple-700 text-white"
-                onClick={() => setShowTravelMaintenance(true)}
-              >
-                <Wrench className="h-6 w-6 mb-1" />
-                <span className="text-xs text-center">Manutenção Viagem</span>
-              </Button>
-            </div>
+            {/* Botão 4: Registrar Manutenção em Viagem */}
+            <Button 
+              className="h-20 flex flex-col items-center justify-center bg-purple-600 hover:bg-purple-700 text-white"
+              onClick={() => {
+                if (!selectedVehicle) {
+                  toast({ 
+                    title: "Aviso", 
+                    description: "Selecione um veículo primeiro",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                setShowTravelMaintenance(true);
+              }}
+            >
+              <Wrench className="h-6 w-6 mb-1" />
+              <span className="text-xs text-center">Manutenção Viagem</span>
+            </Button>
+          </div>
 
-            {/* Botão para continuar para próxima etapa */}
+          {/* Botão para continuar para próxima etapa */}
+          {selectedVehicle && (
             <Button className="w-full bg-gray-600 hover:bg-gray-700 text-lg py-3 mt-4">
               Continuar para Próxima Etapa
             </Button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Modal de Documentos */}
         <Dialog open={showDocuments} onOpenChange={setShowDocuments}>
