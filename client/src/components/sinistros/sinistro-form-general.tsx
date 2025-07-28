@@ -455,6 +455,7 @@ export function SinistroFormGeneral({ userInfo, trigger }: SinistroFormGeneralPr
                 type="button"
                 variant="outline"
                 onClick={() => setOpen(false)}
+                disabled={createSinistroMutation.isPending}
               >
                 Cancelar
               </Button>

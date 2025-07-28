@@ -385,6 +385,7 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
                 type="button"
                 variant="outline"
                 onClick={() => setOpen(false)}
+                disabled={createSinistroMutation.isPending}
               >
                 Cancelar
               </Button>
@@ -393,7 +394,7 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
                 disabled={createSinistroMutation.isPending}
                 className="bg-red-600 hover:bg-red-700"
               >
-{createSinistroMutation.isPending ? "Comunicando..." : "Comunicar Sinistro"}
+                {createSinistroMutation.isPending ? "Comunicando..." : "Comunicar Sinistro"}
               </Button>
             </div>
           </form>

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, Eye, FileText, Search, Filter, Calendar, User, MapPin } from "lucide-react";
+import { AlertTriangle, Eye, FileText, Search, Filter, Calendar, User, MapPin, Download } from "lucide-react";
 import { SinistroFormGeneral } from "@/components/sinistros/sinistro-form-general";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -29,6 +29,68 @@ export default function SinistrosPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [tipoFilter, setTipoFilter] = useState("all");
+  const [monthFilter, setMonthFilter] = useState("all");
+  const [yearFilter, setYearFilter] = useState("all");
+
+  // Função para exportar dados para Excel
+  const exportToExcel = () => {
+    // Preparar dados para exportação
+    const exportData = filteredSinistros.map((sinistro: Sinistro) => ({
+      'ID': sinistro.id,
+      'Tipo': sinistro.tipo,
+      'Status': sinistro.status,
+      'Data Ocorrido': sinistro.dataOcorrido,
+      'Hora': sinistro.horaOcorrido,
+      'Local/Endereço': sinistro.localEndereco,
+      'Nome Envolvido': sinistro.nomeEnvolvido,
+      'Cargo Envolvido': sinistro.cargoEnvolvido || 'N/A',
+      'Placa Tração': sinistro.placaTracao || 'N/A',
+      'Tipo Colisão': sinistro.tipoColisao || 'N/A',
+      'Condições Trajeto': sinistro.condicoesTrajeto || 'N/A',
+      'Gravidade': sinistro.percepcaoGravidade || 'N/A',
+      'Avaria': sinistro.quemSofreuAvaria || 'N/A',
+      'Vítimas': sinistro.vitimas ? 'Sim' : 'Não',
+      'Descrição Vítimas': sinistro.descricaoVitimas || 'N/A',
+      'Observações': sinistro.observacoes,
+      'Registrado Por': sinistro.nomeRegistrador,
+      'Cargo Registrador': sinistro.cargoRegistrador,
+      'Data Criação': format(new Date(sinistro.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR })
+    }));
+
+    // Criar workbook e worksheet
+    const XLSX = require('xlsx');
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Sinistros');
+
+    // Definir larguras das colunas
+    const colWidths = [
+      { wch: 15 }, // ID
+      { wch: 20 }, // Tipo
+      { wch: 15 }, // Status
+      { wch: 12 }, // Data Ocorrido
+      { wch: 8 },  // Hora
+      { wch: 30 }, // Local/Endereço
+      { wch: 25 }, // Nome Envolvido
+      { wch: 20 }, // Cargo Envolvido
+      { wch: 12 }, // Placa Tração
+      { wch: 20 }, // Tipo Colisão
+      { wch: 20 }, // Condições Trajeto
+      { wch: 15 }, // Gravidade
+      { wch: 20 }, // Avaria
+      { wch: 8 },  // Vítimas
+      { wch: 30 }, // Descrição Vítimas
+      { wch: 40 }, // Observações
+      { wch: 20 }, // Registrado Por
+      { wch: 20 }, // Cargo Registrador
+      { wch: 18 }  // Data Criação
+    ];
+    ws['!cols'] = colWidths;
+
+    // Exportar arquivo
+    const fileName = `sinistros_${format(new Date(), 'dd-MM-yyyy_HH-mm')}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
 
   const { data: sinistros = [], isLoading } = useQuery({
     queryKey: ["/api/sinistros"],
@@ -43,7 +105,12 @@ export default function SinistrosPage() {
     const matchesStatus = statusFilter === "all" || sinistro.status === statusFilter;
     const matchesTipo = tipoFilter === "all" || sinistro.tipo === tipoFilter;
     
-    return matchesSearch && matchesStatus && matchesTipo;
+    // Filtros por data
+    const sinistroDate = new Date(sinistro.dataOcorrido);
+    const matchesMonth = monthFilter === "all" || (sinistroDate.getMonth() + 1).toString() === monthFilter;
+    const matchesYear = yearFilter === "all" || sinistroDate.getFullYear().toString() === yearFilter;
+    
+    return matchesSearch && matchesStatus && matchesTipo && matchesMonth && matchesYear;
   });
 
   const getStatusBadge = (status: string) => {
@@ -95,9 +162,18 @@ export default function SinistrosPage() {
             Controle e gerenciamento de acidentes e incidentes - Módulo QSMS
           </p>
         </div>
-        <SinistroFormGeneral 
-          userInfo={{ id: "admin-1", name: "Administrador", role: "admin" }}
-        />
+        <div className="flex gap-2">
+          <SinistroFormGeneral 
+            userInfo={{ id: "admin-1", name: "Administrador", role: "admin" }}
+          />
+          <Button
+            onClick={exportToExcel}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Exportar XLSX
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -178,7 +254,7 @@ export default function SinistrosPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
@@ -214,6 +290,39 @@ export default function SinistrosPage() {
                 <SelectItem value="ambiental">Ambiental</SelectItem>
                 <SelectItem value="falha_epi">Falha EPI</SelectItem>
                 <SelectItem value="quase_acidente">Quase Acidente</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={monthFilter} onValueChange={setMonthFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Mês" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="1">Janeiro</SelectItem>
+                <SelectItem value="2">Fevereiro</SelectItem>
+                <SelectItem value="3">Março</SelectItem>
+                <SelectItem value="4">Abril</SelectItem>
+                <SelectItem value="5">Maio</SelectItem>
+                <SelectItem value="6">Junho</SelectItem>
+                <SelectItem value="7">Julho</SelectItem>
+                <SelectItem value="8">Agosto</SelectItem>
+                <SelectItem value="9">Setembro</SelectItem>
+                <SelectItem value="10">Outubro</SelectItem>
+                <SelectItem value="11">Novembro</SelectItem>
+                <SelectItem value="12">Dezembro</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={yearFilter} onValueChange={setYearFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="2024">2024</SelectItem>
+                <SelectItem value="2025">2025</SelectItem>
+                <SelectItem value="2026">2026</SelectItem>
               </SelectContent>
             </Select>
           </div>
