@@ -610,6 +610,40 @@ export class MemStorage implements IStorage {
     return this.employees.delete(id);
   }
 
+  // Desativar colaborador com motivo
+  async deactivateEmployee(id: string, reason: string, changedBy: string): Promise<Employee | undefined> {
+    const existing = this.employees.get(id);
+    if (!existing) return undefined;
+    
+    const updated: Employee = {
+      ...existing,
+      status: "inactive",
+      inactiveReason: reason,
+      inactiveDate: new Date(),
+      statusChangedBy: changedBy,
+      updatedAt: new Date(),
+    };
+    this.employees.set(id, updated);
+    return updated;
+  }
+
+  // Reativar colaborador com motivo
+  async reactivateEmployee(id: string, reason: string, changedBy: string): Promise<Employee | undefined> {
+    const existing = this.employees.get(id);
+    if (!existing) return undefined;
+    
+    const updated: Employee = {
+      ...existing,
+      status: "active",
+      reactivationReason: reason,
+      reactivationDate: new Date(),
+      statusChangedBy: changedBy,
+      updatedAt: new Date(),
+    };
+    this.employees.set(id, updated);
+    return updated;
+  }
+
   // Employee Dependents methods
   async getEmployeeDependents(employeeId: string): Promise<EmployeeDependent[]> {
     return Array.from(this.employeeDependents.values()).filter(d => d.employeeId === employeeId);

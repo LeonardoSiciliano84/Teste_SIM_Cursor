@@ -511,6 +511,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Desativar colaborador
+  app.patch("/api/employees/:id/deactivate", async (req, res) => {
+    try {
+      const { reason, changedBy } = req.body;
+      if (!reason || !changedBy) {
+        return res.status(400).json({ message: "Motivo e responsável são obrigatórios" });
+      }
+      
+      const employee = await storage.deactivateEmployee(req.params.id, reason, changedBy);
+      if (!employee) {
+        return res.status(404).json({ message: "Colaborador não encontrado" });
+      }
+      res.json(employee);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao desativar colaborador" });
+    }
+  });
+
+  // Reativar colaborador
+  app.patch("/api/employees/:id/reactivate", async (req, res) => {
+    try {
+      const { reason, changedBy } = req.body;
+      if (!reason || !changedBy) {
+        return res.status(400).json({ message: "Motivo e responsável são obrigatórios" });
+      }
+      
+      const employee = await storage.reactivateEmployee(req.params.id, reason, changedBy);
+      if (!employee) {
+        return res.status(404).json({ message: "Colaborador não encontrado" });
+      }
+      res.json(employee);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao reativar colaborador" });
+    }
+  });
+
   // Employee PDF generation
   app.get("/api/employees/:id/pdf", async (req, res) => {
     try {

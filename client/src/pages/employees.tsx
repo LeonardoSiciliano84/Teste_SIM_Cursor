@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { type Employee, type EmployeeDocument } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { EmployeeStatusControl } from "@/components/employees/employee-status-control";
 
 export function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -56,6 +57,58 @@ export function EmployeesPage() {
       console.error('Erro ao gerar PDF:', error);
       // Temporariamente mostrar alerta
       alert('Funcionalidade de impressão será implementada em breve');
+    }
+  };
+
+  // Função para gerar PDF completo com ocorrências
+  const generateCompleteEmployeePDF = async (employee: Employee) => {
+    try {
+      const response = await fetch(`/api/employees/${employee.id}/pdf-with-occurrences`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf',
+        },
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ficha_completa_${employee.fullName.replace(/\s+/g, '_')}_${employee.employeeNumber}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error("Erro ao gerar PDF completo:", error);
+    }
+  };
+
+  // Função para exportar colaboradores para CSV
+  const exportEmployeesToCSV = async () => {
+    try {
+      const response = await fetch('/api/employees/export/csv', {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/csv',
+        },
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'colaboradores.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error("Erro ao exportar colaboradores:", error);
     }
   };
 
@@ -117,9 +170,9 @@ export function EmployeesPage() {
           <p className="text-gray-600">Cadastro e gerenciamento completo de funcionários</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
+          <Button onClick={exportEmployeesToCSV} variant="outline" className="gap-2">
             <Download className="h-4 w-4" />
-            Exportar Dados
+            Exportar CSV
           </Button>
           <Link href="/employees/new">
             <Button className="gap-2" style={{ backgroundColor: '#0C29AB', color: 'white' }}>
@@ -282,13 +335,23 @@ export function EmployeesPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        // Implementar geração de PDF da ficha do colaborador
                         generateEmployeePDF(employee);
                       }}
                       title="Imprimir Ficha"
                     >
                       <Printer className="w-4 h-4" />
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        generateCompleteEmployeePDF(employee);
+                      }}
+                      title="Ficha Completa com Ocorrências"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </Button>
+                    <EmployeeStatusControl employee={employee} />
                     <Link href={`/employees/edit/${employee.id}`}>
                       <Button
                         variant="outline"
@@ -381,6 +444,15 @@ export function EmployeesPage() {
                             >
                               <Printer className="w-4 h-4" />
                             </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => generateCompleteEmployeePDF(employee)}
+                              title="Ficha Completa com Ocorrências"
+                            >
+                              <FileText className="w-4 h-4" />
+                            </Button>
+                            <EmployeeStatusControl employee={employee} />
                             <Link href={`/employees/edit/${employee.id}`}>
                               <Button 
                                 variant="outline" 

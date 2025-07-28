@@ -197,6 +197,10 @@ export const employees = pgTable("employees", {
   // Sistema
   status: text("status").notNull().default("active"), // active, inactive
   inactiveReason: text("inactive_reason"),
+  inactiveDate: timestamp("inactive_date"),
+  reactivationReason: text("reactivation_reason"),
+  reactivationDate: timestamp("reactivation_date"),
+  statusChangedBy: text("status_changed_by"),
   systemUserId: uuid("system_user_id").references(() => users.id),
   profilePhoto: text("profile_photo"),
   
