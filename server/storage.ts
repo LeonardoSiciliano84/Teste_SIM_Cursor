@@ -157,6 +157,17 @@ export class MemStorage implements IStorage {
     };
     this.users.set(adminUser.id, adminUser);
 
+    // Usuário específico para motorista
+    const driverUser: User = {
+      id: randomUUID(),
+      email: "motorista@felka.com",
+      password: "admin123", // In production, this should be hashed
+      name: "João Silva",
+      role: "driver",
+      createdAt: new Date(),
+    };
+    this.users.set(driverUser.id, driverUser);
+
     // Add some sample drivers
     const drivers = [
       {
@@ -216,6 +227,24 @@ export class MemStorage implements IStorage {
         admissionDate: "2021-05-10",
         position: "Motorista Sênior",
         department: "Operações",
+        status: "active" as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        fullName: "João Silva",
+        cpf: "111.222.333-44",
+        birthDate: "1988-12-05",
+        phone: "(11) 91234-5678",
+        email: "motorista@felka.com",
+        employeeNumber: "MOT-001",
+        admissionDate: "2019-03-01",
+        position: "Motorista",
+        department: "Operações",
+        driverLicense: "12345678901",
+        driverLicenseCategory: "D",
+        driverLicenseExpiry: "2025-12-31",
         status: "active" as const,
         createdAt: new Date(),
         updatedAt: new Date(),
