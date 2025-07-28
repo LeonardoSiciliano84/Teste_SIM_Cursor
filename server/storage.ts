@@ -34,6 +34,12 @@ import {
   type InsertSinistroDocument,
   type SinistroHistory,
   type InsertSinistroHistory,
+  type VehicleChecklist,
+  type InsertVehicleChecklist,
+  type ChecklistItem,
+  type InsertChecklistItem,
+  type ChecklistHistory,
+  type InsertChecklistHistory,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -148,6 +154,31 @@ export interface IStorage {
   // SinistroHistory methods
   getSinistroHistory(sinistroId: string): Promise<SinistroHistory[]>;
   createSinistroHistory(history: InsertSinistroHistory): Promise<SinistroHistory>;
+  
+  // Vehicle Checklist methods
+  getVehicleChecklists(filters?: {
+    vehiclePlate?: string;
+    driverName?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    verificationStatus?: string;
+    baseOrigin?: string;
+  }): Promise<VehicleChecklist[]>;
+  getVehicleChecklist(id: string): Promise<VehicleChecklist | undefined>;
+  createVehicleChecklist(checklist: InsertVehicleChecklist): Promise<VehicleChecklist>;
+  updateVehicleChecklist(id: string, updates: Partial<VehicleChecklist>): Promise<VehicleChecklist | undefined>;
+  verifyChecklist(id: string, verifiedBy: string, verifiedByName: string, notes?: string): Promise<VehicleChecklist | undefined>;
+  
+  // Checklist Items methods  
+  getChecklistItems(category?: string): Promise<ChecklistItem[]>;
+  createChecklistItem(item: InsertChecklistItem): Promise<ChecklistItem>;
+  updateChecklistItem(id: string, item: Partial<ChecklistItem>): Promise<ChecklistItem | undefined>;
+  deleteChecklistItem(id: string): Promise<boolean>;
+  
+  // Checklist History methods
+  getChecklistHistory(checklistId: string): Promise<ChecklistHistory[]>;
+  createChecklistHistory(history: InsertChecklistHistory): Promise<ChecklistHistory>;
 }
 
 export class MemStorage implements IStorage {
@@ -168,6 +199,9 @@ export class MemStorage implements IStorage {
   private sinistros: Map<string, Sinistro>;
   private sinistroDocuments: Map<string, SinistroDocument>;
   private sinistroHistory: Map<string, SinistroHistory>;
+  private vehicleChecklists: Map<string, VehicleChecklist>;
+  private checklistItems: Map<string, ChecklistItem>;
+  private checklistHistory: Map<string, ChecklistHistory>;
 
   constructor() {
     this.users = new Map();
@@ -187,9 +221,13 @@ export class MemStorage implements IStorage {
     this.sinistros = new Map();
     this.sinistroDocuments = new Map();
     this.sinistroHistory = new Map();
+    this.vehicleChecklists = new Map();
+    this.checklistItems = new Map();
+    this.checklistHistory = new Map();
     
     // Initialize with default admin user and sample data
     this.initializeDefaultData();
+    this.initializeChecklistTestData();
   }
 
   private initializeDefaultData() {
@@ -1255,6 +1293,413 @@ export class MemStorage implements IStorage {
     
     this.sinistroHistory.set(id, history);
     return history;
+  }
+
+  // ============= MÉTODOS DE CHECKLISTS DE VEÍCULOS =============
+
+  async getVehicleChecklists(filters?: {
+    vehiclePlate?: string;
+    driverName?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    verificationStatus?: string;
+    baseOrigin?: string;
+  }): Promise<VehicleChecklist[]> {
+    let checklists = Array.from(this.vehicleChecklists.values());
+
+    // Aplicar filtros se fornecidos
+    if (filters) {
+      if (filters.vehiclePlate) {
+        checklists = checklists.filter(c => 
+          c.vehiclePlate.toLowerCase().includes(filters.vehiclePlate!.toLowerCase()) ||
+          (c.implementPlate && c.implementPlate.toLowerCase().includes(filters.vehiclePlate!.toLowerCase()))
+        );
+      }
+      if (filters.driverName) {
+        checklists = checklists.filter(c => 
+          c.driverName.toLowerCase().includes(filters.driverName!.toLowerCase())
+        );
+      }
+      if (filters.status) {
+        checklists = checklists.filter(c => c.status === filters.status);
+      }
+      if (filters.verificationStatus) {
+        checklists = checklists.filter(c => c.verificationStatus === filters.verificationStatus);
+      }
+      if (filters.baseOrigin) {
+        checklists = checklists.filter(c => c.baseOrigin === filters.baseOrigin);
+      }
+      if (filters.startDate) {
+        checklists = checklists.filter(c => c.exitDate >= filters.startDate!);
+      }
+      if (filters.endDate) {
+        checklists = checklists.filter(c => c.exitDate <= filters.endDate!);
+      }
+    }
+
+    // Ordenar por data de criação mais recente
+    return checklists.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getVehicleChecklist(id: string): Promise<VehicleChecklist | undefined> {
+    return this.vehicleChecklists.get(id);
+  }
+
+  async createVehicleChecklist(checklistData: InsertVehicleChecklist): Promise<VehicleChecklist> {
+    const id = randomUUID();
+    const checklist: VehicleChecklist = {
+      ...checklistData,
+      id,
+      status: "saida_registrada",
+      verificationStatus: "nao_verificado",
+      accessDepartments: ["frota", "manutencao", "seguranca", "portaria"],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.vehicleChecklists.set(id, checklist);
+
+    // Criar histórico de criação
+    await this.createChecklistHistory({
+      checklistId: id,
+      action: "criacao",
+      performedBy: checklistData.driverId,
+      performedByName: checklistData.driverName,
+      details: `Checklist de saída criado para veículo ${checklistData.vehiclePlate}`
+    });
+
+    return checklist;
+  }
+
+  async updateVehicleChecklist(id: string, updates: Partial<VehicleChecklist>): Promise<VehicleChecklist | undefined> {
+    const checklist = this.vehicleChecklists.get(id);
+    if (!checklist) return undefined;
+
+    const updated = {
+      ...checklist,
+      ...updates,
+      updatedAt: new Date()
+    };
+
+    this.vehicleChecklists.set(id, updated);
+    return updated;
+  }
+
+  async verifyChecklist(id: string, verifiedBy: string, verifiedByName: string, notes?: string): Promise<VehicleChecklist | undefined> {
+    const checklist = this.vehicleChecklists.get(id);
+    if (!checklist) return undefined;
+
+    const updated = {
+      ...checklist,
+      verificationStatus: "verificado" as const,
+      verifiedBy,
+      verifiedByName,
+      verificationDate: new Date(),
+      verificationNotes: notes,
+      updatedAt: new Date()
+    };
+
+    this.vehicleChecklists.set(id, updated);
+
+    // Criar histórico de verificação
+    await this.createChecklistHistory({
+      checklistId: id,
+      action: "verificacao",
+      performedBy: verifiedBy,
+      performedByName: verifiedByName,
+      details: `Checklist verificado${notes ? `: ${notes}` : ""}`
+    });
+
+    return updated;
+  }
+
+  // ============= MÉTODOS DE ITENS DE CHECKLIST =============
+
+  async getChecklistItems(category?: string): Promise<ChecklistItem[]> {
+    let items = Array.from(this.checklistItems.values()).filter(item => item.active);
+    
+    if (category) {
+      items = items.filter(item => item.category === category);
+    }
+    
+    return items.sort((a, b) => a.order - b.order);
+  }
+
+  async createChecklistItem(itemData: InsertChecklistItem): Promise<ChecklistItem> {
+    const id = randomUUID();
+    const item: ChecklistItem = {
+      ...itemData,
+      id,
+      createdAt: new Date()
+    };
+    
+    this.checklistItems.set(id, item);
+    return item;
+  }
+
+  async updateChecklistItem(id: string, itemData: Partial<ChecklistItem>): Promise<ChecklistItem | undefined> {
+    const item = this.checklistItems.get(id);
+    if (!item) return undefined;
+
+    const updated = { ...item, ...itemData };
+    this.checklistItems.set(id, updated);
+    return updated;
+  }
+
+  async deleteChecklistItem(id: string): Promise<boolean> {
+    return this.checklistItems.delete(id);
+  }
+
+  // ============= MÉTODOS DE HISTÓRICO DE CHECKLISTS =============
+
+  async getChecklistHistory(checklistId: string): Promise<ChecklistHistory[]> {
+    return Array.from(this.checklistHistory.values())
+      .filter(hist => hist.checklistId === checklistId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async createChecklistHistory(historyData: InsertChecklistHistory): Promise<ChecklistHistory> {
+    const id = randomUUID();
+    const history: ChecklistHistory = {
+      ...historyData,
+      id,
+      createdAt: new Date()
+    };
+    
+    this.checklistHistory.set(id, history);
+    return history;
+  }
+
+  // ============= INICIALIZAÇÃO DE DADOS DE TESTE - CHECKLISTS =============
+
+  private initializeChecklistTestData() {
+    // Itens de checklist padrão
+    const checklistItems = [
+      {
+        id: randomUUID(),
+        description: "Verificação de freios",
+        category: "seguranca",
+        order: 1,
+        active: true,
+        createdAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        description: "Verificação de pneus",
+        category: "seguranca", 
+        order: 2,
+        active: true,
+        createdAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        description: "Verificação de luzes",
+        category: "seguranca",
+        order: 3,
+        active: true,
+        createdAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        description: "Nível de óleo do motor",
+        category: "manutencao",
+        order: 4,
+        active: true,
+        createdAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        description: "Nível de combustível",
+        category: "manutencao",
+        order: 5,
+        active: true,
+        createdAt: new Date()
+      },
+      {
+        id: randomUUID(),
+        description: "Documentação do veículo",
+        category: "documentos",
+        order: 6,
+        active: true,
+        createdAt: new Date()
+      }
+    ];
+
+    checklistItems.forEach(item => this.checklistItems.set(item.id, item));
+
+    // Checklists de exemplo
+    const sampleChecklists = [
+      {
+        id: randomUUID(),
+        driverId: "driver123",
+        driverName: "João Silva",
+        vehicleId: "vehicle1",
+        vehicleName: "Scania R450",
+        vehiclePlate: "ABC-1234",
+        implementId: null,
+        implementName: null,
+        implementPlate: null,
+        baseOrigin: "Base São Paulo",
+        baseDestination: "Base Rio de Janeiro",
+        exitDate: "2025-01-27",
+        exitTime: "08:30",
+        exitKm: 45230,
+        exitGatekeeper: "Carlos Porteiro",
+        exitChecklist: {
+          "Verificação de freios": true,
+          "Verificação de pneus": true,
+          "Verificação de luzes": true,
+          "Nível de óleo do motor": true,
+          "Nível de combustível": true,
+          "Documentação do veículo": true
+        },
+        exitObservations: "Veículo em perfeito estado para viagem",
+        returnDate: "2025-01-28",
+        returnTime: "16:45",
+        returnKm: 45890,
+        returnGatekeeper: "Maria Porteiro",
+        returnChecklist: {
+          "Verificação de freios": true,
+          "Verificação de pneus": false,
+          "Verificação de luzes": true,
+          "Nível de óleo do motor": true,
+          "Nível de combustível": false,
+          "Documentação do veículo": true
+        },
+        returnObservations: "Pneu traseiro direito com desgaste, combustível baixo",
+        status: "retorno_registrado" as const,
+        verificationStatus: "nao_verificado" as const,
+        accessDepartments: ["frota", "manutencao", "seguranca", "portaria"],
+        createdAt: new Date("2025-01-27T08:30:00"),
+        updatedAt: new Date("2025-01-28T16:45:00")
+      },
+      {
+        id: randomUUID(),
+        driverId: "driver456",
+        driverName: "Maria Santos",
+        vehicleId: "vehicle2",
+        vehicleName: "Mercedes Actros",
+        vehiclePlate: "DEF-5678",
+        implementId: "impl1",
+        implementName: "Sider 30t",
+        implementPlate: "GHI-9012",
+        baseOrigin: "Base Campinas",
+        baseDestination: "Base Belo Horizonte",
+        exitDate: "2025-01-28",
+        exitTime: "14:20",
+        exitKm: 32450,
+        exitGatekeeper: "Pedro Porteiro",
+        exitChecklist: {
+          "Verificação de freios": true,
+          "Verificação de pneus": true,
+          "Verificação de luzes": true,
+          "Nível de óleo do motor": true,
+          "Nível de combustível": true,
+          "Documentação do veículo": true
+        },
+        exitObservations: null,
+        returnDate: null,
+        returnTime: null,
+        returnKm: null,
+        returnGatekeeper: null,
+        returnChecklist: null,
+        returnObservations: null,
+        status: "viagem_em_andamento" as const,
+        verificationStatus: "verificado" as const,
+        verifiedBy: "admin123",
+        verifiedByName: "Supervisor Frota",
+        verificationDate: new Date("2025-01-28T14:30:00"),
+        verificationNotes: "Checklist aprovado, viagem autorizada",
+        accessDepartments: ["frota", "manutencao", "seguranca", "portaria"],
+        createdAt: new Date("2025-01-28T14:20:00"),
+        updatedAt: new Date("2025-01-28T14:30:00")
+      },
+      {
+        id: randomUUID(),
+        driverId: "driver789",
+        driverName: "José Oliveira",
+        vehicleId: "vehicle3",
+        vehicleName: "Volvo FH",
+        vehiclePlate: "JKL-3456",
+        implementId: null,
+        implementName: null,
+        implementPlate: null,
+        baseOrigin: "Base Guarulhos",
+        baseDestination: null,
+        exitDate: "2025-01-28",
+        exitTime: "09:15",
+        exitKm: 78920,
+        exitGatekeeper: "Ana Porteiro",
+        exitChecklist: {
+          "Verificação de freios": true,
+          "Verificação de pneus": true,
+          "Verificação de luzes": false,
+          "Nível de óleo do motor": true,
+          "Nível de combustível": true,
+          "Documentação do veículo": true
+        },
+        exitObservations: "Farol direito com problema, será reparado no destino",
+        returnDate: null,
+        returnTime: null,
+        returnKm: null,
+        returnGatekeeper: null,
+        returnChecklist: null,
+        returnObservations: null,
+        status: "saida_registrada" as const,
+        verificationStatus: "nao_verificado" as const,
+        accessDepartments: ["frota", "manutencao", "seguranca", "portaria"],
+        createdAt: new Date("2025-01-28T09:15:00"),
+        updatedAt: new Date("2025-01-28T09:15:00")
+      }
+    ];
+
+    sampleChecklists.forEach(checklist => this.vehicleChecklists.set(checklist.id, checklist));
+
+    // Histórico de exemplo para os checklists
+    sampleChecklists.forEach(checklist => {
+      // Histórico de criação
+      const creationHistory = {
+        id: randomUUID(),
+        checklistId: checklist.id,
+        action: "criacao" as const,
+        performedBy: checklist.driverId,
+        performedByName: checklist.driverName,
+        details: `Checklist de saída criado para veículo ${checklist.vehiclePlate}`,
+        createdAt: checklist.createdAt
+      };
+      this.checklistHistory.set(creationHistory.id, creationHistory);
+
+      // Histórico de verificação (se verificado)
+      if (checklist.verificationStatus === "verificado" && checklist.verifiedBy) {
+        const verificationHistory = {
+          id: randomUUID(),
+          checklistId: checklist.id,
+          action: "verificacao" as const,
+          performedBy: checklist.verifiedBy,
+          performedByName: checklist.verifiedByName!,
+          details: `Checklist verificado${checklist.verificationNotes ? `: ${checklist.verificationNotes}` : ""}`,
+          createdAt: checklist.verificationDate!
+        };
+        this.checklistHistory.set(verificationHistory.id, verificationHistory);
+      }
+
+      // Histórico de retorno (se houver)
+      if (checklist.returnDate) {
+        const returnHistory = {
+          id: randomUUID(),
+          checklistId: checklist.id,
+          action: "retorno" as const,
+          performedBy: checklist.driverId,
+          performedByName: checklist.driverName,
+          details: `Checklist de retorno registrado para veículo ${checklist.vehiclePlate}`,
+          createdAt: new Date(checklist.returnDate + "T" + (checklist.returnTime || "16:00"))
+        };
+        this.checklistHistory.set(returnHistory.id, returnHistory);
+      }
+    });
   }
 }
 

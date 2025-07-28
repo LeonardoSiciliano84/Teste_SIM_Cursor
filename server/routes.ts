@@ -26,7 +26,8 @@ import {
   insertEmployeeFileSchema,
   insertPranchaServiceSchema,
   insertSinistroSchema,
-  insertSinistroDocumentSchema
+  insertSinistroDocumentSchema,
+  insertVehicleChecklistSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -1698,6 +1699,292 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching history:", error);
       res.status(500).json({ message: "Failed to fetch history" });
+    }
+  });
+
+  // ============= ROTAS DE CHECKLISTS =============
+
+  // Listar checklists com filtros
+  app.get("/api/checklists", async (req, res) => {
+    try {
+      const filters = {
+        vehiclePlate: req.query.vehiclePlate as string,
+        driverName: req.query.driverName as string,
+        startDate: req.query.startDate as string,
+        endDate: req.query.endDate as string,
+        status: req.query.status as string,
+        verificationStatus: req.query.verificationStatus as string,
+        baseOrigin: req.query.baseOrigin as string,
+      };
+
+      // Remove filtros vazios
+      Object.keys(filters).forEach(key => 
+        filters[key as keyof typeof filters] === undefined && delete filters[key as keyof typeof filters]
+      );
+
+      const checklists = await storage.getVehicleChecklists(filters);
+      res.json(checklists);
+    } catch (error) {
+      console.error("Error fetching checklists:", error);
+      res.status(500).json({ message: "Erro ao buscar checklists" });
+    }
+  });
+
+  // Obter checklist específico
+  app.get("/api/checklists/:id", async (req, res) => {
+    try {
+      const checklist = await storage.getVehicleChecklist(req.params.id);
+      if (!checklist) {
+        return res.status(404).json({ message: "Checklist não encontrado" });
+      }
+      res.json(checklist);
+    } catch (error) {
+      console.error("Error fetching checklist:", error);
+      res.status(500).json({ message: "Erro ao buscar checklist" });
+    }
+  });
+
+  // Criar novo checklist
+  app.post("/api/checklists", async (req, res) => {
+    try {
+      const checklistData = insertVehicleChecklistSchema.parse(req.body);
+      const checklist = await storage.createVehicleChecklist(checklistData);
+      res.status(201).json(checklist);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Error creating checklist:", error);
+      res.status(500).json({ message: "Erro ao criar checklist" });
+    }
+  });
+
+  // Atualizar checklist (para adicionar dados de retorno)
+  app.patch("/api/checklists/:id", async (req, res) => {
+    try {
+      const checklist = await storage.updateVehicleChecklist(req.params.id, req.body);
+      if (!checklist) {
+        return res.status(404).json({ message: "Checklist não encontrado" });
+      }
+      res.json(checklist);
+    } catch (error) {
+      console.error("Error updating checklist:", error);
+      res.status(500).json({ message: "Erro ao atualizar checklist" });
+    }
+  });
+
+  // Verificar checklist
+  app.post("/api/checklists/:id/verify", async (req, res) => {
+    try {
+      const { verifiedBy, verifiedByName, notes } = req.body;
+      
+      if (!verifiedBy || !verifiedByName) {
+        return res.status(400).json({ message: "Dados do verificador são obrigatórios" });
+      }
+
+      const checklist = await storage.verifyChecklist(req.params.id, verifiedBy, verifiedByName, notes);
+      if (!checklist) {
+        return res.status(404).json({ message: "Checklist não encontrado" });
+      }
+
+      res.json(checklist);
+    } catch (error) {
+      console.error("Error verifying checklist:", error);
+      res.status(500).json({ message: "Erro ao verificar checklist" });
+    }
+  });
+
+  // Gerar PDF individual do checklist
+  app.get("/api/checklists/:id/pdf", async (req, res) => {
+    try {
+      const checklist = await storage.getVehicleChecklist(req.params.id);
+      if (!checklist) {
+        return res.status(404).json({ message: "Checklist não encontrado" });
+      }
+
+      const doc = new PDFDocument();
+      let buffers: Buffer[] = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        const pdfData = Buffer.concat(buffers);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="checklist-${checklist.vehiclePlate}-${checklist.exitDate}.pdf"`);
+        res.send(pdfData);
+      });
+
+      // Aplicar cabeçalho e rodapé padronizado
+      let yPos = addFelkaHeaderAndFooter(doc, 'CHECKLIST DE VEÍCULO');
+      yPos += 10;
+
+      // Informações do veículo e motorista
+      doc.fontSize(12).font('Helvetica-Bold').text('DADOS DO VEÍCULO E MOTORISTA:', 50, yPos);
+      yPos += 20;
+      doc.font('Helvetica').text(`Veículo: ${checklist.vehicleName} - Placa: ${checklist.vehiclePlate}`, 50, yPos);
+      yPos += 15;
+      if (checklist.implementPlate) {
+        doc.text(`Implemento: ${checklist.implementName} - Placa: ${checklist.implementPlate}`, 50, yPos);
+        yPos += 15;
+      }
+      doc.text(`Motorista: ${checklist.driverName}`, 50, yPos);
+      yPos += 15;
+      doc.text(`Base de Origem: ${checklist.baseOrigin}`, 50, yPos);
+      if (checklist.baseDestination) {
+        yPos += 15;
+        doc.text(`Base de Destino: ${checklist.baseDestination}`, 50, yPos);
+      }
+      yPos += 30;
+
+      // Dados da viagem
+      doc.font('Helvetica-Bold').text('DADOS DA VIAGEM:', 50, yPos);
+      yPos += 20;
+      doc.font('Helvetica').text(`Data/Hora de Saída: ${checklist.exitDate} às ${checklist.exitTime}`, 50, yPos);
+      yPos += 15;
+      doc.text(`KM de Saída: ${checklist.exitKm}`, 50, yPos);
+      yPos += 15;
+      if (checklist.returnDate) {
+        doc.text(`Data/Hora de Retorno: ${checklist.returnDate} às ${checklist.returnTime || ''}`, 50, yPos);
+        yPos += 15;
+      }
+      if (checklist.returnKm) {
+        doc.text(`KM de Retorno: ${checklist.returnKm}`, 50, yPos);
+        yPos += 15;
+      }
+      if (checklist.exitGatekeeper) {
+        doc.text(`Porteiro na Saída: ${checklist.exitGatekeeper}`, 50, yPos);
+        yPos += 15;
+      }
+      if (checklist.returnGatekeeper) {
+        doc.text(`Porteiro no Retorno: ${checklist.returnGatekeeper}`, 50, yPos);
+        yPos += 15;
+      }
+      yPos += 20;
+
+      // Checklist de saída
+      doc.font('Helvetica-Bold').text('CHECKLIST DE SAÍDA:', 50, yPos);
+      yPos += 15;
+      const exitItems = checklist.exitChecklist as Record<string, boolean>;
+      Object.entries(exitItems).forEach(([item, checked]) => {
+        doc.font('Helvetica').text(`${checked ? '✓' : '✗'} ${item}`, 70, yPos);
+        yPos += 12;
+      });
+
+      if (checklist.exitObservations) {
+        yPos += 10;
+        doc.font('Helvetica-Bold').text('Observações de Saída:', 50, yPos);
+        yPos += 15;
+        doc.font('Helvetica').text(checklist.exitObservations, 50, yPos, { width: 495 });
+        yPos += Math.ceil(checklist.exitObservations.length / 80) * 15;
+      }
+
+      // Checklist de retorno (se houver)
+      if (checklist.returnChecklist) {
+        yPos += 20;
+        doc.font('Helvetica-Bold').text('CHECKLIST DE RETORNO:', 50, yPos);
+        yPos += 15;
+        const returnItems = checklist.returnChecklist as Record<string, boolean>;
+        Object.entries(returnItems).forEach(([item, checked]) => {
+          doc.font('Helvetica').text(`${checked ? '✓' : '✗'} ${item}`, 70, yPos);
+          yPos += 12;
+        });
+
+        if (checklist.returnObservations) {
+          yPos += 10;
+          doc.font('Helvetica-Bold').text('Observações de Retorno:', 50, yPos);
+          yPos += 15;
+          doc.font('Helvetica').text(checklist.returnObservations, 50, yPos, { width: 495 });
+          yPos += Math.ceil(checklist.returnObservations.length / 80) * 15;
+        }
+      }
+
+      // Status de verificação
+      yPos += 30;
+      doc.font('Helvetica-Bold').text('STATUS DE VERIFICAÇÃO:', 50, yPos);
+      yPos += 15;
+      doc.font('Helvetica').text(`Status: ${checklist.verificationStatus === 'verificado' ? 'VERIFICADO' : 'NÃO VERIFICADO'}`, 50, yPos);
+      if (checklist.verifiedByName) {
+        yPos += 15;
+        doc.text(`Verificado por: ${checklist.verifiedByName}`, 50, yPos);
+        yPos += 15;
+        doc.text(`Data de Verificação: ${checklist.verificationDate ? new Date(checklist.verificationDate).toLocaleString('pt-BR') : ''}`, 50, yPos);
+      }
+      if (checklist.verificationNotes) {
+        yPos += 15;
+        doc.text(`Notas: ${checklist.verificationNotes}`, 50, yPos, { width: 495 });
+      }
+
+      doc.end();
+    } catch (error) {
+      console.error("Error generating checklist PDF:", error);
+      res.status(500).json({ message: "Erro ao gerar PDF" });
+    }
+  });
+
+  // Histórico do checklist
+  app.get("/api/checklists/:id/history", async (req, res) => {
+    try {
+      const history = await storage.getChecklistHistory(req.params.id);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching checklist history:", error);
+      res.status(500).json({ message: "Erro ao buscar histórico" });
+    }
+  });
+
+  // Exportar checklists em lote para Excel
+  app.get("/api/checklists/export/xlsx", async (req, res) => {
+    try {
+      const filters = {
+        vehiclePlate: req.query.vehiclePlate as string,
+        driverName: req.query.driverName as string,
+        startDate: req.query.startDate as string,
+        endDate: req.query.endDate as string,
+        status: req.query.status as string,
+        verificationStatus: req.query.verificationStatus as string,
+        baseOrigin: req.query.baseOrigin as string,
+      };
+
+      // Remove filtros vazios
+      Object.keys(filters).forEach(key => 
+        filters[key as keyof typeof filters] === undefined && delete filters[key as keyof typeof filters]
+      );
+
+      const checklists = await storage.getVehicleChecklists(filters);
+
+      // Criar dados para Excel
+      const excelData = checklists.map(checklist => ({
+        'ID': checklist.id,
+        'Placa do Veículo': checklist.vehiclePlate,
+        'Nome do Veículo': checklist.vehicleName,
+        'Placa do Implemento': checklist.implementPlate || '',
+        'Nome do Implemento': checklist.implementName || '',
+        'Motorista': checklist.driverName,
+        'Base de Origem': checklist.baseOrigin,
+        'Base de Destino': checklist.baseDestination || '',
+        'Data de Saída': checklist.exitDate,
+        'Hora de Saída': checklist.exitTime,
+        'KM de Saída': checklist.exitKm,
+        'Data de Retorno': checklist.returnDate || '',
+        'Hora de Retorno': checklist.returnTime || '',
+        'KM de Retorno': checklist.returnKm || '',
+        'Status': checklist.status,
+        'Status de Verificação': checklist.verificationStatus,
+        'Verificado por': checklist.verifiedByName || '',
+        'Data de Verificação': checklist.verificationDate ? new Date(checklist.verificationDate).toLocaleString('pt-BR') : '',
+        'Porteiro na Saída': checklist.exitGatekeeper || '',
+        'Porteiro no Retorno': checklist.returnGatekeeper || '',
+        'Observações de Saída': checklist.exitObservations || '',
+        'Observações de Retorno': checklist.returnObservations || '',
+        'Data de Criação': new Date(checklist.createdAt).toLocaleString('pt-BR')
+      }));
+
+      // Em um sistema real, você usaria uma biblioteca como xlsx para gerar o arquivo Excel
+      // Por enquanto, retornaremos os dados em JSON
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="checklists-export-${new Date().toISOString().split('T')[0]}.json"`);
+      res.json(excelData);
+    } catch (error) {
+      console.error("Error exporting checklists:", error);
+      res.status(500).json({ message: "Erro ao exportar checklists" });
     }
   });
 

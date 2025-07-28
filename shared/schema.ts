@@ -698,3 +698,155 @@ export type InsertSinistroDocument = typeof sinistroDocuments.$inferInsert;
 export type SinistroDocument = typeof sinistroDocuments.$inferSelect;
 export type InsertSinistroHistory = typeof sinistroHistory.$inferInsert;
 export type SinistroHistory = typeof sinistroHistory.$inferSelect;
+
+// ============= MÓDULO DE CHECKLISTS =============
+
+// Tabela principal de checklists de veículos
+export const vehicleChecklists = pgTable("vehicle_checklists", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Informações do veículo
+  vehicleId: varchar("vehicle_id").notNull(),
+  vehiclePlate: varchar("vehicle_plate").notNull(),
+  vehicleName: varchar("vehicle_name").notNull(),
+  implementId: varchar("implement_id"),
+  implementPlate: varchar("implement_plate"),
+  implementName: varchar("implement_name"),
+  
+  // Informações do motorista
+  driverId: varchar("driver_id").notNull(),
+  driverName: varchar("driver_name").notNull(),
+  driverEmployeeNumber: varchar("driver_employee_number"),
+  
+  // Dados da viagem
+  baseOrigin: varchar("base_origin").notNull(), // Base de origem
+  baseDestination: varchar("base_destination"), // Base de destino
+  exitDate: varchar("exit_date").notNull(),
+  exitTime: varchar("exit_time").notNull(),
+  returnDate: varchar("return_date"),
+  returnTime: varchar("return_time"),
+  exitKm: integer("exit_km").notNull(),
+  returnKm: integer("return_km"),
+  
+  // Portaria
+  exitGatekeeper: varchar("exit_gatekeeper"), // Nome do porteiro na saída
+  returnGatekeeper: varchar("return_gatekeeper"), // Nome do porteiro no retorno
+  
+  // Checklist de saída (JSON com os itens verificados)
+  exitChecklist: json("exit_checklist").notNull(), // {documentos: true, pneus: true, etc}
+  exitObservations: text("exit_observations"),
+  exitPhotos: text("exit_photos").array(), // Array de URLs das fotos
+  
+  // Checklist de retorno (JSON com os itens verificados)
+  returnChecklist: json("return_checklist"), // {documentos: true, pneus: true, etc}
+  returnObservations: text("return_observations"),
+  returnPhotos: text("return_photos").array(), // Array de URLs das fotos
+  
+  // Status e verificação
+  status: varchar("status").notNull().default("saida_registrada"), // saida_registrada, viagem_em_andamento, retorno_registrado, finalizado
+  verificationStatus: varchar("verification_status").notNull().default("nao_verificado"), // nao_verificado, verificado
+  verifiedBy: varchar("verified_by"), // ID do usuário que verificou
+  verifiedByName: varchar("verified_by_name"), // Nome do usuário que verificou
+  verificationDate: timestamp("verification_date"),
+  verificationNotes: text("verification_notes"),
+  
+  // Permissões de acesso (setores que podem visualizar)
+  accessDepartments: text("access_departments").array().default(sql`ARRAY['frota', 'manutencao', 'seguranca', 'portaria']`),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Tabela de itens de checklist padrão
+export const checklistItems = pgTable("checklist_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  category: varchar("category").notNull(), // documentos, equipamentos, pneus, manutencao, combustivel, etc
+  itemName: varchar("item_name").notNull(), // "CNH válida", "Pneus calibrados", etc
+  description: text("description"),
+  mandatory: boolean("mandatory").default(true),
+  vehicleType: varchar("vehicle_type"), // Para qual tipo de veículo se aplica
+  order: integer("order").default(0), // Ordem de exibição
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Tabela de histórico de ações nos checklists
+export const checklistHistory = pgTable("checklist_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  checklistId: varchar("checklist_id").notNull().references(() => vehicleChecklists.id, { onDelete: "cascade" }),
+  action: varchar("action").notNull(), // criacao, verificacao, edicao, exportacao
+  performedBy: varchar("performed_by").notNull(),
+  performedByName: varchar("performed_by_name").notNull(),
+  department: varchar("department"),
+  details: text("details"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Relations para checklists
+export const vehicleChecklistsRelations = relations(vehicleChecklists, ({ many }) => ({
+  history: many(checklistHistory),
+}));
+
+export const checklistHistoryRelations = relations(checklistHistory, ({ one }) => ({
+  checklist: one(vehicleChecklists, {
+    fields: [checklistHistory.checklistId],
+    references: [vehicleChecklists.id],
+  }),
+}));
+
+// Schemas para validação
+export const insertVehicleChecklistSchema = createInsertSchema(vehicleChecklists).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  verificationStatus: true,
+  verifiedBy: true,
+  verifiedByName: true,
+  verificationDate: true,
+  verificationNotes: true,
+}).extend({
+  // Campos obrigatórios
+  vehicleId: z.string().min(1, "Veículo é obrigatório"),
+  vehiclePlate: z.string().min(1, "Placa do veículo é obrigatória"),
+  vehicleName: z.string().min(1, "Nome do veículo é obrigatório"),
+  driverId: z.string().min(1, "Motorista é obrigatório"),
+  driverName: z.string().min(1, "Nome do motorista é obrigatório"),
+  baseOrigin: z.string().min(1, "Base de origem é obrigatória"),
+  exitDate: z.string().min(1, "Data de saída é obrigatória"),
+  exitTime: z.string().min(1, "Hora de saída é obrigatória"),
+  exitKm: z.number().min(0, "KM de saída deve ser positivo"),
+  exitChecklist: z.any(), // JSON object
+  
+  // Campos opcionais
+  implementId: z.string().optional(),
+  implementPlate: z.string().optional(),
+  implementName: z.string().optional(),
+  baseDestination: z.string().optional(),
+  returnDate: z.string().optional(),
+  returnTime: z.string().optional(),
+  returnKm: z.number().optional(),
+  exitObservations: z.string().optional(),
+  exitPhotos: z.array(z.string()).optional(),
+  returnChecklist: z.any().optional(),
+  returnObservations: z.string().optional(),
+  returnPhotos: z.array(z.string()).optional(),
+  exitGatekeeper: z.string().optional(),
+  returnGatekeeper: z.string().optional(),
+});
+
+export const insertChecklistItemSchema = createInsertSchema(checklistItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertChecklistHistorySchema = createInsertSchema(checklistHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertVehicleChecklist = typeof vehicleChecklists.$inferInsert;
+export type VehicleChecklist = typeof vehicleChecklists.$inferSelect;
+export type InsertChecklistItem = typeof checklistItems.$inferInsert;
+export type ChecklistItem = typeof checklistItems.$inferSelect;
+export type InsertChecklistHistory = typeof checklistHistory.$inferInsert;
+export type ChecklistHistory = typeof checklistHistory.$inferSelect;

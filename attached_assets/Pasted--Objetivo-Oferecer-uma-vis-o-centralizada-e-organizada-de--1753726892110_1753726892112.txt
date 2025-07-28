@@ -1,0 +1,49 @@
+________________________________________
+Objetivo
+Oferecer uma visão centralizada e organizada de todos os checklists de saída e retorno de veículos registrados pelos motoristas, permitindo auditoria, verificação, exportação e emissão de relatórios de forma prática e segura.
+________________________________________
+Acesso
+•	Tela disponível para usuários dos setores de Frota, Manutenção, Segurança e Portaria, conforme permissões definidas no sistema.
+•	Interface web responsiva para uso em computadores e dispositivos móveis.
+________________________________________
+Layout e Funcionalidades Principais
+1. Lista de Checklists Registrados
+Exibição em formato de tabela dinâmica com filtros por:
+•	Placa do veículo (tração e implemento)
+•	Nome do motorista
+•	Data de saída e data de retorno
+•	Base de operação (origem/destino)
+•	Status de verificação: Verificado / Não Verificado
+•	Portaria de entrada e saída (nome do colaborador)
+•	Botão “Visualizar Detalhes” para acesso completo
+________________________________________
+2. Visualização Completa do Checklist (Popup/Modal)
+Ao clicar em "Visualizar Detalhes", o sistema abre um modal com as informações completas do checklist preenchido pelo motorista, incluindo:
+•	Data e hora da saída e retorno
+•	KM de saída e de chegada
+•	Base de origem e destino
+•	Itens verificados (documentos, pneus, equipamentos, etc.)
+•	Observações do motorista
+•	Fotos anexadas
+•	Nome do porteiro responsável pela liberação na saída e na chegada
+•	Botão para gerar PDF individual do checklist
+________________________________________
+3. Verificação e Auditoria
+•	Cada checklist exibirá um status de "Verificado" ou "Não Verificado".
+•	O responsável autorizado poderá clicar em um botão "Verificar Checklist", que:
+o	Registra automaticamente o nome do colaborador que realizou a verificação
+o	Salva a data e hora da verificação
+o	Atualiza o status para "Verificado"
+o	Garante rastreabilidade para auditoria
+________________________________________
+4. Exportações e Relatórios
+•	Exportação em lote para Excel (.xlsx) com filtros aplicáveis (data, motorista, placa, status etc.)
+•	Geração de relatórios em PDF individuais por checklist ou por lote selecionado
+•	Possibilidade de anexar os PDFs aos registros de viagem ou manutenção, conforme necessidade do setor
+________________________________________
+Funcionalidades Adicionais
+•	Integração com os módulos de Motoristas, Veículos, Manutenção e Portaria
+•	Controle de permissões por setor e cargo
+•	Histórico de todas as ações realizadas na tela, com data, hora e usuário
+•	Notificações internas para pendências de verificação
+________________________________________
