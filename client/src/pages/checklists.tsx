@@ -162,9 +162,6 @@ export default function ChecklistsPage() {
   const getStatusBadge = (status: string) => {
     const statusMap = {
       'saida_registrada': { label: 'Saída Registrada', variant: 'secondary' as const },
-      'viagem_em_andamento': { label: 'Em Andamento', variant: 'default' as const },
-      'retorno_registrado': { label: 'Retorno Registrado', variant: 'outline' as const },
-      'finalizado': { label: 'Finalizado', variant: 'default' as const },
     };
     
     const config = statusMap[status as keyof typeof statusMap] || { label: status, variant: 'secondary' as const };
@@ -243,9 +240,6 @@ export default function ChecklistsPage() {
                 <SelectContent>
                   <SelectItem value="todos">Todos os status</SelectItem>
                   <SelectItem value="saida_registrada">Saída Registrada</SelectItem>
-                  <SelectItem value="viagem_em_andamento">Em Andamento</SelectItem>
-                  <SelectItem value="retorno_registrado">Retorno Registrado</SelectItem>
-                  <SelectItem value="finalizado">Finalizado</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -16,6 +16,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from "@/components/ui/select";
 import { Search, User, Mail, Shield, Car, FileText, Download, AlertTriangle, CheckSquare, Wrench, Phone, Camera, MapPin, Clock, Truck, Fuel, Settings, Package, MessageSquare, Calendar, LogOut, Lock, UserCircle, ChevronDown } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -1163,15 +1170,18 @@ export default function DriverPortal() {
 
               {/* Base de saída */}
               <div>
-                <Label>Base de Saída</Label>
-                <select className="w-full p-2 border rounded-md">
-                  <option value="">Selecione a base</option>
-                  <option value="matriz">Matriz</option>
-                  <option value="base2">Base 2</option>
-                  <option value="oficina">Oficina</option>
-                  <option value="baseRB">Base RB</option>
-                  <option value="filial01">Filial 01</option>
-                </select>
+                <Label>Base de Saída *</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a base de saída" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="matriz">Matriz</SelectItem>
+                    <SelectItem value="base2">Base 2</SelectItem>
+                    <SelectItem value="base3">Base 3</SelectItem>
+                    <SelectItem value="base4">Base 4</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Placas */}
