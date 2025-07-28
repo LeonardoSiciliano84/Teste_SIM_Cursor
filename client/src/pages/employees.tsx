@@ -86,13 +86,13 @@ export function EmployeesPage() {
     }
   };
 
-  // Função para exportar colaboradores para CSV
-  const exportEmployeesToCSV = async () => {
+  // Função para exportar colaboradores para XLSX
+  const exportEmployeesToXLSX = async () => {
     try {
-      const response = await fetch('/api/employees/export/csv', {
+      const response = await fetch('/api/employees/export/xlsx', {
         method: 'GET',
         headers: {
-          'Accept': 'text/csv',
+          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         },
       });
       
@@ -101,7 +101,7 @@ export function EmployeesPage() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'colaboradores.csv';
+        a.download = 'colaboradores.xlsx';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -170,9 +170,9 @@ export function EmployeesPage() {
           <p className="text-gray-600">Cadastro e gerenciamento completo de funcionários</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={exportEmployeesToCSV} variant="outline" className="gap-2">
+          <Button onClick={exportEmployeesToXLSX} variant="outline" className="gap-2">
             <Download className="h-4 w-4" />
-            Exportar CSV
+            Exportar XLSX
           </Button>
           <Link href="/employees/new">
             <Button className="gap-2" style={{ backgroundColor: '#0C29AB', color: 'white' }}>

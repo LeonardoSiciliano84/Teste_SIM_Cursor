@@ -37,12 +37,9 @@ export function EmployeeStatusControl({ employee }: EmployeeStatusControlProps) 
 
   const deactivateMutation = useMutation({
     mutationFn: async (data: StatusChangeForm) => {
-      return apiRequest(`/api/employees/${employee.id}/deactivate`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          reason: data.reason,
-          changedBy: "admin@felka.com", // Aqui deveria vir do contexto de usuário logado
-        }),
+      return apiRequest(`/api/employees/${employee.id}/deactivate`, "PATCH", {
+        reason: data.reason,
+        changedBy: "admin@felka.com", // Aqui deveria vir do contexto de usuário logado
       });
     },
     onSuccess: () => {
@@ -65,12 +62,9 @@ export function EmployeeStatusControl({ employee }: EmployeeStatusControlProps) 
 
   const reactivateMutation = useMutation({
     mutationFn: async (data: StatusChangeForm) => {
-      return apiRequest(`/api/employees/${employee.id}/reactivate`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          reason: data.reason,
-          changedBy: "admin@felka.com", // Aqui deveria vir do contexto de usuário logado
-        }),
+      return apiRequest(`/api/employees/${employee.id}/reactivate`, "PATCH", {
+        reason: data.reason,
+        changedBy: "admin@felka.com", // Aqui deveria vir do contexto de usuário logado
       });
     },
     onSuccess: () => {

@@ -1022,6 +1022,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export employees to XLSX
+  app.get("/api/employees/export/xlsx", async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      const XLSX = require('xlsx');
+      
+      // Preparar dados para planilha
+      const worksheetData = employees.map(emp => ({
+        'Nome': emp.fullName,
+        'CPF': emp.cpf,
+        'Matrícula': emp.employeeNumber,
+        'Cargo': emp.position,
+        'Departamento': emp.department,
+        'Status': emp.status === 'active' ? 'Ativo' : 'Inativo',
+        'Data Admissão': emp.admissionDate ? new Date(emp.admissionDate).toLocaleDateString('pt-BR') : '',
+        'Telefone': emp.phone || '',
+        'Email': emp.email || '',
+        'Salário': emp.salary ? Number(emp.salary) : ''
+      }));
+      
+      // Criar workbook e worksheet
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+      
+      // Definir larguras das colunas
+      const columnWidths = [
+        { wch: 25 }, // Nome
+        { wch: 15 }, // CPF
+        { wch: 12 }, // Matrícula
+        { wch: 20 }, // Cargo
+        { wch: 20 }, // Departamento
+        { wch: 10 }, // Status
+        { wch: 15 }, // Data Admissão
+        { wch: 15 }, // Telefone
+        { wch: 25 }, // Email
+        { wch: 12 }  // Salário
+      ];
+      worksheet['!cols'] = columnWidths;
+      
+      // Adicionar worksheet ao workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Colaboradores');
+      
+      // Gerar buffer do arquivo
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      
+      // Configurar headers para download
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="colaboradores.xlsx"');
+      res.send(buffer);
+    } catch (error) {
+      console.error('Erro ao exportar colaboradores:', error);
+      res.status(500).json({ message: "Erro ao exportar colaboradores" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
