@@ -249,7 +249,7 @@ export const employeeDocuments = pgTable("employee_documents", {
   renewalNotified: boolean("renewal_notified").default(false),
   
   // Histórico de alterações
-  previousVersionId: uuid("previous_version_id").references(() => employeeDocuments.id),
+  previousVersionId: uuid("previous_version_id"),
   changeReason: text("change_reason"), // renovação, correção, etc.
   changedBy: uuid("changed_by").references(() => users.id),
   
@@ -260,7 +260,7 @@ export const employeeDocuments = pgTable("employee_documents", {
 export const employeeOccurrences = pgTable("employee_occurrences", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: uuid("employee_id").references(() => employees.id).notNull(),
-  requestedById: uuid("requested_by_id").references(() => employees.id).notNull(),
+  requestedById: text("requested_by_id").notNull(),
   
   occurrenceType: text("occurrence_type").notNull(), // advertencia_verbal, advertencia_escrita, suspensao, falta, atestado
   title: text("title").notNull(),
@@ -434,6 +434,13 @@ export const insertEmployeeOccurrenceSchema = createInsertSchema(employeeOccurre
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  occurrenceDate: z.string(),
+  requestedById: z.string(),
+  severity: z.enum(["low", "medium", "high"]).optional(),
+  actionRequired: z.string().optional(),
+  followUpDate: z.string().optional(),
+  witnesses: z.string().optional(),
 });
 
 export const insertEmployeeMovementSchema = createInsertSchema(employeeMovements).omit({

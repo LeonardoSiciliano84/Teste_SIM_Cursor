@@ -717,15 +717,36 @@ export class MemStorage implements IStorage {
     );
   }
 
-  async createEmployeeOccurrence(occurrence: InsertEmployeeOccurrence): Promise<EmployeeOccurrence> {
-    const newOccurrence: EmployeeOccurrence = {
+  async createEmployeeOccurrence(occurrenceData: any): Promise<EmployeeOccurrence> {
+    const occurrence: EmployeeOccurrence = {
       id: randomUUID(),
-      ...occurrence,
+      employeeId: occurrenceData.employeeId,
+      requestedById: occurrenceData.requestedById,
+      occurrenceType: occurrenceData.occurrenceType,
+      title: occurrenceData.title,
+      description: occurrenceData.description,
+      occurrenceDate: occurrenceData.occurrenceDate,
+      suspensionDays: occurrenceData.suspensionDays || null,
+      suspensionStart: occurrenceData.suspensionStart || null,
+      suspensionEnd: occurrenceData.suspensionEnd || null,
+      medicalDays: occurrenceData.medicalDays || null,
+      medicalStart: occurrenceData.medicalStart || null,
+      medicalEnd: occurrenceData.medicalEnd || null,
+      medicalDocument: occurrenceData.medicalDocument || null,
+      employeeSignature: false,
+      employeeSignatureDate: null,
+      managerSignature: false,
+      managerSignatureDate: null,
+      hrSignature: false,
+      hrSignatureDate: null,
+      documentGenerated: false,
+      documentUrl: null,
+      status: occurrenceData.status || "pending",
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    this.employeeOccurrences.set(newOccurrence.id, newOccurrence);
-    return newOccurrence;
+    this.employeeOccurrences.set(occurrence.id, occurrence);
+    return occurrence;
   }
 
   async updateEmployeeOccurrence(id: string, occurrence: Partial<InsertEmployeeOccurrence>): Promise<EmployeeOccurrence | undefined> {

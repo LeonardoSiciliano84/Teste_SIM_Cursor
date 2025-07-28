@@ -12,7 +12,7 @@ import {
   insertEmployeeSchema,
   insertEmployeeDependentSchema,
   insertEmployeeDocumentSchema,
-  insertEmployeeOccurrenceSchema,
+
   insertEmployeeMovementSchema,
   insertEmployeeFileSchema
 } from "@shared/schema";
@@ -718,17 +718,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Criar nova ocorrência
   app.post("/api/employees/:id/occurrences", async (req, res) => {
     try {
-      const occurrenceData = insertEmployeeOccurrenceSchema.parse({
-        ...req.body,
-        employeeId: req.params.id
-      });
+      const occurrenceData = {
+        employeeId: req.params.id,
+        title: req.body.title,
+        occurrenceType: req.body.occurrenceType,
+        description: req.body.description,
+        occurrenceDate: req.body.occurrenceDate,
+        requestedById: req.body.requestedById,
+        status: "active"
+      };
+      
       const occurrence = await storage.createEmployeeOccurrence(occurrenceData);
       res.status(201).json(occurrence);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
-      }
-      res.status(500).json({ message: "Erro ao criar ocorrência" });
+      console.error("Erro ao criar ocorrência:", error);
+      res.status(500).json({ message: "Erro ao criar ocorrência", error: error.message });
     }
   });
 
