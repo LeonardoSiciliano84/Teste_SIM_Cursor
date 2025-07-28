@@ -1,0 +1,329 @@
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Search, User, Mail, Shield, Car } from "lucide-react";
+import { authManager } from "@/lib/auth";
+
+interface DriverInfo {
+  id: string;
+  fullName: string;
+  email: string;
+  employeeNumber: string;
+  profilePhoto?: string;
+  position: string;
+  department: string;
+  driverLicense: string;
+  driverLicenseCategory: string;
+  driverLicenseExpiry: string;
+  phone: string;
+}
+
+export default function DriverPortal() {
+  const [selectedVehicle, setSelectedVehicle] = useState<string>("");
+  const [vehicleSearchTerm, setVehicleSearchTerm] = useState("");
+  const [implementSearchTerm, setImplementSearchTerm] = useState("");
+  const [selectedImplement, setSelectedImplement] = useState<string>("");
+  
+  // Obter informações do motorista logado
+  const { data: driverInfo, isLoading: driverLoading } = useQuery<DriverInfo>({
+    queryKey: ["/api/driver/profile"],
+    retry: false,
+  });
+
+  // Obter veículos disponíveis
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ["/api/vehicles"],
+    select: (data: any[]) => data.filter(v => v.status === 'active')
+  });
+
+  // Filtrar veículos por busca
+  const filteredVehicles = vehicles.filter((vehicle: any) => 
+    vehicle.plate.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
+    vehicle.name.toLowerCase().includes(vehicleSearchTerm.toLowerCase())
+  );
+
+  // Filtrar implementos por busca
+  const filteredImplements = vehicles.filter((vehicle: any) => 
+    vehicle.vehicleType === 'Semirreboque' &&
+    (vehicle.plate.toLowerCase().includes(implementSearchTerm.toLowerCase()) ||
+     vehicle.name.toLowerCase().includes(implementSearchTerm.toLowerCase()))
+  );
+
+  // Obter dados do veículo selecionado
+  const selectedVehicleData = vehicles.find((v: any) => v.id === selectedVehicle);
+  const selectedImplementData = vehicles.find((v: any) => v.id === selectedImplement);
+
+  if (driverLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!driverInfo) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center text-red-600">Acesso Negado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center text-gray-600">
+              Este portal é exclusivo para motoristas autorizados.
+            </p>
+            <Button 
+              className="w-full mt-4" 
+              onClick={() => authManager.logout()}
+            >
+              Fazer Login Novamente
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4">
+      <div className="max-w-md mx-auto space-y-6">
+        
+        {/* Header com informações do motorista */}
+        <Card className="border-blue-200 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+            <div className="flex items-center space-x-4">
+              <Avatar className="h-16 w-16 border-2 border-white">
+                <AvatarImage src={driverInfo.profilePhoto} />
+                <AvatarFallback className="bg-blue-500 text-white text-lg">
+                  {driverInfo.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <h1 className="text-xl font-bold">{driverInfo.fullName}</h1>
+                <div className="flex items-center space-x-1 text-blue-100">
+                  <Mail className="h-4 w-4" />
+                  <span className="text-sm">{driverInfo.email}</span>
+                </div>
+                <div className="flex items-center space-x-1 text-blue-100 mt-1">
+                  <Shield className="h-4 w-4" />
+                  <span className="text-sm">Mat: {driverInfo.employeeNumber}</span>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <Label className="text-gray-600">CNH</Label>
+                <p className="font-semibold">{driverInfo.driverLicense}</p>
+              </div>
+              <div>
+                <Label className="text-gray-600">Categoria</Label>
+                <p className="font-semibold">{driverInfo.driverLicenseCategory}</p>
+              </div>
+              <div className="col-span-2">
+                <Label className="text-gray-600">Validade CNH</Label>
+                <p className="font-semibold text-blue-600">
+                  {new Date(driverInfo.driverLicenseExpiry).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Seleção de Veículo de Tração */}
+        <Card className="border-gray-200 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-gray-800">
+              <Car className="h-5 w-5 text-blue-600" />
+              <span>Selecionar Veículo de Tração</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="vehicle-search">Buscar por Placa ou Nome</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="vehicle-search"
+                  placeholder="Digite a placa ou nome do veículo..."
+                  value={vehicleSearchTerm}
+                  onChange={(e) => setVehicleSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {vehicleSearchTerm && (
+              <div className="max-h-40 overflow-y-auto space-y-2">
+                {filteredVehicles.length > 0 ? (
+                  filteredVehicles.map((vehicle: any) => (
+                    <button
+                      key={vehicle.id}
+                      onClick={() => {
+                        setSelectedVehicle(vehicle.id);
+                        setVehicleSearchTerm("");
+                      }}
+                      className="w-full text-left p-3 border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-semibold text-gray-800">{vehicle.plate}</p>
+                          <p className="text-sm text-gray-600">{vehicle.name}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-500">{vehicle.brand}</p>
+                          <p className="text-sm text-gray-500">{vehicle.model}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-center text-gray-500 py-4">
+                    Nenhum veículo encontrado
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Dados do veículo selecionado */}
+        {selectedVehicleData && (
+          <Card className="border-green-200 shadow-lg">
+            <CardHeader className="bg-green-50">
+              <CardTitle className="text-green-800">
+                Veículo Selecionado: {selectedVehicleData.plate}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <Label className="text-gray-600">Marca/Modelo</Label>
+                  <p className="font-semibold">{selectedVehicleData.brand} {selectedVehicleData.model}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">Ano</Label>
+                  <p className="font-semibold">{selectedVehicleData.modelYear}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">Capacidade Carga</Label>
+                  <p className="font-semibold">{selectedVehicleData.loadCapacity || 'N/A'} kg</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">Tanque</Label>
+                  <p className="font-semibold">{selectedVehicleData.fuelTankCapacity || 'N/A'} L</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">Consumo Médio</Label>
+                  <p className="font-semibold">{selectedVehicleData.fuelConsumption || 'N/A'} km/L</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">Localização</Label>
+                  <p className="font-semibold">{selectedVehicleData.currentLocation || 'N/A'}</p>
+                </div>
+              </div>
+
+              {/* Informações de manutenção */}
+              <div className="pt-3 border-t">
+                <h4 className="font-semibold text-gray-800 mb-2">Próximas Manutenções</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Revisão Preventiva:</span>
+                    <span className="text-sm font-semibold text-orange-600">
+                      {selectedVehicleData.preventiveMaintenanceKm || 10000} km
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Rodízio de Pneus:</span>
+                    <span className="text-sm font-semibold text-blue-600">
+                      {selectedVehicleData.tireRotationKm || 10000} km
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botão para documentos */}
+              <Button className="w-full mt-4 bg-blue-600 hover:bg-blue-700">
+                Ver Documentos do Veículo
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Seleção de Implemento (opcional) */}
+        <Card className="border-gray-200 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-gray-800">
+              <Car className="h-5 w-5 text-orange-600" />
+              <span>Implemento (Opcional)</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="implement-search">Buscar Implemento</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="implement-search"
+                  placeholder="Digite a placa do implemento..."
+                  value={implementSearchTerm}
+                  onChange={(e) => setImplementSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {implementSearchTerm && (
+              <div className="max-h-32 overflow-y-auto space-y-2">
+                {filteredImplements.length > 0 ? (
+                  filteredImplements.map((implement: any) => (
+                    <button
+                      key={implement.id}
+                      onClick={() => {
+                        setSelectedImplement(implement.id);
+                        setImplementSearchTerm("");
+                      }}
+                      className="w-full text-left p-2 border rounded hover:bg-orange-50 hover:border-orange-300 transition-colors"
+                    >
+                      <div className="flex justify-between">
+                        <span className="font-semibold">{implement.plate}</span>
+                        <span className="text-sm text-gray-600">{implement.name}</span>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-center text-gray-500 py-2">
+                    Nenhum implemento encontrado
+                  </p>
+                )}
+              </div>
+            )}
+
+            {selectedImplementData && (
+              <div className="bg-orange-50 p-3 rounded-lg">
+                <p className="font-semibold text-orange-800">
+                  Implemento: {selectedImplementData.plate}
+                </p>
+                <p className="text-sm text-orange-600">
+                  {selectedImplementData.name}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Botão para continuar */}
+        {selectedVehicle && (
+          <Button className="w-full bg-green-600 hover:bg-green-700 text-lg py-3">
+            Continuar para Próxima Etapa
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}

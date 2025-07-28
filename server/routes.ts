@@ -47,6 +47,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Driver portal route - obter perfil do motorista logado
+  app.get("/api/driver/profile", async (req, res) => {
+    try {
+      // Por enquanto, vamos simular um motorista baseado no usuário logado
+      // Em produção, isso seria baseado na sessão do usuário autenticado
+      
+      // Buscar um colaborador que seja motorista (tem CNH)
+      const employees = await storage.getEmployees();
+      const driver = employees.find(emp => 
+        emp.driverLicense && 
+        emp.driverLicense.trim() !== '' &&
+        emp.status === 'active'
+      );
+      
+      if (!driver) {
+        return res.status(404).json({ message: "Perfil de motorista não encontrado" });
+      }
+      
+      // Retornar informações do motorista
+      const driverProfile = {
+        id: driver.id,
+        fullName: driver.fullName,
+        email: driver.email || driver.personalEmail,
+        employeeNumber: driver.employeeNumber,
+        profilePhoto: driver.profilePhoto,
+        position: driver.position,
+        department: driver.department,
+        driverLicense: driver.driverLicense,
+        driverLicenseCategory: driver.driverLicenseCategory || 'D',
+        driverLicenseExpiry: driver.driverLicenseExpiry || new Date(Date.now() + 365*24*60*60*1000).toISOString(),
+        phone: driver.phone
+      };
+      
+      res.json(driverProfile);
+    } catch (error) {
+      console.error('Erro ao obter perfil do motorista:', error);
+      res.status(500).json({ message: "Erro ao carregar perfil do motorista" });
+    }
+  });
+
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
     try {

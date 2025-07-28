@@ -17,6 +17,8 @@ import { EmployeeNewPage } from "@/pages/employee-new";
 import { EmployeeDetailsPage } from "@/pages/employee-details";
 import { EmployeeEditPage } from "@/pages/employee-edit";
 import { OccurrencesPage } from "@/pages/occurrences";
+import DriverPortal from "@/pages/driver-portal";
+import DriverLogin from "@/pages/driver-login";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import VehicleEdit from "@/components/vehicles/vehicle-edit";
@@ -41,6 +43,8 @@ function Router() {
       <Route path="/employees/:id" component={EmployeeDetailsPage} />
       <Route path="/employees/edit/:id" component={EmployeeEditPage} />
       <Route path="/occurrences" component={OccurrencesPage} />
+      <Route path="/driver-portal" component={DriverPortal} />
+      <Route path="/driver-login" component={DriverLogin} />
       <Route path="/routes" component={Routes} />
       <Route path="/bookings" component={Bookings} />
       <Route path="/analytics" component={Analytics} />
