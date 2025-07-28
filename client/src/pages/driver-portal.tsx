@@ -40,6 +40,13 @@ export default function DriverPortal() {
   const [showTravelMaintenance, setShowTravelMaintenance] = useState(false);
   const [activeTab, setActiveTab] = useState("dados-iniciais");
   const [selectedOC, setSelectedOC] = useState<string | null>(null);
+  const [showPranchaOC, setShowPranchaOC] = useState(false);
+  const [pranchaService, setPranchaService] = useState<{
+    ocNumber: string;
+    startDate: string;
+    isActive: boolean;
+    startTime?: string;
+  } | null>(null);
   const { toast } = useToast();
 
   // Dados mock para Ordens de Coleta
@@ -113,6 +120,19 @@ export default function DriverPortal() {
   // Obter dados do veículo selecionado
   const selectedVehicleData = vehicles.find((v: any) => v.id === selectedVehicle);
   const selectedImplementData = vehicles.find((v: any) => v.id === selectedImplement);
+
+  // Verificar se o implemento selecionado é uma prancha
+  const isPranchaImplement = selectedImplementData && 
+    selectedImplementData.name.toLowerCase().includes('prancha');
+
+  // Calcular dias de serviço ativo
+  const getActiveDays = () => {
+    if (!pranchaService?.startDate) return 0;
+    const startDate = new Date(pranchaService.startDate);
+    const today = new Date();
+    const diffTime = Math.abs(today.getTime() - startDate.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
 
   // Função para visualizar documentos
   const handleViewDocuments = (vehicleId: string) => {
@@ -410,6 +430,16 @@ export default function DriverPortal() {
                 >
                   Ver Documentos do Implemento
                 </Button>
+                
+                {/* Botão para Registrar O.C. de Prancha */}
+                {isPranchaImplement && !pranchaService?.isActive && (
+                  <Button 
+                    className="w-full mt-2 bg-purple-600 hover:bg-purple-700"
+                    onClick={() => setShowPranchaOC(true)}
+                  >
+                    Registrar O.C. de Prancha
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>
@@ -496,6 +526,51 @@ export default function DriverPortal() {
             </Button>
           )}
         </div>
+
+        {/* Serviço Ativo de Prancha */}
+        {pranchaService?.isActive && (
+          <Card className="border-purple-200 bg-purple-50 shadow-lg mt-4">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 text-purple-800">
+                <Package className="h-5 w-5" />
+                <span>Serviço de Prancha Ativo</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-purple-600">O.C. Número</Label>
+                  <p className="font-bold text-purple-800">{pranchaService.ocNumber}</p>
+                </div>
+                <div>
+                  <Label className="text-purple-600">Data de Início</Label>
+                  <p className="font-bold text-purple-800">{pranchaService.startDate}</p>
+                </div>
+                <div>
+                  <Label className="text-purple-600">Implemento</Label>
+                  <p className="font-bold text-purple-800">{selectedImplementData?.name}</p>
+                </div>
+                <div>
+                  <Label className="text-purple-600">Dias de Serviço</Label>
+                  <p className="font-bold text-green-600 text-xl">{getActiveDays()} dias</p>
+                </div>
+              </div>
+              <Button 
+                className="w-full bg-red-600 hover:bg-red-700 mt-4"
+                onClick={() => {
+                  const endDate = new Date().toLocaleDateString('pt-BR');
+                  toast({
+                    title: "Serviço Encerrado!",
+                    description: `O.C. ${pranchaService.ocNumber} finalizada em ${endDate}. Total: ${getActiveDays()} dias`,
+                  });
+                  setPranchaService(null);
+                }}
+              >
+                Encerrar Serviço
+              </Button>
+            </CardContent>
+          </Card>
+        )}
           </TabsContent>
 
           {/* Aba Dados dos Veículos */}
@@ -730,6 +805,85 @@ export default function DriverPortal() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Modal de Registro de O.C. de Prancha */}
+        <Dialog open={showPranchaOC} onOpenChange={setShowPranchaOC}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Package className="h-5 w-5 text-purple-600" />
+                <span>Registrar O.C. de Prancha</span>
+              </DialogTitle>
+              <DialogDescription>
+                Confirme o início do serviço com implemento prancha
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {/* Detecção automática do implemento */}
+              <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                <p className="text-sm font-medium text-purple-800">
+                  ✓ Implemento do tipo prancha detectado automaticamente
+                </p>
+                <p className="text-sm text-purple-600">
+                  {selectedImplementData?.plate} - {selectedImplementData?.name}
+                </p>
+              </div>
+
+              {/* Campo: Número da O.C. */}
+              <div>
+                <Label>Número da Ordem de Coleta (O.C.) *</Label>
+                <Input 
+                  placeholder="Ex: OC-2025-001"
+                  id="oc-number"
+                />
+              </div>
+
+              {/* Campo: Data de início */}
+              <div>
+                <Label>Data de Início do Serviço *</Label>
+                <Input 
+                  type="date"
+                  defaultValue={new Date().toISOString().split('T')[0]}
+                  id="start-date"
+                />
+              </div>
+
+              <Button 
+                className="w-full bg-purple-600 hover:bg-purple-700"
+                onClick={() => {
+                  const ocNumber = (document.getElementById('oc-number') as HTMLInputElement)?.value;
+                  const startDate = (document.getElementById('start-date') as HTMLInputElement)?.value;
+                  
+                  if (!ocNumber || !startDate) {
+                    toast({
+                      title: "Campos obrigatórios",
+                      description: "Preencha o número da O.C. e a data de início",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+
+                  setPranchaService({
+                    ocNumber,
+                    startDate: new Date(startDate).toLocaleDateString('pt-BR'),
+                    isActive: true,
+                    startTime: new Date().toTimeString().slice(0,5)
+                  });
+
+                  toast({
+                    title: "Serviço Iniciado!",
+                    description: `O.C. ${ocNumber} registrada com sucesso. Serviço ativo.`,
+                  });
+
+                  setShowPranchaOC(false);
+                }}
+              >
+                Confirmar Serviço
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Modal de Documentos */}
         <Dialog open={showDocuments} onOpenChange={setShowDocuments}>
