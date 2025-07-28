@@ -103,7 +103,7 @@ export default function DriverPortal() {
   });
 
   // Verificar serviço ativo do motorista ao carregar
-  const { data: activeServiceData } = useQuery({
+  const { data: activeServiceData, refetch: refetchActiveService } = useQuery({
     queryKey: [`/api/driver/${driverInfo?.id}/active-service`],
     enabled: !!driverInfo?.id,
     retry: false,
@@ -118,6 +118,10 @@ export default function DriverPortal() {
         isActive: true,
         startTime: new Date(activeServiceData.createdAt).toLocaleTimeString('pt-BR')
       });
+      
+      // Definir os veículos selecionados automaticamente
+      setSelectedVehicle(activeServiceData.vehicleId);
+      setSelectedImplement(activeServiceData.implementId);
     }
   }, [activeServiceData]);
 
@@ -150,11 +154,18 @@ export default function DriverPortal() {
 
   // Calcular dias de serviço ativo
   const getActiveDays = () => {
-    if (!pranchaService?.startDate) return 0;
-    const startDate = new Date(pranchaService.startDate);
+    if (!activeService?.startDate && !pranchaService?.startDate) return 0;
+    const startDateStr = activeService?.startDate || pranchaService?.startDate;
+    const startDate = new Date(startDateStr);
     const today = new Date();
-    const diffTime = Math.abs(today.getTime() - startDate.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Zerar horas para calcular dias completos
+    startDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    const diffTime = today.getTime() - startDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir o dia de início
+    return Math.max(diffDays, 1); // Mínimo 1 dia
   };
 
   // Função para visualizar documentos
@@ -570,10 +581,18 @@ export default function DriverPortal() {
                   <p className="font-bold text-purple-800">{pranchaService.startDate}</p>
                 </div>
                 <div>
-                  <Label className="text-purple-600">Implemento</Label>
-                  <p className="font-bold text-purple-800">{selectedImplementData?.name}</p>
+                  <Label className="text-purple-600">Veículo Tração</Label>
+                  <p className="font-bold text-purple-800">
+                    {activeService?.vehiclePlate} - {activeService?.vehicleName}
+                  </p>
                 </div>
                 <div>
+                  <Label className="text-purple-600">Implemento</Label>
+                  <p className="font-bold text-purple-800">
+                    {activeService?.implementPlate} - {activeService?.implementName}
+                  </p>
+                </div>
+                <div className="col-span-2">
                   <Label className="text-purple-600">Dias de Serviço</Label>
                   <p className="font-bold text-green-600 text-xl">{getActiveDays()} dias</p>
                 </div>

@@ -1050,20 +1050,6 @@ export class MemStorage implements IStorage {
     return service;
   }
 
-  async updatePranchaService(id: string, serviceData: Partial<InsertPranchaService>): Promise<PranchaService | undefined> {
-    const service = this.pranchaServices.get(id);
-    if (!service) return undefined;
-
-    const updatedService = {
-      ...service,
-      ...serviceData,
-      updatedAt: new Date()
-    };
-
-    this.pranchaServices.set(id, updatedService);
-    return updatedService;
-  }
-
   // Service Log methods
   async getServiceLogs(serviceId: string): Promise<ServiceLog[]> {
     return Array.from(this.serviceLogs.values()).filter(log => log.serviceId === serviceId);
