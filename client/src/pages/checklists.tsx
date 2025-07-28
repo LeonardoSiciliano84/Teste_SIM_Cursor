@@ -289,9 +289,7 @@ export default function ChecklistsPage() {
                     <TableHead>Veículo</TableHead>
                     <TableHead>Motorista</TableHead>
                     <TableHead>Saída</TableHead>
-                    <TableHead>Retorno</TableHead>
                     <TableHead>Base</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead>Verificação</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
@@ -329,22 +327,6 @@ export default function ChecklistsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {checklist.returnDate ? (
-                          <div>
-                            <div className="flex items-center space-x-1 text-sm">
-                              <Calendar className="h-3 w-3" />
-                              <span>{checklist.returnDate}</span>
-                            </div>
-                            <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              <span>{checklist.returnTime || 'N/A'}</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">Pendente</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
                         <div className="flex items-center space-x-1 text-sm">
                           <MapPin className="h-3 w-3" />
                           <span>{checklist.baseOrigin}</span>
@@ -355,7 +337,6 @@ export default function ChecklistsPage() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>{getStatusBadge(checklist.status)}</TableCell>
                       <TableCell>{getVerificationBadge(checklist.verificationStatus)}</TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
