@@ -69,6 +69,7 @@ export default function DriverPortal() {
   const [finalizationFile, setFinalizationFile] = useState<File | null>(null);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [showSecuritySettings, setShowSecuritySettings] = useState(false);
+  const [selectedBase, setSelectedBase] = useState<string>("");
   const { toast } = useToast();
 
   // Dados mock para Ordens de Coleta
@@ -1171,7 +1172,7 @@ export default function DriverPortal() {
               {/* Base de saída */}
               <div>
                 <Label>Base de Saída *</Label>
-                <Select>
+                <Select value={selectedBase} onValueChange={setSelectedBase}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a base de saída" />
                   </SelectTrigger>
@@ -1258,7 +1259,107 @@ export default function DriverPortal() {
                 </label>
               </div>
 
-              <Button className="w-full bg-green-600 hover:bg-green-700">
+              <Button 
+                className="w-full bg-green-600 hover:bg-green-700"
+                onClick={async () => {
+                  if (!selectedVehicleData || !driverInfo) {
+                    toast({
+                      title: "Dados incompletos",
+                      description: "Selecione um veículo antes de enviar o checklist",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+
+                  try {
+                    // Coletar dados do formulário
+                    const formData = new FormData();
+                    const photoInput = document.getElementById('checklist-photo') as HTMLInputElement;
+                    const kmInput = document.querySelector('input[type="number"]') as HTMLInputElement;
+                    const observationsTextarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                    
+                    // Verificar campos obrigatórios
+                    if (!selectedBase) {
+                      toast({
+                        title: "Campo obrigatório",
+                        description: "Selecione a base de saída",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+
+                    if (!photoInput?.files?.[0]) {
+                      toast({
+                        title: "Foto obrigatória",
+                        description: "Adicione uma foto antes de enviar",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+
+                    // Coletar checklist marcado
+                    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+                    const checklistItems: Record<string, boolean> = {};
+                    checkboxes.forEach((checkbox, index) => {
+                      const labels = [
+                        "Documentos válidos",
+                        "Cartão de abastecimento", 
+                        "Níveis de óleo e água",
+                        "Elétrica, faróis, buzina, retrovisores",
+                        "Pneus e calibragem",
+                        "Equipamentos obrigatórios (extintor, triângulo)",
+                        "Cintas, catracas, lonas"
+                      ];
+                      checklistItems[labels[index]] = (checkbox as HTMLInputElement).checked;
+                    });
+
+                    // Criar dados do checklist
+                    const checklistData = {
+                      vehicleId: selectedVehicleData.id,
+                      vehiclePlate: selectedVehicleData.plate,
+                      vehicleName: selectedVehicleData.name,
+                      implementId: selectedImplementData?.id,
+                      implementPlate: selectedImplementData?.plate,
+                      implementName: selectedImplementData?.name,
+                      driverId: driverInfo.id,
+                      driverName: driverInfo.fullName,
+                      driverRegistration: driverInfo.employeeNumber,
+                      exitDate: new Date().toISOString().split('T')[0],
+                      exitTime: new Date().toTimeString().slice(0,5),
+                      baseOrigin: selectedBase,
+                      currentKm: parseInt(kmInput?.value || '0'),
+                      exitChecklist: checklistItems,
+                      exitObservations: observationsTextarea?.value || '',
+                      attachmentPath: photoInput.files[0].name
+                    };
+
+                    const response = await fetch('/api/checklists', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify(checklistData),
+                    });
+
+                    if (response.ok) {
+                      setShowChecklist(false);
+                      toast({
+                        title: "Checklist enviado!",
+                        description: "Checklist de saída registrado com sucesso",
+                      });
+                    } else {
+                      throw new Error('Falha ao enviar checklist');
+                    }
+                  } catch (error) {
+                    console.error('Erro ao enviar checklist:', error);
+                    toast({
+                      title: "Erro",
+                      description: "Falha ao enviar checklist. Tente novamente.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+              >
                 Enviar Checklist
               </Button>
             </div>

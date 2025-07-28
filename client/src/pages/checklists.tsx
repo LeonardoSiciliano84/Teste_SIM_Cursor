@@ -37,11 +37,13 @@ import {
   User,
   Truck,
   MapPin,
-  Clock
+  Clock,
+  Camera
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
 import type { VehicleChecklist } from "@shared/schema";
 
 interface ChecklistFilters {
@@ -56,6 +58,7 @@ interface ChecklistFilters {
 
 export default function ChecklistsPage() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [filters, setFilters] = useState<ChecklistFilters>({
     vehiclePlate: "",
     driverName: "",
@@ -458,6 +461,38 @@ export default function ChecklistsPage() {
                       <p className="mt-1 text-sm text-muted-foreground">{selectedChecklist.returnObservations}</p>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Foto do checklist */}
+              {selectedChecklist.attachmentPath && (
+                <div>
+                  <h3 className="font-semibold mb-2">Foto do Checklist</h3>
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Camera className="h-5 w-5 text-blue-600" />
+                        <span className="text-sm font-medium">Foto anexada</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Simular visualização da foto
+                          toast({
+                            title: "Visualizando foto",
+                            description: `Arquivo: ${selectedChecklist.attachmentPath}`,
+                          });
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver Foto
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Arquivo: {selectedChecklist.attachmentPath}
+                    </p>
+                  </div>
                 </div>
               )}
 
