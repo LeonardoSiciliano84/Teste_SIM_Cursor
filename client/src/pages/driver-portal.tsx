@@ -388,9 +388,9 @@ export default function DriverPortal() {
               <span className="text-xs text-center">Solicitar Manutenção</span>
             </Button>
 
-            {/* Botão 3: Comunicar Manutenção */}
+            {/* Botão 3: Comunicar Sinistro */}
             <Button 
-              className="h-20 flex flex-col items-center justify-center bg-orange-600 hover:bg-orange-700 text-white"
+              className="h-20 flex flex-col items-center justify-center bg-red-600 hover:bg-red-700 text-white"
               onClick={() => {
                 if (!selectedVehicle) {
                   toast({ 
@@ -403,8 +403,8 @@ export default function DriverPortal() {
                 setShowMaintenanceCommunication(true);
               }}
             >
-              <Phone className="h-6 w-6 mb-1" />
-              <span className="text-xs text-center">Comunicar Manutenção</span>
+              <AlertTriangle className="h-6 w-6 mb-1" />
+              <span className="text-xs text-center">Comunicar Sinistro</span>
             </Button>
 
             {/* Botão 4: Registrar Manutenção em Viagem */}
@@ -576,7 +576,14 @@ export default function DriverPortal() {
               {/* Base de saída */}
               <div>
                 <Label>Base de Saída</Label>
-                <Input placeholder="Ex: Terminal São Paulo" />
+                <select className="w-full p-2 border rounded-md">
+                  <option value="">Selecione a base</option>
+                  <option value="matriz">Matriz</option>
+                  <option value="base2">Base 2</option>
+                  <option value="oficina">Oficina</option>
+                  <option value="baseRB">Base RB</option>
+                  <option value="filial01">Filial 01</option>
+                </select>
               </div>
 
               {/* Placas */}
@@ -629,10 +636,28 @@ export default function DriverPortal() {
               {/* Upload de foto */}
               <div>
                 <Label>Foto Obrigatória *</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  id="checklist-photo"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      toast({
+                        title: "Foto capturada!",
+                        description: `Arquivo: ${e.target.files[0].name}`,
+                      });
+                    }
+                  }}
+                />
+                <label
+                  htmlFor="checklist-photo"
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center block cursor-pointer hover:border-gray-400 transition-colors"
+                >
                   <Camera className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                   <p className="text-sm text-gray-600">Toque para adicionar foto</p>
-                </div>
+                </label>
               </div>
 
               <Button className="w-full bg-green-600 hover:bg-green-700">
@@ -691,60 +716,186 @@ export default function DriverPortal() {
           </DialogContent>
         </Dialog>
 
-        {/* Modal de Comunicação de Manutenção */}
+        {/* Modal de Comunicação de Sinistro */}
         <Dialog open={showMaintenanceCommunication} onOpenChange={setShowMaintenanceCommunication}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-screen overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2">
-                <Phone className="h-5 w-5 text-orange-600" />
-                <span>Comunicação de Manutenção</span>
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <span>Comunicação de Sinistro</span>
               </DialogTitle>
               <DialogDescription>
-                Comunique problemas urgentes
+                Registre acidentes e ocorrências
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4">
-              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                <p className="text-sm font-medium text-orange-800">
-                  Para problemas que impedem a continuidade da viagem
-                </p>
-              </div>
-
-              {/* Placa do veículo */}
-              <div>
-                <Label>Placa do Veículo</Label>
-                <Input value={selectedVehicleData?.plate || ""} readOnly />
-              </div>
-
-              {/* Localização atual */}
-              <div>
-                <Label>Localização Atual</Label>
-                <div className="flex space-x-2">
-                  <Input placeholder="Endereço ou coordenadas" className="flex-1" />
-                  <Button variant="outline" size="sm">
-                    <MapPin className="h-4 w-4" />
-                  </Button>
+              {/* Data e hora do sinistro */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Data do Sinistro</Label>
+                  <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+                </div>
+                <div>
+                  <Label>Hora do Sinistro</Label>
+                  <Input type="time" defaultValue={new Date().toTimeString().slice(0,5)} />
                 </div>
               </div>
 
-              {/* Descrição do problema */}
+              {/* Placa da tração */}
               <div>
-                <Label>Descrição do Problema *</Label>
+                <Label>Placa da Tração</Label>
+                <Input value={selectedVehicleData?.plate || ""} readOnly />
+              </div>
+
+              {/* Local e endereço */}
+              <div>
+                <Label>Local e Endereço *</Label>
+                <div className="space-y-2">
+                  <Input placeholder="Nome do local (ex: BR-101, km 150)" />
+                  <div className="flex space-x-2">
+                    <Input placeholder="Endereço completo" className="flex-1" />
+                    <Button variant="outline" size="sm">
+                      <MapPin className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tipo de colisão */}
+              <div>
+                <Label>Tipo de Colisão</Label>
+                <select className="w-full p-2 border rounded-md">
+                  <option value="">Selecione o tipo</option>
+                  <option value="frontal">Frontal</option>
+                  <option value="traseira">Traseira</option>
+                  <option value="lateral">Lateral</option>
+                  <option value="capotamento">Capotamento</option>
+                  <option value="tombamento">Tombamento</option>
+                  <option value="abalroamento">Abalroamento</option>
+                  <option value="outros">Outros</option>
+                </select>
+              </div>
+
+              {/* Houve vítima */}
+              <div>
+                <Label>Houve Vítima?</Label>
+                <div className="flex space-x-4">
+                  <label className="flex items-center space-x-2">
+                    <input type="radio" name="vitima" value="sim" />
+                    <span>Sim</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input type="radio" name="vitima" value="nao" />
+                    <span>Não</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Condições de trajeto e carga */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Condições do Trajeto</Label>
+                  <select className="w-full p-2 border rounded-md">
+                    <option value="">Selecione</option>
+                    <option value="seco">Pista Seca</option>
+                    <option value="molhada">Pista Molhada</option>
+                    <option value="obras">Em Obras</option>
+                    <option value="buracos">Com Buracos</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Situação da Carga</Label>
+                  <select className="w-full p-2 border rounded-md">
+                    <option value="">Selecione</option>
+                    <option value="carregado">Carregado</option>
+                    <option value="vazio">Vazio</option>
+                    <option value="parcial">Carga Parcial</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Quem sofreu a avaria */}
+              <div>
+                <Label>Quem Sofreu a Avaria</Label>
+                <select className="w-full p-2 border rounded-md">
+                  <option value="">Selecione</option>
+                  <option value="apenas-nosso">Apenas nosso veículo</option>
+                  <option value="terceiros">Veículo de terceiros</option>
+                  <option value="ambos">Ambos os veículos</option>
+                  <option value="propriedade">Propriedade pública/privada</option>
+                </select>
+              </div>
+
+              {/* Percepção de gravidade */}
+              <div>
+                <Label>Percepção de Gravidade</Label>
+                <select className="w-full p-2 border rounded-md">
+                  <option value="">Selecione</option>
+                  <option value="leve">Leve - Apenas danos materiais menores</option>
+                  <option value="moderada">Moderada - Danos materiais significativos</option>
+                  <option value="grave">Grave - Danos severos ou ferimentos</option>
+                  <option value="muito-grave">Muito Grave - Risco de vida</option>
+                </select>
+              </div>
+
+              {/* Campo de observações */}
+              <div>
+                <Label>Observações</Label>
                 <textarea 
                   className="w-full p-2 border rounded-md resize-none" 
                   rows={3}
-                  placeholder="Descreva o problema..."
-                  required
+                  placeholder="Descreva detalhadamente o que aconteceu..."
                 />
               </div>
 
+              {/* Upload de imagens */}
+              <div>
+                <Label>Fotos do Sinistro (1 a 6 fotos) *</Label>
+                <p className="text-xs text-gray-600 mb-2">Mínimo 1 foto obrigatória</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[1, 2, 3, 4, 5, 6].map((num) => (
+                    <div key={num}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        id={`sinistro-photo-${num}`}
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            toast({
+                              title: `Foto ${num} capturada!`,
+                              description: e.target.files[0].name,
+                            });
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`sinistro-photo-${num}`}
+                        className="border-2 border-dashed border-gray-300 rounded-lg p-2 text-center block cursor-pointer hover:border-gray-400 transition-colors"
+                      >
+                        <Camera className="h-6 w-6 mx-auto text-gray-400 mb-1" />
+                        <p className="text-xs text-gray-600">Foto {num}</p>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex space-x-3">
-                <Button className="flex-1 bg-orange-600 hover:bg-orange-700">
-                  Enviar Comunicação
+                <Button className="flex-1 bg-red-600 hover:bg-red-700">
+                  Registrar Sinistro
                 </Button>
-                <Button variant="outline" className="flex-1">
-                  WhatsApp Emergência
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    // Simular abertura do WhatsApp
+                    window.open('https://wa.me/5511999999999?text=Emergência%20-%20Sinistro%20reportado', '_blank');
+                  }}
+                >
+                  WhatsApp Segurança
                 </Button>
               </div>
             </div>
