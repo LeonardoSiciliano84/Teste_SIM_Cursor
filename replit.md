@@ -117,6 +117,19 @@ The architecture supports easy scaling by separating concerns and using modern, 
 
 ## Recent Changes and Current Status (January 2025)
 
+### Sistema de Download de Documentos e Controle de Acesso - IMPLEMENTADO ✓ (January 28, 2025)
+**Sistema completo de download de arquivos e controle de acesso por função:**
+- Componente SinistroDocuments para visualização e download de anexos em sinistros
+- Download direto de documentos através de endpoints /api/sinistros/:id/documents/:docId/download
+- Persistência automática de login com localStorage e restauração de sessão
+- Controle de acesso baseado em função (role-based access control):
+  * Motoristas (role: 'driver') acessam apenas o portal do motorista
+  * Usuários admin e user podem acessar sistema completo + portal do motorista
+- Usuário teste criado: motorista@felka.com / admin123 (role: driver)
+- AuthManager aprimorado com métodos canAccessAdmin() e isDriver()
+- Redirecionamento automático baseado na função do usuário no App.tsx
+- Interface de download com ícones, informações de arquivo e badges por tipo
+
 ### Prancha Service Persistence System ✓ (January 28, 2025)
 **Complete prancha service management with persistent state across login sessions:**
 - Database-backed service persistence with PostgreSQL integration
@@ -190,11 +203,14 @@ The architecture supports easy scaling by separating concerns and using modern, 
 - Logo placement in sidebar, header, and login page
 - Portuguese Brazilian interface language consistently applied
 
-### Authentication System ✓
-- Session-based authentication working
-- User roles (admin, user) implemented
-- Protected routes with authentication guards
-- Login credentials: admin@felka.com / admin123
+### Authentication System ✓ (Atualizado January 28, 2025)
+- Session-based authentication with automatic persistence via localStorage
+- User roles (admin, user, driver) implemented with role-based access control
+- Protected routes with authentication guards and role-based redirection
+- Automatic session restoration on page reload
+- Login credentials: 
+  * admin@felka.com / admin123 (admin - acesso completo)
+  * motorista@felka.com / admin123 (driver - apenas portal do motorista)
 
 ### Technical Infrastructure ✓ (Enhanced January 27, 2025)
 - PostgreSQL database with Drizzle ORM
@@ -212,6 +228,12 @@ The architecture supports easy scaling by separating concerns and using modern, 
 - POST /api/vehicles - Criar novo veículo
 - PATCH /api/vehicles/:id - Atualizar veículo
 - GET /api/vehicles/:id/pdf - Gerar PDF do veículo
+
+**Gestão de Documentos de Sinistros:**
+- GET /api/sinistros/:id/documents - Listar documentos do sinistro
+- GET /api/sinistros/:id/documents/:docId/download - Download de documento
+- POST /api/sinistros/:id/documents/upload - Upload de documento
+- DELETE /api/sinistros/:id/documents/:docId - Deletar documento
 
 **Gestão de Colaboradores:**
 - GET /api/employees - Listar todos os colaboradores
@@ -242,8 +264,10 @@ The architecture supports easy scaling by separating concerns and using modern, 
 - GET /api/occurrences/report - Relatório geral de ocorrências
 
 **Sistema:**
-- POST /api/auth/login - Autenticação de usuário
+- POST /api/auth/login - Autenticação de usuário com controle de função
 - GET /api/dashboard/stats - Estatísticas do dashboard
+- GET /api/driver/profile - Perfil do motorista logado
+- GET /api/driver/:driverId/active-service - Serviço ativo do motorista
 
 ### Sistema de Exportação e Relatórios - IMPLEMENTADO ✓ (January 28, 2025)
 **Exportações profissionais com formatação corporativa:**
