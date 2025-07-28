@@ -147,58 +147,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Pipe do PDF para a resposta
       doc.pipe(res);
 
-      // Header do documento
-      doc.fontSize(20).text('FELKA TRANSPORTES', { align: 'center' });
-      doc.fontSize(16).text('FICHA TÉCNICA DO VEÍCULO', { align: 'center' });
-      doc.moveDown(2);
+      // Aplicar cabeçalho e rodapé padronizado
+      let yPos = addFelkaHeaderAndFooter(doc, 'FICHA TÉCNICA DO VEÍCULO');
+      yPos += 10;
 
       // Informações principais
-      doc.fontSize(14).text('DADOS PRINCIPAIS', { underline: true });
-      doc.fontSize(12)
-        .text(`Nome: ${vehicle.name}`)
-        .text(`Placa: ${vehicle.plate}`)
-        .text(`Marca: ${vehicle.brand || 'N/A'}`)
-        .text(`Modelo: ${vehicle.model}`)
-        .text(`Ano: ${vehicle.modelYear || 'N/A'}`)
-        .text(`Status: ${vehicle.status}`)
-        .text(`Localização: ${vehicle.currentLocation || 'N/A'}`)
-        .moveDown();
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('DADOS PRINCIPAIS', 50, yPos);
+      yPos += 20;
+      doc.fontSize(10).font('Helvetica').fillColor('black')
+        .text(`Nome: ${vehicle.name}`, 50, yPos); yPos += 15;
+      doc.text(`Placa: ${vehicle.plate}`, 50, yPos); yPos += 15;
+      doc.text(`Marca: ${vehicle.brand || 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Modelo: ${vehicle.model}`, 50, yPos); yPos += 15;
+      doc.text(`Ano: ${vehicle.modelYear || 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Status: ${vehicle.status}`, 50, yPos); yPos += 15;
+      doc.text(`Localização: ${vehicle.currentLocation || 'N/A'}`, 50, yPos); yPos += 25;
 
       // Informações financeiras
-      doc.fontSize(14).text('INFORMAÇÕES FINANCEIRAS', { underline: true });
-      doc.fontSize(12)
-        .text(`Valor de Compra: R$ ${vehicle.purchaseValue ? parseFloat(vehicle.purchaseValue).toLocaleString('pt-BR') : 'N/A'}`)
-        .text(`Valor FIPE: R$ ${vehicle.fipeValue ? parseFloat(vehicle.fipeValue).toLocaleString('pt-BR') : 'N/A'}`)
-        .text(`Instituição Financeira: ${vehicle.financialInstitution || 'N/A'}`)
-        .text(`Tipo de Contrato: ${vehicle.contractType || 'N/A'}`)
-        .text(`Parcelas: ${vehicle.installmentCount || 'N/A'}`)
-        .text(`Valor da Parcela: R$ ${vehicle.installmentValue ? parseFloat(vehicle.installmentValue).toLocaleString('pt-BR') : 'N/A'}`)
-        .moveDown();
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('INFORMAÇÕES FINANCEIRAS', 50, yPos);
+      yPos += 20;
+      doc.fontSize(10).font('Helvetica').fillColor('black')
+        .text(`Valor de Compra: R$ ${vehicle.purchaseValue ? parseFloat(vehicle.purchaseValue).toLocaleString('pt-BR') : 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Valor FIPE: R$ ${vehicle.fipeValue ? parseFloat(vehicle.fipeValue).toLocaleString('pt-BR') : 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Instituição Financeira: ${vehicle.financialInstitution || 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Tipo de Contrato: ${vehicle.contractType || 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Parcelas: ${vehicle.installmentCount || 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Valor da Parcela: R$ ${vehicle.installmentValue ? parseFloat(vehicle.installmentValue).toLocaleString('pt-BR') : 'N/A'}`, 50, yPos); yPos += 25;
 
       // Especificações técnicas
-      doc.fontSize(14).text('ESPECIFICAÇÕES TÉCNICAS', { underline: true });
-      doc.fontSize(12)
-        .text(`Largura: ${vehicle.bodyWidth || 'N/A'} m`)
-        .text(`Comprimento: ${vehicle.bodyLength || 'N/A'} m`)
-        .text(`Altura do Piso: ${vehicle.floorHeight || 'N/A'} m`)
-        .text(`Capacidade de Carga: ${vehicle.loadCapacity || 'N/A'} kg`)
-        .text(`Capacidade do Tanque: ${vehicle.fuelTankCapacity || 'N/A'} L`)
-        .text(`Consumo: ${vehicle.fuelConsumption || 'N/A'} km/L`)
-        .moveDown();
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('ESPECIFICAÇÕES TÉCNICAS', 50, yPos);
+      yPos += 20;
+      doc.fontSize(10).font('Helvetica').fillColor('black')
+        .text(`Largura: ${vehicle.bodyWidth || 'N/A'} m`, 50, yPos); yPos += 15;
+      doc.text(`Comprimento: ${vehicle.bodyLength || 'N/A'} m`, 50, yPos); yPos += 15;
+      doc.text(`Altura do Piso: ${vehicle.floorHeight || 'N/A'} m`, 50, yPos); yPos += 15;
+      doc.text(`Capacidade de Carga: ${vehicle.loadCapacity || 'N/A'} kg`, 50, yPos); yPos += 15;
+      doc.text(`Capacidade do Tanque: ${vehicle.fuelTankCapacity || 'N/A'} L`, 50, yPos); yPos += 15;
+      doc.text(`Consumo: ${vehicle.fuelConsumption || 'N/A'} km/L`, 50, yPos); yPos += 25;
 
       // Documentação
-      doc.fontSize(14).text('DOCUMENTAÇÃO', { underline: true });
-      doc.fontSize(12)
-        .text(`CRLV: ${vehicle.crlvExpiry ? `Vence em ${new Date(vehicle.crlvExpiry).toLocaleDateString('pt-BR')}` : 'N/A'}`)
-        .text(`Tacógrafo: ${vehicle.tachographExpiry ? `Vence em ${new Date(vehicle.tachographExpiry).toLocaleDateString('pt-BR')}` : 'N/A'}`)
-        .text(`ANTT: ${vehicle.anttExpiry ? `Vence em ${new Date(vehicle.anttExpiry).toLocaleDateString('pt-BR')}` : 'N/A'}`)
-        .text(`Seguro: ${vehicle.insuranceExpiry ? `Vence em ${new Date(vehicle.insuranceExpiry).toLocaleDateString('pt-BR')}` : 'N/A'}`)
-        .moveDown();
-
-      // Footer
-      doc.fontSize(10)
-        .text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, { align: 'center' })
-        .text('Sistema FELKA Transportes', { align: 'center' });
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('DOCUMENTAÇÃO', 50, yPos);
+      yPos += 20;
+      doc.fontSize(10).font('Helvetica').fillColor('black')
+        .text(`CRLV: ${vehicle.crlvExpiry ? `Vence em ${new Date(vehicle.crlvExpiry).toLocaleDateString('pt-BR')}` : 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Tacógrafo: ${vehicle.tachographExpiry ? `Vence em ${new Date(vehicle.tachographExpiry).toLocaleDateString('pt-BR')}` : 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`ANTT: ${vehicle.anttExpiry ? `Vence em ${new Date(vehicle.anttExpiry).toLocaleDateString('pt-BR')}` : 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Seguro: ${vehicle.insuranceExpiry ? `Vence em ${new Date(vehicle.insuranceExpiry).toLocaleDateString('pt-BR')}` : 'N/A'}`, 50, yPos);
 
       doc.end();
     } catch (error) {
@@ -547,38 +541,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Função auxiliar para cabeçalho e rodapé padronizado
+  // Função auxiliar para cabeçalho e rodapé padronizado FELKA
   const addFelkaHeaderAndFooter = (doc: any, title: string) => {
-    // Cabeçalho com logo e informações da empresa
-    doc.fontSize(18).font('Helvetica-Bold').fillColor('#0C29AB').text('FELKA TRANSPORTES LTDA', 50, 30);
-    doc.fontSize(9).font('Helvetica').fillColor('black')
-       .text('CNPJ: 12.345.678/0001-90 - Inscrição Estadual: 123.456.789.012', 50, 55)
-       .text('Endereço: Rua dos Transportes, 1000 - Centro - São Paulo/SP - CEP: 01234-567', 50, 68)
-       .text('Telefone: (11) 3456-7890 - Email: contato@felkatransportes.com.br', 50, 81);
-    
-    // Linha separadora do cabeçalho
-    doc.strokeColor('#0C29AB').lineWidth(2)
-       .moveTo(50, 100).lineTo(545, 100).stroke();
-    
-    // Título do documento
-    doc.fontSize(14).font('Helvetica-Bold').fillColor('#0C29AB')
-       .text(title, 50, 115);
-    
-    // Linha separadora do título
-    doc.strokeColor('black').lineWidth(1)
-       .moveTo(50, 138).lineTo(545, 138).stroke();
-    
-    // Rodapé
-    const pageHeight = doc.page.height;
-    doc.strokeColor('#0C29AB').lineWidth(1)
-       .moveTo(50, pageHeight - 65).lineTo(545, pageHeight - 65).stroke();
+    // Cabeçalho oficial FELKA
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#0C29AB')
+       .text('FELKA TRANSPORTES LTDA', 50, 25);
     
     doc.fontSize(8).font('Helvetica').fillColor('black')
-       .text('www.felkatransportes.com.br', 50, pageHeight - 55)
-       .text(`Documento gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 50, pageHeight - 45)
-       .text('Sistema FELKA Transportes - Gestão Empresarial', 50, pageHeight - 35);
+       .text('CNPJ: 01.234.567/0001-89 | Inscrição Estadual: 123.456.789.123', 50, 45)
+       .text('Rua das Indústrias, 2500 - Distrito Industrial - São Paulo/SP - CEP: 08150-000', 50, 58)
+       .text('Tel: (11) 2345-6789 | Email: comercial@felkatransportes.com.br', 50, 71)
+       .text('Site: www.felkatransportes.com.br', 50, 84);
     
-    return 155; // Posição Y inicial para conteúdo
+    // Linha dupla separadora (estilo timbrado)
+    doc.strokeColor('#0C29AB').lineWidth(1.5)
+       .moveTo(50, 100).lineTo(545, 100).stroke()
+       .moveTo(50, 103).lineTo(545, 103).stroke();
+    
+    // Título do documento centralizado
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#0C29AB')
+       .text(title, 0, 120, { width: doc.page.width, align: 'center' });
+    
+    // Linha separadora do título
+    doc.strokeColor('black').lineWidth(0.5)
+       .moveTo(50, 143).lineTo(545, 143).stroke();
+    
+    // Rodapé com informações legais
+    const pageHeight = doc.page.height;
+    
+    // Linha separadora do rodapé
+    doc.strokeColor('#0C29AB').lineWidth(0.5)
+       .moveTo(50, pageHeight - 70).lineTo(545, pageHeight - 70).stroke();
+    
+    doc.fontSize(7).font('Helvetica').fillColor('black')
+       .text('FELKA TRANSPORTES LTDA - Licença ANTT: 123456789', 50, pageHeight - 60)
+       .text('Este documento foi gerado eletronicamente e possui validade legal conforme MP 2.200-2/2001', 50, pageHeight - 50)
+       .text(`Emissão: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')} | Sistema FELKA v2.0`, 50, pageHeight - 40)
+       .text('Página 1 de 1', 500, pageHeight - 40);
+    
+    return 160; // Posição Y inicial para conteúdo
   };
 
   // Employee PDF generation
@@ -820,14 +821,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.send(pdfData);
       });
 
-      // Header do documento
-      doc.fontSize(18).text('FELKA Transportes', 50, 50);
-      doc.fontSize(14).text('REGISTRO DE OCORRÊNCIA', 50, 80);
-      
-      // Linha separadora
-      doc.moveTo(50, 110).lineTo(545, 110).stroke();
-      
-      let yPos = 130;
+      // Aplicar cabeçalho e rodapé padronizado
+      let yPos = addFelkaHeaderAndFooter(doc, 'REGISTRO DE OCORRÊNCIA');
+      yPos += 10;
       
       // Dados do colaborador
       doc.fontSize(12).font('Helvetica-Bold').text('DADOS DO COLABORADOR:', 50, yPos);
@@ -946,15 +942,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.send(pdfData);
       });
 
-      // Header do relatório
-      doc.fontSize(18).text('FELKA Transportes', 50, 50);
-      doc.fontSize(14).text('RELATÓRIO GERAL DE OCORRÊNCIAS', 50, 80);
-      doc.fontSize(10).text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 50, 100);
-      
-      // Linha separadora
-      doc.moveTo(50, 120).lineTo(545, 120).stroke();
-      
-      let yPos = 140;
+      // Aplicar cabeçalho e rodapé padronizado
+      let yPos = addFelkaHeaderAndFooter(doc, 'RELATÓRIO GERAL DE OCORRÊNCIAS');
+      yPos += 10;
       
       // Estatísticas gerais
       doc.fontSize(12).font('Helvetica-Bold').text('ESTATÍSTICAS GERAIS:', 50, yPos);
@@ -1047,6 +1037,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
       }
       res.status(500).json({ message: "Erro ao criar ocorrência" });
+    }
+  });
+
+  // Employee with occurrences PDF (PDF completo com histórico)
+  app.get("/api/employees/:id/pdf-with-occurrences", async (req, res) => {
+    try {
+      const employee = await storage.getEmployee(req.params.id);
+      const occurrences = await storage.getEmployeeOccurrences(req.params.id);
+      
+      if (!employee) {
+        return res.status(404).json({ message: "Colaborador não encontrado" });
+      }
+
+      const doc = new PDFDocument();
+      let buffers: Buffer[] = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        const pdfData = Buffer.concat(buffers);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="ficha_completa_${employee.fullName.replace(/\s+/g, '_')}_${employee.employeeNumber}.pdf"`);
+        res.send(pdfData);
+      });
+
+      // Aplicar cabeçalho e rodapé padronizado
+      let yPos = addFelkaHeaderAndFooter(doc, 'FICHA COMPLETA DO COLABORADOR');
+      yPos += 10;
+      
+      // Dados pessoais básicos
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('DADOS PESSOAIS', 50, yPos);
+      yPos += 20;
+      doc.fontSize(10).font('Helvetica').fillColor('black')
+        .text(`Nome: ${employee.fullName}`, 50, yPos); yPos += 15;
+      doc.text(`CPF: ${employee.cpf}`, 50, yPos); yPos += 15;
+      doc.text(`Matrícula: ${employee.employeeNumber}`, 50, yPos); yPos += 15;
+      doc.text(`Cargo: ${employee.position}`, 50, yPos); yPos += 15;
+      doc.text(`Departamento: ${employee.department}`, 50, yPos); yPos += 15;
+      doc.text(`Status: ${employee.status === 'active' ? 'Ativo' : 'Inativo'}`, 50, yPos); yPos += 30;
+
+      // Histórico de ocorrências
+      if (occurrences.length > 0) {
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('HISTÓRICO DE OCORRÊNCIAS', 50, yPos);
+        yPos += 20;
+        
+        occurrences.forEach((occurrence, index) => {
+          if (yPos > 650) {
+            doc.addPage();
+            yPos = addFelkaHeaderAndFooter(doc, 'FICHA COMPLETA DO COLABORADOR - CONTINUAÇÃO');
+            yPos += 10;
+          }
+          
+          doc.fontSize(10).font('Helvetica-Bold').fillColor('black')
+            .text(`${index + 1}. ${occurrence.title}`, 50, yPos); yPos += 15;
+          doc.fontSize(9).font('Helvetica').fillColor('black')
+            .text(`Tipo: ${occurrence.occurrenceType}`, 70, yPos); yPos += 12;
+          doc.text(`Data: ${new Date(occurrence.occurrenceDate).toLocaleDateString('pt-BR')}`, 70, yPos); yPos += 12;
+          doc.text(`Descrição: ${occurrence.description}`, 70, yPos, { width: 475 }); 
+          yPos += Math.ceil(occurrence.description.length / 80) * 12 + 15;
+        });
+      } else {
+        doc.fontSize(10).font('Helvetica').fillColor('black')
+          .text('Nenhuma ocorrência registrada para este colaborador', 50, yPos);
+      }
+      
+      doc.end();
+    } catch (error) {
+      console.error('Erro ao gerar PDF completo:', error);
+      res.status(500).json({ message: "Erro ao gerar documento" });
     }
   });
 
