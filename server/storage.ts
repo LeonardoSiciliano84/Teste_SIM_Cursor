@@ -989,6 +989,37 @@ export class MemStorage implements IStorage {
     }));
   }
 
+  async getActiveServiceByDriver(driverId: string): Promise<PranchaService | undefined> {
+    const activeService = Array.from(this.pranchaServices.values()).find(
+      service => service.driverId === driverId && service.isActive === true
+    );
+    
+    if (!activeService) return undefined;
+    
+    return {
+      ...activeService,
+      logs: Array.from(this.serviceLogs.values()).filter(log => log.serviceId === activeService.id)
+    };
+  }
+
+  async updatePranchaService(id: string, updates: Partial<PranchaService>): Promise<PranchaService | undefined> {
+    const service = this.pranchaServices.get(id);
+    if (!service) return undefined;
+    
+    const updatedService = {
+      ...service,
+      ...updates,
+      updatedAt: new Date()
+    };
+    
+    this.pranchaServices.set(id, updatedService);
+    
+    return {
+      ...updatedService,
+      logs: Array.from(this.serviceLogs.values()).filter(log => log.serviceId === id)
+    };
+  }
+
   async getPranchaService(id: string): Promise<PranchaService | undefined> {
     const service = this.pranchaServices.get(id);
     if (!service) return undefined;
@@ -1005,8 +1036,11 @@ export class MemStorage implements IStorage {
       ...serviceData,
       id,
       serviceDays: serviceData.serviceDays || 0,
-      status: "aguardando",
+      status: "em_andamento",
       hrStatus: "nao_verificado",
+      isActive: true, // Marca como ativo para o motorista
+      finalizationNotes: null,
+      finalizationAttachment: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       logs: []

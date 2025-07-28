@@ -47,6 +47,10 @@ export default function DriverPortal() {
     isActive: boolean;
     startTime?: string;
   } | null>(null);
+  const [activeService, setActiveService] = useState<any>(null);
+  const [showFinalizationModal, setShowFinalizationModal] = useState(false);
+  const [finalizationNotes, setFinalizationNotes] = useState('');
+  const [finalizationFile, setFinalizationFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   // Dados mock para Ordens de Coleta
@@ -97,6 +101,25 @@ export default function DriverPortal() {
     queryKey: ["/api/driver/profile"],
     retry: false,
   });
+
+  // Verificar serviço ativo do motorista ao carregar
+  const { data: activeServiceData } = useQuery({
+    queryKey: [`/api/driver/${driverInfo?.id}/active-service`],
+    enabled: !!driverInfo?.id,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (activeServiceData) {
+      setActiveService(activeServiceData);
+      setPranchaService({
+        ocNumber: activeServiceData.ocNumber,
+        startDate: activeServiceData.startDate,
+        isActive: true,
+        startTime: new Date(activeServiceData.createdAt).toLocaleTimeString('pt-BR')
+      });
+    }
+  }, [activeServiceData]);
 
   // Obter veículos disponíveis
   const { data: vehicles = [] } = useQuery({
@@ -557,16 +580,9 @@ export default function DriverPortal() {
               </div>
               <Button 
                 className="w-full bg-red-600 hover:bg-red-700 mt-4"
-                onClick={() => {
-                  const endDate = new Date().toLocaleDateString('pt-BR');
-                  toast({
-                    title: "Serviço Encerrado!",
-                    description: `O.C. ${pranchaService.ocNumber} finalizada em ${endDate}. Total: ${getActiveDays()} dias`,
-                  });
-                  setPranchaService(null);
-                }}
+                onClick={() => setShowFinalizationModal(true)}
               >
-                Encerrar Serviço
+                Finalizar Serviço
               </Button>
             </CardContent>
           </Card>
@@ -1429,6 +1445,141 @@ export default function DriverPortal() {
               <Button className="w-full bg-purple-600 hover:bg-purple-700">
                 Registrar Manutenção
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Finalização de Serviço */}
+        <Dialog open={showFinalizationModal} onOpenChange={setShowFinalizationModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Package className="h-5 w-5 text-red-600" />
+                <span>Finalizar Serviço de Prancha</span>
+              </DialogTitle>
+              <DialogDescription>
+                Confirme a finalização do serviço e adicione observações
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {/* Informações do serviço */}
+              <div className="bg-purple-50 p-3 rounded-lg">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="font-medium text-purple-600">O.C.:</span>
+                    <p>{activeService?.ocNumber}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-purple-600">Dias de Serviço:</span>
+                    <p className="font-bold text-green-600">{getActiveDays()} dias</p>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="font-medium text-purple-600">Veículo:</span>
+                    <p>{activeService?.vehiclePlate} - {activeService?.vehicleName}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="font-medium text-purple-600">Implemento:</span>
+                    <p>{activeService?.implementPlate} - {activeService?.implementName}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notas de finalização */}
+              <div>
+                <Label>Observações de Finalização *</Label>
+                <textarea 
+                  className="w-full p-2 border rounded-md resize-none" 
+                  rows={4}
+                  placeholder="Descreva como foi o serviço, problemas encontrados, etc..."
+                  value={finalizationNotes}
+                  onChange={(e) => setFinalizationNotes(e.target.value)}
+                />
+              </div>
+
+              {/* Upload de anexo */}
+              <div>
+                <Label>Anexar Documento (Opcional)</Label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="w-full p-2 border rounded-md"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setFinalizationFile(e.target.files[0]);
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Formatos aceitos: PDF, JPG, PNG
+                </p>
+                {finalizationFile && (
+                  <p className="text-xs text-green-600 mt-1">
+                    ✓ Arquivo selecionado: {finalizationFile.name}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex space-x-2">
+                <Button 
+                  className="flex-1 bg-gray-500 hover:bg-gray-600"
+                  onClick={() => setShowFinalizationModal(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                  onClick={async () => {
+                    if (!finalizationNotes.trim()) {
+                      toast({
+                        title: "Campo obrigatório",
+                        description: "Preencha as observações de finalização",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    if (!activeService) return;
+
+                    try {
+                      const formData = new FormData();
+                      formData.append('notes', finalizationNotes);
+                      if (finalizationFile) {
+                        formData.append('attachment', finalizationFile);
+                      }
+
+                      const response = await fetch(`/api/prancha-services/${activeService.id}/finalize`, {
+                        method: 'PATCH',
+                        body: formData
+                      });
+
+                      if (response.ok) {
+                        setActiveService(null);
+                        setPranchaService(null);
+                        setShowFinalizationModal(false);
+                        setFinalizationNotes('');
+                        setFinalizationFile(null);
+                        
+                        toast({
+                          title: "Serviço Finalizado",
+                          description: "Serviço de prancha finalizado com sucesso",
+                          variant: "default",
+                        });
+                      } else {
+                        throw new Error('Falha ao finalizar serviço');
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "Erro",
+                        description: "Falha ao finalizar serviço",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  Finalizar Serviço
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

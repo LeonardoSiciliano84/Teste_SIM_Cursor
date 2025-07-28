@@ -1342,6 +1342,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para obter serviço ativo do motorista
+  app.get("/api/driver/:driverId/active-service", async (req, res) => {
+    try {
+      const activeService = await storage.getActiveServiceByDriver(req.params.driverId);
+      res.json(activeService || null);
+    } catch (error) {
+      console.error("Error fetching active service:", error);
+      res.status(500).json({ message: "Failed to fetch active service" });
+    }
+  });
+
+  // Rota para finalizar serviço com anexo
+  app.patch("/api/prancha-services/:id/finalize", upload.single('attachment'), async (req, res) => {
+    try {
+      const { notes } = req.body;
+      const attachmentPath = req.file ? req.file.path : null;
+      
+      const updatedService = await storage.updatePranchaService(req.params.id, {
+        status: "finalizado",
+        isActive: false,
+        finalizationNotes: notes,
+        finalizationAttachment: attachmentPath,
+        endDate: new Date().toISOString().split('T')[0]
+      });
+
+      if (updatedService) {
+        await storage.createServiceLog({
+          serviceId: req.params.id,
+          action: "Serviço Finalizado pelo Motorista",
+          userName: updatedService.driverName,
+          userRole: "Motorista",
+          justification: notes || "Serviço finalizado"
+        });
+
+        res.json(updatedService);
+      } else {
+        res.status(404).json({ message: "Prancha service not found" });
+      }
+    } catch (error) {
+      console.error("Error finalizing service:", error);
+      res.status(500).json({ message: "Failed to finalize service" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

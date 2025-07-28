@@ -4,6 +4,8 @@
 
 This is a comprehensive transport management system called "FELKA Transportes" built with a React frontend and Express.js backend. The application manages vehicles, drivers, routes, bookings, and provides analytics for a transport company. It features a modern UI built with shadcn/ui components and uses Drizzle ORM for database operations with complete CRUD functionality.
 
+The system now includes a complete prancha service management system with persistent services that remain tied to drivers across login sessions, featuring automatic state restoration and trip tracking capabilities.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -114,6 +116,18 @@ The architecture supports easy scaling by separating concerns and using modern, 
 - Integração com sistemas externos
 
 ## Recent Changes and Current Status (January 2025)
+
+### Prancha Service Persistence System ✓ (January 28, 2025)
+**Complete prancha service management with persistent state across login sessions:**
+- Database-backed service persistence with PostgreSQL integration
+- Enhanced schema with isActive, finalizationNotes, and finalizationAttachment fields
+- Service state survives driver logout/login cycles with automatic restoration
+- New API endpoints: GET /api/driver/:driverId/active-service, PATCH /api/prancha-services/:id/finalize
+- Automatic service detection and restoration on driver portal load
+- Service lifecycle management: start → active → finish with file attachments
+- Trip day counter that continues across sessions
+- Finish service modal with notes and file upload capability
+- Updated storage layer with getActiveServiceByDriver and updatePranchaService methods
 
 ### Module 3 - Driver Portal Mobile Interface ✓ (January 28, 2025)
 **Complete driver-specific mobile portal implementation:**

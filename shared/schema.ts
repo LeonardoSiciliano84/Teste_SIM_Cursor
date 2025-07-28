@@ -483,9 +483,12 @@ export const pranchaServices = pgTable("prancha_services", {
   startDate: varchar("start_date").notNull(),
   endDate: varchar("end_date"),
   serviceDays: integer("service_days").default(0),
-  status: varchar("status", { enum: ["aguardando", "confirmado", "negado", "aditado"] }).default("aguardando"),
+  status: varchar("status", { enum: ["aguardando", "confirmado", "negado", "aditado", "em_andamento", "finalizado"] }).default("aguardando"),
   hrStatus: varchar("hr_status", { enum: ["nao_verificado", "verificado"] }).default("nao_verificado"),
   observations: text("observations"),
+  isActive: boolean("is_active").default(false), // Controla se o serviço está ativo para o motorista
+  finalizationNotes: text("finalization_notes"), // Notas de finalização
+  finalizationAttachment: varchar("finalization_attachment"), // Caminho do anexo
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
