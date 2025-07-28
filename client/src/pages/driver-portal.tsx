@@ -571,35 +571,26 @@ export default function DriverPortal() {
                           {selectedVehicleData.preventiveMaintenanceKm || '10.000'} km
                         </Badge>
                       </div>
-                      <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
-                        <span className="text-sm">Troca de Óleo</span>
-                        <Badge variant="outline" className="text-blue-700">
-                          15.000 km
-                        </Badge>
-                      </div>
+
                     </div>
                   </div>
 
-                  {/* Histórico de Combustível */}
+                  {/* Histórico de Manutenção */}
                   <div className="border-t pt-4">
                     <h4 className="font-semibold text-gray-800 mb-3 flex items-center space-x-2">
-                      <Fuel className="h-4 w-4" />
-                      <span>Histórico Recente</span>
+                      <Settings className="h-4 w-4" />
+                      <span>Histórico de Manutenção</span>
                     </h4>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div className="bg-green-50 p-2 rounded">
+                    <div className="grid grid-cols-2 gap-3 text-center">
+                      <div className="bg-green-50 p-3 rounded">
                         <p className="text-xs text-green-600">Última Revisão</p>
-                        <p className="font-bold text-green-800">15 dias</p>
+                        <p className="font-bold text-green-800">15 dias atrás</p>
+                        <p className="text-xs text-gray-500">12/01/2025</p>
                       </div>
-                      <div className="bg-blue-50 p-2 rounded">
-                        <p className="text-xs text-blue-600">KM Atual</p>
-                        <p className="font-bold text-blue-800">
-                          {selectedVehicleData.mileage || '85.420'} km
-                        </p>
-                      </div>
-                      <div className="bg-orange-50 p-2 rounded">
-                        <p className="text-xs text-orange-600">Último Abastecimento</p>
-                        <p className="font-bold text-orange-800">2 dias</p>
+                      <div className="bg-blue-50 p-3 rounded">
+                        <p className="text-xs text-blue-600">Último Rodízio de Pneus</p>
+                        <p className="font-bold text-blue-800">45 dias atrás</p>
+                        <p className="text-xs text-gray-500">13/12/2024</p>
                       </div>
                     </div>
                   </div>
