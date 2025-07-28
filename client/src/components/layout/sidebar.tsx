@@ -8,7 +8,8 @@ import {
   BarChart3, 
   Settings, 
   LogOut, 
-  Truck 
+  Truck,
+  FileText
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ const navigation = [
   { name: "Veículos", href: "/vehicles", icon: Car },
   { name: "Motoristas", href: "/drivers", icon: Users },
   { name: "Colaboradores", href: "/employees", icon: Users },
+  { name: "Ocorrências", href: "/occurrences", icon: FileText },
   { name: "Rotas", href: "/routes", icon: Map },
   { name: "Reservas", href: "/bookings", icon: Package },
   { name: "Análises", href: "/analytics", icon: BarChart3 },

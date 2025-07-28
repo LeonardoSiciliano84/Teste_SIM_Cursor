@@ -98,6 +98,8 @@ export interface IStorage {
 
   // Employee Occurrences methods
   getEmployeeOccurrences(employeeId: string): Promise<EmployeeOccurrence[]>;
+  getEmployeeOccurrence(occurrenceId: string): Promise<EmployeeOccurrence | undefined>;
+  getAllOccurrences(): Promise<EmployeeOccurrence[]>;
   createEmployeeOccurrence(occurrence: InsertEmployeeOccurrence): Promise<EmployeeOccurrence>;
   updateEmployeeOccurrence(id: string, occurrence: Partial<InsertEmployeeOccurrence>): Promise<EmployeeOccurrence | undefined>;
   deleteEmployeeOccurrence(id: string): Promise<boolean>;
@@ -703,6 +705,16 @@ export class MemStorage implements IStorage {
   // Employee Occurrences methods
   async getEmployeeOccurrences(employeeId: string): Promise<EmployeeOccurrence[]> {
     return Array.from(this.employeeOccurrences.values()).filter(o => o.employeeId === employeeId);
+  }
+
+  async getEmployeeOccurrence(occurrenceId: string): Promise<EmployeeOccurrence | undefined> {
+    return this.employeeOccurrences.get(occurrenceId);
+  }
+
+  async getAllOccurrences(): Promise<EmployeeOccurrence[]> {
+    return Array.from(this.employeeOccurrences.values()).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
   async createEmployeeOccurrence(occurrence: InsertEmployeeOccurrence): Promise<EmployeeOccurrence> {

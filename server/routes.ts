@@ -703,6 +703,233 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === EMPLOYEE OCCURRENCES ROUTES ===
+
+  // Listar ocorrências de um colaborador
+  app.get("/api/employees/:id/occurrences", async (req, res) => {
+    try {
+      const occurrences = await storage.getEmployeeOccurrences(req.params.id);
+      res.json(occurrences);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao carregar ocorrências" });
+    }
+  });
+
+  // Criar nova ocorrência
+  app.post("/api/employees/:id/occurrences", async (req, res) => {
+    try {
+      const occurrenceData = insertEmployeeOccurrenceSchema.parse({
+        ...req.body,
+        employeeId: req.params.id
+      });
+      const occurrence = await storage.createEmployeeOccurrence(occurrenceData);
+      res.status(201).json(occurrence);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Erro ao criar ocorrência" });
+    }
+  });
+
+  // Gerar documento PDF da ocorrência
+  app.get("/api/employees/:id/occurrences/:occurrenceId/document", async (req, res) => {
+    try {
+      const employee = await storage.getEmployee(req.params.id);
+      const occurrence = await storage.getEmployeeOccurrence(req.params.occurrenceId);
+      
+      if (!employee || !occurrence) {
+        return res.status(404).json({ message: "Colaborador ou ocorrência não encontrado" });
+      }
+
+      const doc = new PDFDocument();
+      let buffers: Buffer[] = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        const pdfData = Buffer.concat(buffers);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="ocorrencia-${occurrence.id}.pdf"`);
+        res.send(pdfData);
+      });
+
+      // Header do documento
+      doc.fontSize(18).text('FELKA Transportes', 50, 50);
+      doc.fontSize(14).text('REGISTRO DE OCORRÊNCIA', 50, 80);
+      
+      // Linha separadora
+      doc.moveTo(50, 110).lineTo(545, 110).stroke();
+      
+      let yPos = 130;
+      
+      // Dados do colaborador
+      doc.fontSize(12).font('Helvetica-Bold').text('DADOS DO COLABORADOR:', 50, yPos);
+      yPos += 20;
+      doc.font('Helvetica').text(`Nome: ${employee.fullName}`, 50, yPos);
+      yPos += 15;
+      doc.text(`CPF: ${employee.cpf}`, 50, yPos);
+      yPos += 15;
+      doc.text(`Matrícula: ${employee.employeeNumber}`, 50, yPos);
+      yPos += 15;
+      doc.text(`Cargo: ${employee.position}`, 50, yPos);
+      yPos += 15;
+      doc.text(`Departamento: ${employee.department}`, 50, yPos);
+      yPos += 30;
+
+      // Dados da ocorrência
+      doc.font('Helvetica-Bold').text('DADOS DA OCORRÊNCIA:', 50, yPos);
+      yPos += 20;
+      doc.font('Helvetica').text(`Título: ${occurrence.title}`, 50, yPos);
+      yPos += 15;
+      doc.text(`Tipo: ${occurrence.occurrenceType}`, 50, yPos);
+      yPos += 15;
+      doc.text(`Data da Ocorrência: ${new Date(occurrence.occurrenceDate).toLocaleDateString('pt-BR')}`, 50, yPos);
+      yPos += 15;
+      doc.text(`Solicitante: ${occurrence.requestedById}`, 50, yPos);
+      yPos += 20;
+
+      // Descrição
+      doc.font('Helvetica-Bold').text('DESCRIÇÃO:', 50, yPos);
+      yPos += 15;
+      doc.font('Helvetica').text(occurrence.description, 50, yPos, { width: 495 });
+      yPos += Math.ceil(occurrence.description.length / 80) * 15 + 20;
+
+      // Ação requerida (se houver)
+      if ((occurrence as any).actionRequired) {
+        doc.font('Helvetica-Bold').text('AÇÃO REQUERIDA:', 50, yPos);
+        yPos += 15;
+        doc.font('Helvetica').text((occurrence as any).actionRequired, 50, yPos, { width: 495 });
+        yPos += Math.ceil(((occurrence as any).actionRequired as string).length / 80) * 15 + 20;
+      }
+
+      // Assinaturas
+      yPos += 30;
+      doc.font('Helvetica-Bold').text('ASSINATURAS:', 50, yPos);
+      yPos += 40;
+      
+      doc.text('_________________________________', 50, yPos);
+      doc.text('Colaborador', 50, yPos + 15);
+      
+      doc.text('_________________________________', 300, yPos);
+      doc.text('Gestor Solicitante', 300, yPos + 15);
+      
+      yPos += 60;
+      doc.text('_________________________________', 50, yPos);
+      doc.text('RH', 50, yPos + 15);
+      
+      doc.text('_________________________________', 300, yPos);
+      doc.text('Data: ___/___/_____', 300, yPos + 15);
+
+      doc.end();
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      res.status(500).json({ message: "Erro ao gerar documento" });
+    }
+  });
+
+  // Atualizar ocorrência
+  app.patch("/api/employees/:id/occurrences/:occurrenceId", async (req, res) => {
+    try {
+      const occurrence = await storage.updateEmployeeOccurrence(req.params.occurrenceId, req.body);
+      if (!occurrence) {
+        return res.status(404).json({ message: "Ocorrência não encontrada" });
+      }
+      res.json(occurrence);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao atualizar ocorrência" });
+    }
+  });
+
+  // Deletar ocorrência
+  app.delete("/api/employees/:id/occurrences/:occurrenceId", async (req, res) => {
+    try {
+      const success = await storage.deleteEmployeeOccurrence(req.params.occurrenceId);
+      if (!success) {
+        return res.status(404).json({ message: "Ocorrência não encontrada" });
+      }
+      res.json({ message: "Ocorrência removida com sucesso" });
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao remover ocorrência" });
+    }
+  });
+
+  // Listar todas as ocorrências (para relatório geral)
+  app.get("/api/occurrences/all", async (req, res) => {
+    try {
+      const allOccurrences = await storage.getAllOccurrences();
+      res.json(allOccurrences);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao carregar ocorrências" });
+    }
+  });
+
+  // Gerar relatório completo de ocorrências
+  app.get("/api/occurrences/report", async (req, res) => {
+    try {
+      const allOccurrences = await storage.getAllOccurrences();
+      const employees = await storage.getEmployees();
+      
+      const doc = new PDFDocument();
+      let buffers: Buffer[] = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        const pdfData = Buffer.concat(buffers);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="relatorio-ocorrencias-${new Date().toISOString().split('T')[0]}.pdf"`);
+        res.send(pdfData);
+      });
+
+      // Header do relatório
+      doc.fontSize(18).text('FELKA Transportes', 50, 50);
+      doc.fontSize(14).text('RELATÓRIO GERAL DE OCORRÊNCIAS', 50, 80);
+      doc.fontSize(10).text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 50, 100);
+      
+      // Linha separadora
+      doc.moveTo(50, 120).lineTo(545, 120).stroke();
+      
+      let yPos = 140;
+      
+      // Estatísticas gerais
+      doc.fontSize(12).font('Helvetica-Bold').text('ESTATÍSTICAS GERAIS:', 50, yPos);
+      yPos += 20;
+      doc.font('Helvetica').text(`Total de Ocorrências: ${allOccurrences.length}`, 50, yPos);
+      yPos += 15;
+      doc.text(`Colaboradores Afetados: ${new Set(allOccurrences.map((o: any) => o.employeeId)).size}`, 50, yPos);
+      yPos += 30;
+
+      // Lista de ocorrências
+      doc.font('Helvetica-Bold').text('HISTÓRICO DE OCORRÊNCIAS:', 50, yPos);
+      yPos += 20;
+
+      allOccurrences.forEach((occurrence: any, index: number) => {
+        if (yPos > 700) {
+          doc.addPage();
+          yPos = 50;
+        }
+
+        const employee = employees.find((emp: any) => emp.id === occurrence.employeeId);
+        const employeeName = employee ? employee.fullName : 'Colaborador não encontrado';
+
+        doc.font('Helvetica-Bold').text(`${index + 1}. ${occurrence.title}`, 50, yPos);
+        yPos += 15;
+        doc.font('Helvetica').text(`Colaborador: ${employeeName}`, 60, yPos);
+        yPos += 12;
+        doc.text(`Tipo: ${occurrence.occurrenceType}`, 60, yPos);
+        yPos += 12;
+        doc.text(`Data: ${new Date(occurrence.occurrenceDate).toLocaleDateString('pt-BR')}`, 60, yPos);
+        yPos += 12;
+        doc.text(`Solicitante: ${occurrence.requestedById}`, 60, yPos);
+        yPos += 12;
+        doc.text(`Descrição: ${occurrence.description}`, 60, yPos, { width: 485 });
+        yPos += Math.ceil(occurrence.description.length / 80) * 12 + 15;
+      });
+
+      doc.end();
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+      res.status(500).json({ message: "Erro ao gerar relatório" });
+    }
+  });
+
   // Employee Dependents routes
   app.get("/api/employees/:id/dependents", async (req, res) => {
     try {

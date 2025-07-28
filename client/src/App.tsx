@@ -16,6 +16,7 @@ import { EmployeesPage } from "@/pages/employees";
 import { EmployeeNewPage } from "@/pages/employee-new";
 import { EmployeeDetailsPage } from "@/pages/employee-details";
 import { EmployeeEditPage } from "@/pages/employee-edit";
+import { OccurrencesPage } from "@/pages/occurrences";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import VehicleEdit from "@/components/vehicles/vehicle-edit";
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/employees/new" component={EmployeeNewPage} />
       <Route path="/employees/:id" component={EmployeeDetailsPage} />
       <Route path="/employees/edit/:id" component={EmployeeEditPage} />
+      <Route path="/occurrences" component={OccurrencesPage} />
       <Route path="/routes" component={Routes} />
       <Route path="/bookings" component={Bookings} />
       <Route path="/analytics" component={Analytics} />

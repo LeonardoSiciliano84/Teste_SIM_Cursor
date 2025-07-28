@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { type Employee } from "@shared/schema";
 import { DocumentManagement } from "@/components/employees/document-management";
+import { OccurrenceManagement } from "@/components/employees/occurrence-management";
 
 export function EmployeeDetailsPage() {
   const { id } = useParams();
@@ -114,11 +115,12 @@ export function EmployeeDetailsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
           <TabsTrigger value="professional">Profissionais</TabsTrigger>
           <TabsTrigger value="documents">Documentos</TabsTrigger>
+          <TabsTrigger value="occurrences">Ocorrências</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -349,6 +351,10 @@ export function EmployeeDetailsPage() {
 
         <TabsContent value="documents" className="space-y-6">
           <DocumentManagement employeeId={id!} employeeName={employee.fullName} />
+        </TabsContent>
+
+        <TabsContent value="occurrences" className="space-y-6">
+          <OccurrenceManagement employeeId={id!} employeeName={employee.fullName} />
         </TabsContent>
       </Tabs>
     </div>
