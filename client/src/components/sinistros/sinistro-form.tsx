@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,6 +13,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertTriangle, Plus, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+// Componente para seleção de veículos
+function VehicleSelect({ onValueChange, value }: { onValueChange: (value: string) => void; value: string }) {
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ["/api/vehicles"],
+  });
+
+  return (
+    <Select onValueChange={onValueChange} value={value}>
+      <FormControl>
+        <SelectTrigger>
+          <SelectValue placeholder="Selecione a placa" />
+        </SelectTrigger>
+      </FormControl>
+      <SelectContent>
+        {(vehicles as any[]).map((vehicle: any) => (
+          <SelectItem key={vehicle.id} value={vehicle.licensePlate}>
+            {vehicle.licensePlate} - {vehicle.model}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 const sinistroFormSchema = z.object({
   tipo: z.string().min(1, "Tipo é obrigatório"),
@@ -159,9 +183,7 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Placa da Tração *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="ABC-1234" />
-                    </FormControl>
+                    <VehicleSelect onValueChange={field.onChange} value={field.value} />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -271,13 +293,25 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Condições de Trajeto e Carga *</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      placeholder="Descreva as condições do trajeto, estado da carga, condições climáticas, pista..."
-                      className="min-h-20"
-                    />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione as condições" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="normal_seco">Normal - Pista Seca</SelectItem>
+                      <SelectItem value="normal_molhado">Normal - Pista Molhada</SelectItem>
+                      <SelectItem value="carga_completa">Carga Completa</SelectItem>
+                      <SelectItem value="carga_parcial">Carga Parcial</SelectItem>
+                      <SelectItem value="vazio">Veículo Vazio</SelectItem>
+                      <SelectItem value="chuva_intensa">Chuva Intensa</SelectItem>
+                      <SelectItem value="neblina">Neblina/Baixa Visibilidade</SelectItem>
+                      <SelectItem value="pista_obras">Pista em Obras</SelectItem>
+                      <SelectItem value="transito_intenso">Trânsito Intenso</SelectItem>
+                      <SelectItem value="carga_perigosa">Carga Perigosa</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

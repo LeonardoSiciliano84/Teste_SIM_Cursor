@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,8 +11,32 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Camera, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+// Componente para seleção de colaboradores
+function EmployeeSelect({ onValueChange, value }: { onValueChange: (value: string) => void; value: string }) {
+  const { data: employees = [] } = useQuery({
+    queryKey: ["/api/employees"],
+  });
+
+  return (
+    <Select onValueChange={onValueChange} value={value}>
+      <FormControl>
+        <SelectTrigger>
+          <SelectValue placeholder="Selecione o colaborador" />
+        </SelectTrigger>
+      </FormControl>
+      <SelectContent>
+        {(employees as any[]).map((employee: any) => (
+          <SelectItem key={employee.id} value={employee.fullName}>
+            {employee.fullName} - {employee.position || "Sem cargo"}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 const sinistroFormSchema = z.object({
   tipo: z.string().min(1, "Tipo é obrigatório"),
@@ -195,9 +219,7 @@ export function SinistroFormGeneral({ userInfo, trigger }: SinistroFormGeneralPr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Nome do Envolvido *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Nome completo" />
-                    </FormControl>
+                    <EmployeeSelect onValueChange={field.onChange} value={field.value} />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -385,6 +407,48 @@ export function SinistroFormGeneral({ userInfo, trigger }: SinistroFormGeneralPr
                 </FormItem>
               )}
             />
+
+            {/* Upload de Imagens */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Camera className="w-5 h-5 text-red-600" />
+                <h4 className="font-semibold text-gray-800">Upload de Imagens</h4>
+                <span className="text-sm text-red-600">(Máximo 6)</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[1, 2, 3, 4, 5, 6].map((index) => (
+                  <div key={index} className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                    <Camera className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-sm text-gray-500">Imagem {index}</p>
+                    <Input type="file" accept="image/*" className="mt-2" />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">
+                Formatos suportados: JPG, PNG. Máximo 5MB por imagem.
+              </p>
+            </div>
+
+            {/* Upload de Documentos */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Upload className="w-5 h-5 text-blue-600" />
+                <h4 className="font-semibold text-gray-800">Anexar Documentos</h4>
+                <span className="text-sm text-gray-600">(Relatórios, laudos, etc.)</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((index) => (
+                  <div key={index} className="border-2 border-dashed border-blue-300 rounded-lg p-4 text-center">
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-blue-400" />
+                    <p className="text-sm text-gray-500">Documento {index}</p>
+                    <Input type="file" accept=".pdf,.doc,.docx,.txt" className="mt-2" />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">
+                Formatos suportados: PDF, DOC, DOCX, TXT. Máximo 10MB por arquivo.
+              </p>
+            </div>
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button

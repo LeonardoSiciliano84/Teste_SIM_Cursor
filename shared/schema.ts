@@ -565,13 +565,17 @@ export const sinistros = pgTable("sinistros", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tipo: varchar("tipo").notNull(), // veicular, trabalhista_cat, interno_base, externo_cliente, ambiental, falha_epi, quase_acidente
   classificacao: varchar("classificacao"), // erro_humano, falha_tecnica, omissao_epi, etc
-  placa: varchar("placa"), // se aplicável
+  placaTracao: varchar("placa_tracao"), // nova estrutura para sinistros veiculares
+  tipoColisao: varchar("tipo_colisao"),
+  percepcaoGravidade: varchar("percepcao_gravidade"),
+  quemSofreuAvaria: varchar("quem_sofreu_avaria"),
+  condicoesTrajeto: varchar("condicoes_trajeto"),
   nomeEnvolvido: varchar("nome_envolvido").notNull(),
   cargoEnvolvido: varchar("cargo_envolvido"),
-  dataOcorrido: timestamp("data_ocorrido").notNull(),
+  dataOcorrido: varchar("data_ocorrido").notNull(),
   horaOcorrido: varchar("hora_ocorrido").notNull(),
-  local: varchar("local").notNull(), // base, cliente, rodovia, etc
-  descricao: text("descricao").notNull(),
+  localEndereco: text("local_endereco").notNull(), // mudou de local para localEndereco
+  observacoes: text("observacoes").notNull(), // mudou de descricao para observacoes
   vitimas: boolean("vitimas").default(false),
   descricaoVitimas: text("descricao_vitimas"),
   testemunhas: text("testemunhas"),
