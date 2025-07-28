@@ -61,8 +61,8 @@ export default function ChecklistsPage() {
     driverName: "",
     startDate: "",
     endDate: "",
-    status: "",
-    verificationStatus: "",
+    status: "todos",
+    verificationStatus: "todos",
     baseOrigin: "",
   });
   const [showDetails, setShowDetails] = useState(false);
@@ -76,7 +76,7 @@ export default function ChecklistsPage() {
     queryFn: () => {
       const searchParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) searchParams.append(key, value);
+        if (value && value !== 'todos') searchParams.append(key, value);
       });
       return apiRequest(`/api/checklists?${searchParams.toString()}`);
     },
@@ -120,8 +120,8 @@ export default function ChecklistsPage() {
       driverName: "",
       startDate: "",
       endDate: "",
-      status: "",
-      verificationStatus: "",
+      status: "todos",
+      verificationStatus: "todos",
       baseOrigin: "",
     });
   };
@@ -154,7 +154,7 @@ export default function ChecklistsPage() {
   const handleExportExcel = () => {
     const searchParams = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) searchParams.append(key, value);
+      if (value && value !== 'todos') searchParams.append(key, value);
     });
     window.open(`/api/checklists/export/xlsx?${searchParams.toString()}`, '_blank');
   };
@@ -241,7 +241,7 @@ export default function ChecklistsPage() {
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os status</SelectItem>
+                  <SelectItem value="todos">Todos os status</SelectItem>
                   <SelectItem value="saida_registrada">Saída Registrada</SelectItem>
                   <SelectItem value="viagem_em_andamento">Em Andamento</SelectItem>
                   <SelectItem value="retorno_registrado">Retorno Registrado</SelectItem>
@@ -256,7 +256,7 @@ export default function ChecklistsPage() {
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="verificado">Verificado</SelectItem>
                   <SelectItem value="nao_verificado">Não Verificado</SelectItem>
                 </SelectContent>
