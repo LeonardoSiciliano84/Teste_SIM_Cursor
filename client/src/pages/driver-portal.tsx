@@ -109,19 +109,40 @@ export default function DriverPortal() {
     retry: false,
   });
 
+  // Função para calcular dias de serviço ativo
+  const getActiveDays = () => {
+    if (!activeService?.startDate) return 0;
+    
+    try {
+      const startDate = new Date(activeService.startDate);
+      const currentDate = new Date();
+      
+      // Calcular diferença em milissegundos
+      const diffTime = currentDate.getTime() - startDate.getTime();
+      
+      // Converter para dias (incluindo o dia atual)
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      
+      return Math.max(1, diffDays); // Mínimo 1 dia
+    } catch (error) {
+      console.error('Erro ao calcular dias:', error);
+      return 1;
+    }
+  };
+
   useEffect(() => {
-    if (activeServiceData) {
+    if (activeServiceData && typeof activeServiceData === 'object') {
       setActiveService(activeServiceData);
       setPranchaService({
-        ocNumber: activeServiceData.ocNumber,
-        startDate: activeServiceData.startDate,
+        ocNumber: (activeServiceData as any).ocNumber || '',
+        startDate: (activeServiceData as any).startDate || '',
         isActive: true,
-        startTime: new Date(activeServiceData.createdAt).toLocaleTimeString('pt-BR')
+        startTime: (activeServiceData as any).createdAt ? new Date((activeServiceData as any).createdAt).toLocaleTimeString('pt-BR') : ''
       });
       
       // Definir os veículos selecionados automaticamente
-      setSelectedVehicle(activeServiceData.vehicleId);
-      setSelectedImplement(activeServiceData.implementId);
+      setSelectedVehicle((activeServiceData as any).vehicleId || '');
+      setSelectedImplement((activeServiceData as any).implementId || '');
     }
   }, [activeServiceData]);
 
@@ -152,21 +173,7 @@ export default function DriverPortal() {
   const isPranchaImplement = selectedImplementData && 
     selectedImplementData.name.toLowerCase().includes('prancha');
 
-  // Calcular dias de serviço ativo
-  const getActiveDays = () => {
-    if (!activeService?.startDate && !pranchaService?.startDate) return 0;
-    const startDateStr = activeService?.startDate || pranchaService?.startDate;
-    const startDate = new Date(startDateStr);
-    const today = new Date();
-    
-    // Zerar horas para calcular dias completos
-    startDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-    
-    const diffTime = today.getTime() - startDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir o dia de início
-    return Math.max(diffDays, 1); // Mínimo 1 dia
-  };
+
 
   // Função para visualizar documentos
   const handleViewDocuments = (vehicleId: string) => {
@@ -886,7 +893,7 @@ export default function DriverPortal() {
 
               <Button 
                 className="w-full bg-purple-600 hover:bg-purple-700"
-                onClick={() => {
+                onClick={async () => {
                   const ocNumber = (document.getElementById('oc-number') as HTMLInputElement)?.value;
                   const startDate = (document.getElementById('start-date') as HTMLInputElement)?.value;
                   
@@ -899,19 +906,70 @@ export default function DriverPortal() {
                     return;
                   }
 
-                  setPranchaService({
-                    ocNumber,
-                    startDate: new Date(startDate).toLocaleDateString('pt-BR'),
-                    isActive: true,
-                    startTime: new Date().toTimeString().slice(0,5)
-                  });
+                  if (!selectedVehicleData || !selectedImplementData || !driverInfo) {
+                    toast({
+                      title: "Dados incompletos",
+                      description: "Selecione um veículo e implemento antes de registrar o serviço",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
 
-                  toast({
-                    title: "Serviço Iniciado!",
-                    description: `O.C. ${ocNumber} registrada com sucesso. Serviço ativo.`,
-                  });
+                  try {
+                    const startTime = new Date().toTimeString().slice(0,5);
+                    
+                    // Criar serviço no backend
+                    const response = await fetch('/api/prancha-services', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        vehicleId: selectedVehicleData.id,
+                        vehiclePlate: selectedVehicleData.plate,
+                        vehicleName: selectedVehicleData.name,
+                        implementId: selectedImplementData.id,
+                        implementPlate: selectedImplementData.plate,
+                        implementName: selectedImplementData.name,
+                        driverId: driverInfo.id,
+                        driverName: driverInfo.fullName,
+                        driverRegistration: driverInfo.employeeNumber,
+                        ocNumber,
+                        startDate,
+                        observations: `Serviço iniciado em ${startDate} às ${startTime}`
+                      }),
+                    });
 
-                  setShowPranchaOC(false);
+                    if (response.ok) {
+                      const newService = await response.json();
+                      setActiveService(newService);
+                      setPranchaService({
+                        ocNumber,
+                        startDate: new Date(startDate).toLocaleDateString('pt-BR'),
+                        isActive: true,
+                        startTime
+                      });
+                      
+                      // Revalidar dados do serviço ativo
+                      refetchActiveService();
+                      
+                      setShowPranchaOC(false);
+                      
+                      toast({
+                        title: "O.C. de Prancha Registrada!",
+                        description: `Serviço iniciado em ${new Date(startDate).toLocaleDateString('pt-BR')} às ${startTime}`,
+                      });
+                    } else {
+                      throw new Error('Falha ao criar serviço');
+                    }
+                  } catch (error) {
+                    console.error('Erro ao criar serviço:', error);
+                    toast({
+                      title: "Erro",
+                      description: "Falha ao registrar o serviço. Tente novamente.",
+                      variant: "destructive"
+                    });
+                  }
                 }}
               >
                 Confirmar Serviço

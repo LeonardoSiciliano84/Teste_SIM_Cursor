@@ -545,3 +545,12 @@ export type EmployeeMovement = typeof employeeMovements.$inferSelect;
 
 export type InsertEmployeeFile = z.infer<typeof insertEmployeeFileSchema>;
 export type EmployeeFile = typeof employeeFiles.$inferSelect;
+
+// Prancha Service schemas
+export const insertPranchaServiceSchema = createInsertSchema(pranchaServices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertPranchaServiceZod = z.infer<typeof insertPranchaServiceSchema>;

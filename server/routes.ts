@@ -16,7 +16,8 @@ import {
   insertEmployeeDocumentSchema,
   insertEmployeeOccurrenceSchema,
   insertEmployeeMovementSchema,
-  insertEmployeeFileSchema
+  insertEmployeeFileSchema,
+  insertPranchaServiceSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -1223,6 +1224,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching prancha services:", error);
       res.status(500).json({ message: "Failed to fetch prancha services" });
+    }
+  });
+
+  app.post("/api/prancha-services", async (req, res) => {
+    try {
+      const serviceData = insertPranchaServiceSchema.parse(req.body);
+      const service = await storage.createPranchaService(serviceData);
+      res.status(201).json(service);
+    } catch (error) {
+      console.error("Error creating prancha service:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create prancha service" });
     }
   });
 

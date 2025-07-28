@@ -983,23 +983,24 @@ export class MemStorage implements IStorage {
 
   // Prancha Service methods
   async getPranchaServices(): Promise<PranchaService[]> {
-    return Array.from(this.pranchaServices.values()).map(service => ({
-      ...service,
-      logs: Array.from(this.serviceLogs.values()).filter(log => log.serviceId === service.id)
-    }));
+    return Array.from(this.pranchaServices.values());
   }
 
   async getActiveServiceByDriver(driverId: string): Promise<PranchaService | undefined> {
-    const activeService = Array.from(this.pranchaServices.values()).find(
+    console.log(`Looking for active service for driver: ${driverId}`);
+    const allServices = Array.from(this.pranchaServices.values());
+    console.log(`Total services: ${allServices.length}`);
+    
+    allServices.forEach(service => {
+      console.log(`Service ID: ${service.id}, driverId: ${service.driverId}, isActive: ${service.isActive}`);
+    });
+    
+    const activeService = allServices.find(
       service => service.driverId === driverId && service.isActive === true
     );
     
-    if (!activeService) return undefined;
-    
-    return {
-      ...activeService,
-      logs: Array.from(this.serviceLogs.values()).filter(log => log.serviceId === activeService.id)
-    };
+    console.log(`Found active service:`, activeService ? 'YES' : 'NO');
+    return activeService;
   }
 
   async updatePranchaService(id: string, updates: Partial<PranchaService>): Promise<PranchaService | undefined> {
@@ -1013,21 +1014,11 @@ export class MemStorage implements IStorage {
     };
     
     this.pranchaServices.set(id, updatedService);
-    
-    return {
-      ...updatedService,
-      logs: Array.from(this.serviceLogs.values()).filter(log => log.serviceId === id)
-    };
+    return updatedService;
   }
 
   async getPranchaService(id: string): Promise<PranchaService | undefined> {
-    const service = this.pranchaServices.get(id);
-    if (!service) return undefined;
-    
-    return {
-      ...service,
-      logs: Array.from(this.serviceLogs.values()).filter(log => log.serviceId === id)
-    };
+    return this.pranchaServices.get(id);
   }
 
   async createPranchaService(serviceData: InsertPranchaService): Promise<PranchaService> {
@@ -1042,11 +1033,12 @@ export class MemStorage implements IStorage {
       finalizationNotes: null,
       finalizationAttachment: null,
       createdAt: new Date(),
-      updatedAt: new Date(),
-      logs: []
+      updatedAt: new Date()
     };
     
+    console.log(`Creating service with ID: ${id}, driverId: ${service.driverId}, isActive: ${service.isActive}`);
     this.pranchaServices.set(id, service);
+    console.log(`Total services in memory: ${this.pranchaServices.size}`);
     return service;
   }
 
