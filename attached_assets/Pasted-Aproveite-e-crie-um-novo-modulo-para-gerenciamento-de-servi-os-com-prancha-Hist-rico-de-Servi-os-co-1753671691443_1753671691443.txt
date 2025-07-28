@@ -1,0 +1,58 @@
+Aproveite e crie um novo modulo para gerenciamento de serviços com prancha. Histórico de Serviços com Prancha
+(Submódulo vinculado ao Módulo Motorista – acesso por gestores)
+🔎 Objetivo:
+Permitir o acompanhamento e validação gerencial dos registros de trabalho realizados com implementos do tipo prancha, conforme informados pelos motoristas via tela do motorista no sistema. A funcionalidade garante rastreabilidade, transparência e segurança no controle de ordens de coleta (O.C.) e tempo de operação em campo.
+________________________________________
+👤 Acesso por perfil:
+•	Gestor da Logística:
+o	Visualiza todos os registros
+o	Pode confirmar, negar ou editar datas de início e fim do serviço
+o	Obrigatoriedade de registrar justificativa/observação em qualquer ação
+•	RH (Recursos Humanos):
+o	Tem acesso somente visual aos registros
+o	Pode alterar o status de verificação para "Verificado" ou "Não verificado"
+o	Sem permissão para editar ou alterar os dados
+________________________________________
+📄 Dados apresentados na tela de histórico:
+Campo	Descrição
+Veículo	Placa e dados do veículo tracionado
+Implemento	Placa e tipo (detectado como prancha)
+Motorista	Nome e matrícula (integrado ao BD de colaboradores)
+Nº da O.C.	Ordem de Coleta informada pelo motorista
+Data de Início	Informada no início do serviço pelo motorista
+Data de Encerramento	Inserida pelo motorista ao finalizar o serviço
+Dias de Serviço	Contador automático baseado nas datas
+Situação	Aguardando validação, Confirmado, Negado, Aditado
+Status RH	Verificado ou Não verificado
+________________________________________
+⚙️ Ações disponíveis:
+🔧 Para o Gestor da Logística:
+•	Confirmar serviço
+o	Gera registro definitivo no sistema
+o	Exige preenchimento de observação obrigatória
+•	Negar registro
+o	Solicita justificativa obrigatória
+o	Registro marcado como negado no histórico
+•	Aditar datas (corrigir)
+o	Permite alteração de datas de início ou fim
+o	Exige motivo do ajuste via campo de observação
+o	Sistema recalcula contador de dias automaticamente
+✅ Para o RH:
+•	Visualizar todos os registros
+•	Atualizar status para “Verificado” ou “Não verificado”
+o	Apenas para fins de validação interna do RH
+o	Sem permissão de edição ou manipulação dos dados
+________________________________________
+🔐 Segurança e Logs:
+•	Todos os registros de ações (confirmação, negação, aditamentos, status RH) são armazenados com:
+o	Nome do usuário
+o	Cargo
+o	Data e hora
+o	Justificativa inserida
+•	Logs disponíveis para auditoria interna
+________________________________________
+Opções adionais. 
+•	Filtro por motorista, veículo, período ou status
+•	Exportação em PDF ou Excel
+•	Integração com folha de pagamento para controle de jornada estendida
+Notificações automáticas para pendências de validação

@@ -23,7 +23,11 @@ import {
   type EmployeeMovement,
   type InsertEmployeeMovement,
   type EmployeeFile,
-  type InsertEmployeeFile
+  type InsertEmployeeFile,
+  type PranchaService,
+  type InsertPranchaService,
+  type ServiceLog,
+  type InsertServiceLog
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -112,6 +116,16 @@ export interface IStorage {
   getEmployeeFiles(employeeId: string): Promise<EmployeeFile[]>;
   createEmployeeFile(file: InsertEmployeeFile): Promise<EmployeeFile>;
   deleteEmployeeFile(id: string): Promise<boolean>;
+
+  // Prancha Service methods
+  getPranchaServices(): Promise<PranchaService[]>;
+  getPranchaService(id: string): Promise<PranchaService | undefined>;
+  createPranchaService(service: InsertPranchaService): Promise<PranchaService>;
+  updatePranchaService(id: string, service: Partial<InsertPranchaService>): Promise<PranchaService | undefined>;
+  
+  // Service Log methods
+  getServiceLogs(serviceId: string): Promise<ServiceLog[]>;
+  createServiceLog(log: InsertServiceLog): Promise<ServiceLog>;
 }
 
 export class MemStorage implements IStorage {
@@ -127,6 +141,8 @@ export class MemStorage implements IStorage {
   private employeeOccurrences: Map<string, EmployeeOccurrence>;
   private employeeMovements: Map<string, EmployeeMovement>;
   private employeeFiles: Map<string, EmployeeFile>;
+  private pranchaServices: Map<string, PranchaService>;
+  private serviceLogs: Map<string, ServiceLog>;
 
   constructor() {
     this.users = new Map();
@@ -141,6 +157,8 @@ export class MemStorage implements IStorage {
     this.employeeOccurrences = new Map();
     this.employeeMovements = new Map();
     this.employeeFiles = new Map();
+    this.pranchaServices = new Map();
+    this.serviceLogs = new Map();
     
     // Initialize with default admin user and sample data
     this.initializeDefaultData();
@@ -415,6 +433,58 @@ export class MemStorage implements IStorage {
 
     routes.forEach(route => {
       this.routes.set(route.id, route);
+    });
+
+    // Dados de serviços de prancha para teste
+    const pranchaServicesData = [
+      {
+        id: randomUUID(),
+        vehicleId: "1",
+        vehiclePlate: "ABC-1234",
+        vehicleName: "Scania R 450",
+        implementId: "3",
+        implementPlate: "MNO-7890",
+        implementName: "Prancha Rebaixada",
+        driverId: "driver1",
+        driverName: "João Silva",
+        driverRegistration: "MT001",
+        ocNumber: "OC-2025-001",
+        startDate: "2025-01-25",
+        endDate: "2025-01-27",
+        serviceDays: 3,
+        status: "aguardando" as const,
+        hrStatus: "nao_verificado" as const,
+        observations: "Serviço de transporte de equipamentos pesados",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        logs: []
+      },
+      {
+        id: randomUUID(),
+        vehicleId: "2",
+        vehiclePlate: "DEF-5678",
+        vehicleName: "Volvo FH 540",
+        implementId: "3",
+        implementPlate: "MNO-7890",
+        implementName: "Prancha Rebaixada",
+        driverId: "driver2",
+        driverName: "Carlos Santos",
+        driverRegistration: "MT002",
+        ocNumber: "OC-2025-002",
+        startDate: "2025-01-20",
+        endDate: "2025-01-23",
+        serviceDays: 4,
+        status: "confirmado" as const,
+        hrStatus: "verificado" as const,
+        observations: "Transporte concluído com sucesso",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        logs: []
+      }
+    ];
+
+    pranchaServicesData.forEach(service => {
+      this.pranchaServices.set(service.id, service);
     });
 
   }
@@ -909,6 +979,72 @@ export class MemStorage implements IStorage {
 
   async deleteEmployeeFile(id: string): Promise<boolean> {
     return this.employeeFiles.delete(id);
+  }
+
+  // Prancha Service methods
+  async getPranchaServices(): Promise<PranchaService[]> {
+    return Array.from(this.pranchaServices.values()).map(service => ({
+      ...service,
+      logs: Array.from(this.serviceLogs.values()).filter(log => log.serviceId === service.id)
+    }));
+  }
+
+  async getPranchaService(id: string): Promise<PranchaService | undefined> {
+    const service = this.pranchaServices.get(id);
+    if (!service) return undefined;
+    
+    return {
+      ...service,
+      logs: Array.from(this.serviceLogs.values()).filter(log => log.serviceId === id)
+    };
+  }
+
+  async createPranchaService(serviceData: InsertPranchaService): Promise<PranchaService> {
+    const id = randomUUID();
+    const service: PranchaService = {
+      ...serviceData,
+      id,
+      serviceDays: serviceData.serviceDays || 0,
+      status: "aguardando",
+      hrStatus: "nao_verificado",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      logs: []
+    };
+    
+    this.pranchaServices.set(id, service);
+    return service;
+  }
+
+  async updatePranchaService(id: string, serviceData: Partial<InsertPranchaService>): Promise<PranchaService | undefined> {
+    const service = this.pranchaServices.get(id);
+    if (!service) return undefined;
+
+    const updatedService = {
+      ...service,
+      ...serviceData,
+      updatedAt: new Date()
+    };
+
+    this.pranchaServices.set(id, updatedService);
+    return updatedService;
+  }
+
+  // Service Log methods
+  async getServiceLogs(serviceId: string): Promise<ServiceLog[]> {
+    return Array.from(this.serviceLogs.values()).filter(log => log.serviceId === serviceId);
+  }
+
+  async createServiceLog(logData: InsertServiceLog): Promise<ServiceLog> {
+    const id = randomUUID();
+    const log: ServiceLog = {
+      ...logData,
+      id,
+      createdAt: new Date()
+    };
+    
+    this.serviceLogs.set(id, log);
+    return log;
   }
 }
 

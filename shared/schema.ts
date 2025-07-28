@@ -467,6 +467,45 @@ export const loginSchema = z.object({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+// Prancha Services table
+export const pranchaServices = pgTable("prancha_services", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vehicleId: varchar("vehicle_id").notNull(),
+  vehiclePlate: varchar("vehicle_plate").notNull(),
+  vehicleName: varchar("vehicle_name").notNull(),
+  implementId: varchar("implement_id").notNull(),
+  implementPlate: varchar("implement_plate").notNull(),
+  implementName: varchar("implement_name").notNull(),
+  driverId: varchar("driver_id").notNull(),
+  driverName: varchar("driver_name").notNull(),
+  driverRegistration: varchar("driver_registration").notNull(),
+  ocNumber: varchar("oc_number").notNull(),
+  startDate: varchar("start_date").notNull(),
+  endDate: varchar("end_date"),
+  serviceDays: integer("service_days").default(0),
+  status: varchar("status", { enum: ["aguardando", "confirmado", "negado", "aditado"] }).default("aguardando"),
+  hrStatus: varchar("hr_status", { enum: ["nao_verificado", "verificado"] }).default("nao_verificado"),
+  observations: text("observations"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Service Logs table  
+export const serviceLogs = pgTable("service_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  serviceId: varchar("service_id").notNull().references(() => pranchaServices.id, { onDelete: "cascade" }),
+  action: varchar("action").notNull(),
+  userName: varchar("user_name").notNull(),
+  userRole: varchar("user_role").notNull(),
+  justification: text("justification"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type PranchaService = typeof pranchaServices.$inferSelect;
+export type InsertPranchaService = typeof pranchaServices.$inferInsert;
+export type ServiceLog = typeof serviceLogs.$inferSelect;
+export type InsertServiceLog = typeof serviceLogs.$inferInsert;
+
 export type InsertVehicle = z.infer<typeof insertVehicleSchema>;
 export type Vehicle = typeof vehicles.$inferSelect;
 

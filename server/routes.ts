@@ -1215,6 +1215,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Prancha Service routes
+  app.get("/api/prancha-services", async (req, res) => {
+    try {
+      const services = await storage.getPranchaServices();
+      res.json(services);
+    } catch (error) {
+      console.error("Error fetching prancha services:", error);
+      res.status(500).json({ message: "Failed to fetch prancha services" });
+    }
+  });
+
+  app.patch("/api/prancha-services/:id/confirm", async (req, res) => {
+    try {
+      const { justification } = req.body;
+      
+      const updatedService = await storage.updatePranchaService(req.params.id, {
+        status: "confirmado"
+      });
+
+      if (updatedService) {
+        await storage.createServiceLog({
+          serviceId: req.params.id,
+          action: "Serviço Confirmado",
+          userName: "Gestor Logística",
+          userRole: "Gestor da Logística",
+          justification
+        });
+
+        res.json(updatedService);
+      } else {
+        res.status(404).json({ message: "Prancha service not found" });
+      }
+    } catch (error) {
+      console.error("Error confirming prancha service:", error);
+      res.status(500).json({ message: "Failed to confirm prancha service" });
+    }
+  });
+
+  app.patch("/api/prancha-services/:id/deny", async (req, res) => {
+    try {
+      const { justification } = req.body;
+      
+      const updatedService = await storage.updatePranchaService(req.params.id, {
+        status: "negado"
+      });
+
+      if (updatedService) {
+        await storage.createServiceLog({
+          serviceId: req.params.id,
+          action: "Serviço Negado",
+          userName: "Gestor Logística",
+          userRole: "Gestor da Logística",
+          justification
+        });
+
+        res.json(updatedService);
+      } else {
+        res.status(404).json({ message: "Prancha service not found" });
+      }
+    } catch (error) {
+      console.error("Error denying prancha service:", error);
+      res.status(500).json({ message: "Failed to deny prancha service" });
+    }
+  });
+
+  app.patch("/api/prancha-services/:id/edit-dates", async (req, res) => {
+    try {
+      const { startDate, endDate, justification } = req.body;
+      
+      const start = new Date(startDate);
+      const end = endDate ? new Date(endDate) : new Date();
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const serviceDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      const updatedService = await storage.updatePranchaService(req.params.id, {
+        startDate,
+        endDate,
+        serviceDays,
+        status: "aditado"
+      });
+
+      if (updatedService) {
+        await storage.createServiceLog({
+          serviceId: req.params.id,
+          action: "Datas Aditadas",
+          userName: "Gestor Logística",
+          userRole: "Gestor da Logística",
+          justification
+        });
+
+        res.json(updatedService);
+      } else {
+        res.status(404).json({ message: "Prancha service not found" });
+      }
+    } catch (error) {
+      console.error("Error editing prancha service dates:", error);
+      res.status(500).json({ message: "Failed to edit prancha service dates" });
+    }
+  });
+
+  app.patch("/api/prancha-services/:id/hr-status", async (req, res) => {
+    try {
+      const { hrStatus } = req.body;
+      
+      const updatedService = await storage.updatePranchaService(req.params.id, {
+        hrStatus
+      });
+
+      if (updatedService) {
+        await storage.createServiceLog({
+          serviceId: req.params.id,
+          action: `Status RH alterado para ${hrStatus === 'verificado' ? 'Verificado' : 'Não Verificado'}`,
+          userName: "RH",
+          userRole: "RH",
+          justification: `Status alterado para ${hrStatus}`
+        });
+
+        res.json(updatedService);
+      } else {
+        res.status(404).json({ message: "Prancha service not found" });
+      }
+    } catch (error) {
+      console.error("Error updating HR status:", error);
+      res.status(500).json({ message: "Failed to update HR status" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
