@@ -621,42 +621,37 @@ export default function DriverPortal() {
                 <span>Solicitação de Manutenção</span>
               </DialogTitle>
               <DialogDescription>
-                Descreva o problema encontrado
+                Solicite manutenção para veículo ou implemento
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4">
-              {/* Veículo afetado */}
+              {/* Placa do Veículo */}
               <div>
-                <Label>Veículo Afetado</Label>
+                <Label>Placa do Veículo</Label>
                 <select className="w-full p-2 border rounded-md">
-                  <option>Tração</option>
-                  <option>Implemento</option>
-                  <option>Ambos</option>
+                  {selectedVehicleData && (
+                    <option value={selectedVehicleData.plate}>
+                      {selectedVehicleData.plate} - Tração
+                    </option>
+                  )}
+                  {selectedImplementData && (
+                    <option value={selectedImplementData.plate}>
+                      {selectedImplementData.plate} - Implemento
+                    </option>
+                  )}
                 </select>
               </div>
 
-              {/* Descrição do problema */}
+              {/* Descrição da solicitação */}
               <div>
-                <Label>Descrição do Problema *</Label>
+                <Label>Descrição da Solicitação *</Label>
                 <textarea 
                   className="w-full p-2 border rounded-md resize-none" 
                   rows={4}
-                  placeholder="Descreva detalhadamente o problema encontrado..."
+                  placeholder="Descreva o que precisa de manutenção..."
                   required
                 />
-              </div>
-
-              {/* Data e motorista (preenchidos automaticamente) */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Data</Label>
-                  <Input value={new Date().toLocaleDateString('pt-BR')} readOnly />
-                </div>
-                <div>
-                  <Label>Motorista</Label>
-                  <Input value={driverInfo?.fullName || ""} readOnly />
-                </div>
               </div>
 
               <Button className="w-full bg-blue-600 hover:bg-blue-700">
