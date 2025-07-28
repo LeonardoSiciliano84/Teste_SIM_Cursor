@@ -17,7 +17,9 @@ import {
   insertEmployeeOccurrenceSchema,
   insertEmployeeMovementSchema,
   insertEmployeeFileSchema,
-  insertPranchaServiceSchema
+  insertPranchaServiceSchema,
+  insertSinistroSchema,
+  insertSinistroDocumentSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -1398,6 +1400,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error finalizing service:", error);
       res.status(500).json({ message: "Failed to finalize service" });
+    }
+  });
+
+  // ============= ROUTES DE SINISTROS =============
+  
+  // Listar todos os sinistros
+  app.get("/api/sinistros", async (req, res) => {
+    try {
+      const sinistros = await storage.getSinistros();
+      res.json(sinistros);
+    } catch (error) {
+      console.error("Error fetching sinistros:", error);
+      res.status(500).json({ message: "Failed to fetch sinistros" });
+    }
+  });
+
+  // Obter sinistro específico
+  app.get("/api/sinistros/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const sinistro = await storage.getSinistro(id);
+      
+      if (!sinistro) {
+        return res.status(404).json({ message: "Sinistro não encontrado" });
+      }
+
+      // Buscar documentos e histórico
+      const [documents, history] = await Promise.all([
+        storage.getSinistroDocuments(id),
+        storage.getSinistroHistory(id)
+      ]);
+
+      res.json({
+        ...sinistro,
+        documents,
+        history
+      });
+    } catch (error) {
+      console.error("Error fetching sinistro:", error);
+      res.status(500).json({ message: "Failed to fetch sinistro" });
+    }
+  });
+
+  // Criar novo sinistro
+  app.post("/api/sinistros", async (req, res) => {
+    try {
+      const sinistroData = insertSinistroSchema.parse(req.body);
+      const sinistro = await storage.createSinistro(sinistroData);
+      res.status(201).json(sinistro);
+    } catch (error) {
+      console.error("Error creating sinistro:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos", 
+          errors: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Failed to create sinistro" });
+    }
+  });
+
+  // Atualizar sinistro
+  app.patch("/api/sinistros/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { updatedBy, updatedByName, ...updates } = req.body;
+      
+      const sinistro = await storage.updateSinistro(id, updates, updatedBy, updatedByName);
+      
+      if (!sinistro) {
+        return res.status(404).json({ message: "Sinistro não encontrado" });
+      }
+      
+      res.json(sinistro);
+    } catch (error) {
+      console.error("Error updating sinistro:", error);
+      res.status(500).json({ message: "Failed to update sinistro" });
+    }
+  });
+
+  // Finalizar sinistro (apenas QSMS)
+  app.patch("/api/sinistros/:id/finalizar", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { finalizadoPor, nomeFinalizador } = req.body;
+      
+      const sinistro = await storage.finalizarSinistro(id, finalizadoPor, nomeFinalizador);
+      
+      if (!sinistro) {
+        return res.status(404).json({ message: "Sinistro não encontrado" });
+      }
+      
+      res.json(sinistro);
+    } catch (error) {
+      console.error("Error finalizing sinistro:", error);
+      res.status(500).json({ message: "Failed to finalize sinistro" });
+    }
+  });
+
+  // Upload de documento para sinistro
+  app.post("/api/sinistros/:id/documents", upload.single('document'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { tipoDocumento, uploadedBy, nomeUploader } = req.body;
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "Arquivo é obrigatório" });
+      }
+      
+      const documentData = {
+        sinistroId: id,
+        tipoDocumento,
+        nomeArquivo: req.file.originalname,
+        caminhoArquivo: req.file.path,
+        tamanhoArquivo: req.file.size,
+        tipoMime: req.file.mimetype,
+        uploadedBy,
+        nomeUploader
+      };
+      
+      const document = await storage.createSinistroDocument(documentData);
+      res.status(201).json(document);
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      res.status(500).json({ message: "Failed to upload document" });
+    }
+  });
+
+  // Listar documentos do sinistro
+  app.get("/api/sinistros/:id/documents", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const documents = await storage.getSinistroDocuments(id);
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
+  // Download de documento
+  app.get("/api/sinistros/:id/documents/:docId/download", async (req, res) => {
+    try {
+      const { docId } = req.params;
+      const documents = await storage.getSinistroDocuments(req.params.id);
+      const document = documents.find(doc => doc.id === docId);
+      
+      if (!document) {
+        return res.status(404).json({ message: "Documento não encontrado" });
+      }
+
+      res.download(document.caminhoArquivo, document.nomeArquivo);
+    } catch (error) {
+      console.error("Error downloading document:", error);
+      res.status(500).json({ message: "Failed to download document" });
+    }
+  });
+
+  // Deletar documento
+  app.delete("/api/sinistros/:id/documents/:docId", async (req, res) => {
+    try {
+      const { docId } = req.params;
+      const { deletedBy, deletedByName } = req.body;
+      
+      const success = await storage.deleteSinistroDocument(docId, deletedBy, deletedByName);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Documento não encontrado" });
+      }
+      
+      res.json({ message: "Documento removido com sucesso" });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ message: "Failed to delete document" });
+    }
+  });
+
+  // Histórico do sinistro
+  app.get("/api/sinistros/:id/history", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const history = await storage.getSinistroHistory(id);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching history:", error);
+      res.status(500).json({ message: "Failed to fetch history" });
     }
   });
 

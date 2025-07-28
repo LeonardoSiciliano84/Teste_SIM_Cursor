@@ -10,7 +10,8 @@ import {
   LogOut, 
   Truck,
   FileText,
-  Smartphone
+  Smartphone,
+  AlertTriangle
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Motoristas", href: "/drivers", icon: Users },
   { name: "Colaboradores", href: "/employees", icon: Users },
   { name: "Ocorrências", href: "/occurrences", icon: FileText },
+  { name: "Sinistros", href: "/sinistros", icon: AlertTriangle },
   { name: "Portal Motorista", href: "/driver-login", icon: Smartphone },
   { name: "Gestão de Prancha", href: "/prancha-management", icon: Package },
   { name: "Rotas", href: "/routes", icon: Map },

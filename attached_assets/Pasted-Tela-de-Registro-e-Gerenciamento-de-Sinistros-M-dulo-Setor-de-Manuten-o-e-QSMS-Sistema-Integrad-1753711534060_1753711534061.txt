@@ -1,0 +1,111 @@
+Tela de Registro e Gerenciamento de Sinistros
+(Módulo: Setor de Manutenção e QSMS - Sistema Integrado FELKA)
+
+Objetivo
+Permitir o registro, visualização, edição e tratamento de sinistros de diferentes naturezas, garantindo controle, rastreabilidade e resposta integrada aos eventos que envolvem a frota, colaboradores e unidades operacionais.
+
+Acesso
+Tela acessível exclusivamente pelos usuários dos setores de Manutenção, QSMS e RH.
+
+Interface web responsiva para uso em desktops e dispositivos móveis.
+
+Registro inicial também pode ser feito por motoristas ou supervisores via formulário restrito.
+
+Tipos de Sinistro Registráveis
+Veicular (acidente, colisão, avaria, perda total)
+
+Trabalhista / CAT (acidente com funcionário em serviço)
+
+Interno na base (quedas, falha de estrutura, derramamento, etc.)
+
+Externo com cliente (ocorrido durante atendimento)
+
+Ambiental (vazamentos, contaminação, descarte irregular)
+
+Falha de EPI / Segurança (ausência, uso incorreto, falha de proteção)
+
+Quase acidente (near miss)
+
+1. Lista de Registros de Sinistro
+Exibição em formato de lista/tabela com os seguintes dados:
+
+Tipo do sinistro
+
+Placa (se aplicável)
+
+Nome do envolvido (motorista ou funcionário)
+
+Data do ocorrido
+
+Local (base, cliente, rodovia, etc.)
+
+Status do registro (Aberto, Em andamento, Finalizado)
+
+Botão: Ver/Editar
+
+Botão: Gerar PDF completo do sinistro
+
+Botão: Exportar XLSX com todos os registros filtráveis
+
+2. Registro Completo e Edição (Modal ou Tela Expandida)
+Ao clicar em um sinistro, será exibido:
+
+Dados iniciais registrados:
+
+Local, tipo, descrição, envolvidos, vítimas, data/hora
+
+Upload de fotos e documentos iniciais
+
+Seção de documentos complementares (upload):
+
+BRAT
+
+CAT gerada
+
+Ficha de saúde do colaborador (pós-evento)
+
+Relatório do setor QSMS
+
+Checklists ou evidências adicionais
+
+Histórico de alterações com data, autor e tipo de mudança
+
+Campo de observações internas (ex: diálogo entre setores)
+
+3. Controle de Status
+Aberto: Ao ser criado (motorista, RH ou supervisor).
+
+Em andamento: Quando qualquer setor inicia o tratamento (edição, anexos).
+
+Finalizado: Apenas QSMS pode concluir via botão específico.
+
+Histórico de status mantido com data/hora e usuário responsável.
+
+4. Funcionalidades Adicionais
+Upload e visualização de documentos/imagens múltiplos
+
+Notificações automáticas por e-mail ou sistema:
+
+Novo sinistro criado
+
+Alterações em andamento
+
+Finalização
+
+Campo de classificação da causa (ex: erro humano, falha técnica, omissão de EPI, etc.)
+
+Campo de ação corretiva ou preventiva aplicada
+
+Integração com painel de indicadores e relatórios (futuros)
+
+Benefícios
+Gestão centralizada de todos os tipos de sinistros da empresa
+
+Histórico completo para auditorias internas e externas
+
+Melhoria da segurança com dados integrados para análise de causas
+
+Ações preventivas baseadas em dados reais
+
+Facilidade de uso com interface simples e foco em mobilidade e rapidez
+

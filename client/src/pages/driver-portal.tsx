@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, User, Mail, Shield, Car, FileText, Download, AlertTriangle, CheckSquare, Wrench, Phone, Camera, MapPin, Clock, Truck, Fuel, Settings, Package, MessageSquare, Calendar } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { SinistroForm } from "@/components/sinistros/sinistro-form";
 
 interface DriverInfo {
   id: string;
@@ -522,23 +523,21 @@ export default function DriverPortal() {
             </Button>
 
             {/* Botão 3: Comunicar Sinistro */}
-            <Button 
-              className="h-20 flex flex-col items-center justify-center bg-red-600 hover:bg-red-700 text-white"
-              onClick={() => {
-                if (!selectedVehicle) {
-                  toast({ 
-                    title: "Aviso", 
-                    description: "Selecione um veículo primeiro",
-                    variant: "destructive"
-                  });
-                  return;
-                }
-                setShowMaintenanceCommunication(true);
+            <SinistroForm 
+              userInfo={{
+                id: driverInfo.id,
+                name: driverInfo.fullName,
+                role: "driver"
               }}
-            >
-              <AlertTriangle className="h-6 w-6 mb-1" />
-              <span className="text-xs text-center">Comunicar Sinistro</span>
-            </Button>
+              trigger={
+                <Button 
+                  className="h-20 flex flex-col items-center justify-center bg-red-600 hover:bg-red-700 text-white"
+                >
+                  <AlertTriangle className="h-6 w-6 mb-1" />
+                  <span className="text-xs text-center">Comunicar Sinistro</span>
+                </Button>
+              }
+            />
 
             {/* Botão 4: Registrar Manutenção em Viagem */}
             <Button 

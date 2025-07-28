@@ -20,6 +20,7 @@ import { OccurrencesPage } from "@/pages/occurrences";
 import DriverPortal from "@/pages/driver-portal";
 import DriverLogin from "@/pages/driver-login";
 import PranchaManagement from "@/pages/prancha-management";
+import SinistrosPage from "@/pages/sinistros";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import VehicleEdit from "@/components/vehicles/vehicle-edit";
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/driver-portal" component={DriverPortal} />
       <Route path="/driver-login" component={DriverLogin} />
       <Route path="/prancha-management" component={PranchaManagement} />
+      <Route path="/sinistros" component={SinistrosPage} />
       <Route path="/routes" component={Routes} />
       <Route path="/bookings" component={Bookings} />
       <Route path="/analytics" component={Analytics} />

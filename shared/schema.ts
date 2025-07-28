@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, relations } from "drizzle-orm";
 import { pgTable, text, varchar, timestamp, decimal, integer, boolean, uuid, date, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -551,6 +551,115 @@ export const insertPranchaServiceSchema = createInsertSchema(pranchaServices).om
   id: true,
   createdAt: true,
   updatedAt: true,
+  status: true,
+  hrStatus: true
 });
 
 export type InsertPranchaServiceZod = z.infer<typeof insertPranchaServiceSchema>;
+
+
+// ============= MÓDULO DE SINISTROS =============
+
+// Tabela de sinistros (incidentes/acidentes)
+export const sinistros = pgTable("sinistros", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tipo: varchar("tipo").notNull(), // veicular, trabalhista_cat, interno_base, externo_cliente, ambiental, falha_epi, quase_acidente
+  classificacao: varchar("classificacao"), // erro_humano, falha_tecnica, omissao_epi, etc
+  placa: varchar("placa"), // se aplicável
+  nomeEnvolvido: varchar("nome_envolvido").notNull(),
+  cargoEnvolvido: varchar("cargo_envolvido"),
+  dataOcorrido: timestamp("data_ocorrido").notNull(),
+  horaOcorrido: varchar("hora_ocorrido").notNull(),
+  local: varchar("local").notNull(), // base, cliente, rodovia, etc
+  descricao: text("descricao").notNull(),
+  vitimas: boolean("vitimas").default(false),
+  descricaoVitimas: text("descricao_vitimas"),
+  testemunhas: text("testemunhas"),
+  condicoesTempo: varchar("condicoes_tempo"),
+  condicoesPista: varchar("condicoes_pista"),
+  status: varchar("status").default("aberto"), // aberto, em_andamento, finalizado
+  acaoCorretiva: text("acao_corretiva"),
+  acaoPreventiva: text("acao_preventiva"),
+  observacoesInternas: text("observacoes_internas"),
+  registradoPor: varchar("registrado_por").notNull(), // ID do usuário que registrou
+  nomeRegistrador: varchar("nome_registrador").notNull(),
+  cargoRegistrador: varchar("cargo_registrador").notNull(),
+  finalizadoPor: varchar("finalizado_por"), // ID do usuário QSMS que finalizou
+  nomeFinalizador: varchar("nome_finalizador"),
+  dataFinalizacao: timestamp("data_finalizacao"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Tabela de documentos/anexos dos sinistros
+export const sinistroDocuments = pgTable("sinistro_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sinistroId: varchar("sinistro_id").notNull().references(() => sinistros.id, { onDelete: "cascade" }),
+  tipoDocumento: varchar("tipo_documento").notNull(), // foto_local, brat, cat, ficha_saude, relatorio_qsms, checklist, outros
+  nomeArquivo: varchar("nome_arquivo").notNull(),
+  caminhoArquivo: varchar("caminho_arquivo").notNull(),
+  tamanhoArquivo: integer("tamanho_arquivo"),
+  tipoMime: varchar("tipo_mime"),
+  uploadedBy: varchar("uploaded_by").notNull(),
+  nomeUploader: varchar("nome_uploader").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Tabela de histórico de alterações dos sinistros
+export const sinistroHistory = pgTable("sinistro_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sinistroId: varchar("sinistro_id").notNull().references(() => sinistros.id, { onDelete: "cascade" }),
+  tipoAlteracao: varchar("tipo_alteracao").notNull(), // criacao, edicao, upload_documento, mudanca_status
+  campoAlterado: varchar("campo_alteracao"),
+  valorAnterior: text("valor_anterior"),
+  valorNovo: text("valor_novo"),
+  usuarioId: varchar("usuario_id").notNull(),
+  nomeUsuario: varchar("nome_usuario").notNull(),
+  observacao: text("observacao"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Relations para sinistros
+export const sinistrosRelations = relations(sinistros, ({ many }) => ({
+  documents: many(sinistroDocuments),
+  history: many(sinistroHistory),
+}));
+
+export const sinistroDocumentsRelations = relations(sinistroDocuments, ({ one }) => ({
+  sinistro: one(sinistros, {
+    fields: [sinistroDocuments.sinistroId],
+    references: [sinistros.id],
+  }),
+}));
+
+export const sinistroHistoryRelations = relations(sinistroHistory, ({ one }) => ({
+  sinistro: one(sinistros, {
+    fields: [sinistroHistory.sinistroId],
+    references: [sinistros.id],
+  }),
+}));
+
+// Schemas para validação
+export const insertSinistroSchema = createInsertSchema(sinistros).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  status: true
+});
+
+export const insertSinistroDocumentSchema = createInsertSchema(sinistroDocuments).omit({
+  id: true,
+  createdAt: true
+});
+
+export const insertSinistroHistorySchema = createInsertSchema(sinistroHistory).omit({
+  id: true,
+  createdAt: true
+});
+
+export type InsertSinistro = typeof sinistros.$inferInsert;
+export type Sinistro = typeof sinistros.$inferSelect;
+export type InsertSinistroDocument = typeof sinistroDocuments.$inferInsert;
+export type SinistroDocument = typeof sinistroDocuments.$inferSelect;
+export type InsertSinistroHistory = typeof sinistroHistory.$inferInsert;
+export type SinistroHistory = typeof sinistroHistory.$inferSelect;

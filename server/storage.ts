@@ -27,7 +27,13 @@ import {
   type PranchaService,
   type InsertPranchaService,
   type ServiceLog,
-  type InsertServiceLog
+  type InsertServiceLog,
+  type Sinistro,
+  type InsertSinistro,
+  type SinistroDocument,
+  type InsertSinistroDocument,
+  type SinistroHistory,
+  type InsertSinistroHistory,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -126,6 +132,22 @@ export interface IStorage {
   // Service Log methods
   getServiceLogs(serviceId: string): Promise<ServiceLog[]>;
   createServiceLog(log: InsertServiceLog): Promise<ServiceLog>;
+
+  // Sinistro methods
+  getSinistros(): Promise<Sinistro[]>;
+  getSinistro(id: string): Promise<Sinistro | undefined>;
+  createSinistro(sinistro: InsertSinistro): Promise<Sinistro>;
+  updateSinistro(id: string, updates: Partial<Sinistro>, updatedBy: string, updatedByName: string): Promise<Sinistro | undefined>;
+  finalizarSinistro(id: string, finalizadoPor: string, nomeFinalizador: string): Promise<Sinistro | undefined>;
+
+  // SinistroDocument methods
+  getSinistroDocuments(sinistroId: string): Promise<SinistroDocument[]>;
+  createSinistroDocument(document: InsertSinistroDocument): Promise<SinistroDocument>;
+  deleteSinistroDocument(id: string, deletedBy: string, deletedByName: string): Promise<boolean>;
+
+  // SinistroHistory methods
+  getSinistroHistory(sinistroId: string): Promise<SinistroHistory[]>;
+  createSinistroHistory(history: InsertSinistroHistory): Promise<SinistroHistory>;
 }
 
 export class MemStorage implements IStorage {
@@ -143,6 +165,9 @@ export class MemStorage implements IStorage {
   private employeeFiles: Map<string, EmployeeFile>;
   private pranchaServices: Map<string, PranchaService>;
   private serviceLogs: Map<string, ServiceLog>;
+  private sinistros: Map<string, Sinistro>;
+  private sinistroDocuments: Map<string, SinistroDocument>;
+  private sinistroHistory: Map<string, SinistroHistory>;
 
   constructor() {
     this.users = new Map();
@@ -159,6 +184,9 @@ export class MemStorage implements IStorage {
     this.employeeFiles = new Map();
     this.pranchaServices = new Map();
     this.serviceLogs = new Map();
+    this.sinistros = new Map();
+    this.sinistroDocuments = new Map();
+    this.sinistroHistory = new Map();
     
     // Initialize with default admin user and sample data
     this.initializeDefaultData();
@@ -1057,6 +1085,176 @@ export class MemStorage implements IStorage {
     
     this.serviceLogs.set(id, log);
     return log;
+  }
+
+  // ============= MÉTODOS DE SINISTROS =============
+
+  async getSinistros(): Promise<Sinistro[]> {
+    return Array.from(this.sinistros.values()).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getSinistro(id: string): Promise<Sinistro | undefined> {
+    return this.sinistros.get(id);
+  }
+
+  async createSinistro(sinistroData: InsertSinistro): Promise<Sinistro> {
+    const id = randomUUID();
+    const sinistro: Sinistro = {
+      ...sinistroData,
+      id,
+      status: "aberto",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.sinistros.set(id, sinistro);
+    
+    // Criar histórico inicial
+    await this.createSinistroHistory({
+      sinistroId: id,
+      tipoAlteracao: "criacao",
+      usuarioId: sinistroData.registradoPor,
+      nomeUsuario: sinistroData.nomeRegistrador,
+      observacao: "Sinistro criado"
+    });
+    
+    return sinistro;
+  }
+
+  async updateSinistro(id: string, updates: Partial<Sinistro>, updatedBy: string, updatedByName: string): Promise<Sinistro | undefined> {
+    const sinistro = this.sinistros.get(id);
+    if (!sinistro) return undefined;
+
+    const oldSinistro = { ...sinistro };
+    const updatedSinistro = {
+      ...sinistro,
+      ...updates,
+      updatedAt: new Date()
+    };
+
+    this.sinistros.set(id, updatedSinistro);
+
+    // Criar histórico para campos alterados
+    for (const [campo, novoValor] of Object.entries(updates)) {
+      if (campo !== 'updatedAt' && oldSinistro[campo as keyof Sinistro] !== novoValor) {
+        await this.createSinistroHistory({
+          sinistroId: id,
+          tipoAlteracao: "edicao",
+          campoAlterado: campo,
+          valorAnterior: String(oldSinistro[campo as keyof Sinistro] || ''),
+          valorNovo: String(novoValor || ''),
+          usuarioId: updatedBy,
+          nomeUsuario: updatedByName,
+          observacao: `Campo ${campo} alterado`
+        });
+      }
+    }
+
+    return updatedSinistro;
+  }
+
+  async finalizarSinistro(id: string, finalizadoPor: string, nomeFinalizador: string): Promise<Sinistro | undefined> {
+    const sinistro = this.sinistros.get(id);
+    if (!sinistro) return undefined;
+
+    const updatedSinistro = {
+      ...sinistro,
+      status: "finalizado",
+      finalizadoPor,
+      nomeFinalizador,
+      dataFinalizacao: new Date(),
+      updatedAt: new Date()
+    };
+
+    this.sinistros.set(id, updatedSinistro);
+
+    // Criar histórico de finalização
+    await this.createSinistroHistory({
+      sinistroId: id,
+      tipoAlteracao: "mudanca_status",
+      campoAlterado: "status",
+      valorAnterior: sinistro.status,
+      valorNovo: "finalizado",
+      usuarioId: finalizadoPor,
+      nomeUsuario: nomeFinalizador,
+      observacao: "Sinistro finalizado pelo QSMS"
+    });
+
+    return updatedSinistro;
+  }
+
+  // ============= MÉTODOS DE DOCUMENTOS DE SINISTROS =============
+
+  async getSinistroDocuments(sinistroId: string): Promise<SinistroDocument[]> {
+    return Array.from(this.sinistroDocuments.values())
+      .filter(doc => doc.sinistroId === sinistroId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async createSinistroDocument(documentData: InsertSinistroDocument): Promise<SinistroDocument> {
+    const id = randomUUID();
+    const document: SinistroDocument = {
+      ...documentData,
+      id,
+      createdAt: new Date()
+    };
+    
+    this.sinistroDocuments.set(id, document);
+
+    // Criar histórico de upload
+    await this.createSinistroHistory({
+      sinistroId: documentData.sinistroId,
+      tipoAlteracao: "upload_documento",
+      campoAlterado: "documento",
+      valorNovo: documentData.nomeArquivo,
+      usuarioId: documentData.uploadedBy,
+      nomeUsuario: documentData.nomeUploader,
+      observacao: `Upload de documento: ${documentData.tipoDocumento}`
+    });
+
+    return document;
+  }
+
+  async deleteSinistroDocument(id: string, deletedBy: string, deletedByName: string): Promise<boolean> {
+    const document = this.sinistroDocuments.get(id);
+    if (!document) return false;
+
+    this.sinistroDocuments.delete(id);
+
+    // Criar histórico de remoção
+    await this.createSinistroHistory({
+      sinistroId: document.sinistroId,
+      tipoAlteracao: "remocao_documento",
+      campoAlterado: "documento",
+      valorAnterior: document.nomeArquivo,
+      usuarioId: deletedBy,
+      nomeUsuario: deletedByName,
+      observacao: `Remoção de documento: ${document.tipoDocumento}`
+    });
+
+    return true;
+  }
+
+  // ============= MÉTODOS DE HISTÓRICO DE SINISTROS =============
+
+  async getSinistroHistory(sinistroId: string): Promise<SinistroHistory[]> {
+    return Array.from(this.sinistroHistory.values())
+      .filter(hist => hist.sinistroId === sinistroId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async createSinistroHistory(historyData: InsertSinistroHistory): Promise<SinistroHistory> {
+    const id = randomUUID();
+    const history: SinistroHistory = {
+      ...historyData,
+      id,
+      createdAt: new Date()
+    };
+    
+    this.sinistroHistory.set(id, history);
+    return history;
   }
 }
 
