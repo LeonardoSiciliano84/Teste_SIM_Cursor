@@ -1,0 +1,59 @@
+Agora vamos criar botões de acessos abaixo para esta funcionalidades para o portal do motorista , seram 4 botoes de acesso rapdo. Para estes fomularios 3. Tela de Aviso Pré-Checklist
+•	Exibição de alerta de segurança obrigatório antes do checklist:
+“Se detectar vazamentos ou falhas, não inicie a operação. Comunique imediatamente a manutenção.”
+•	Declaração de responsabilidade pelo preenchimento correto
+•	Botão "Continuar" para seguir ao checklist
+________________________________________
+✅ 4. Checklist de Saída do Veículo
+Formulário com:
+•	Data e hora
+•	Base de saída
+•	Placas (tração e implemento)
+•	KM atual
+•	Lista de verificação com switches (✔️):
+o	Documentos válidos
+o	Cartão de abastecimento
+o	Níveis de óleo e água
+o	Elétrica, faróis, buzina, retrovisores
+o	Pneus e calibragem
+o	Equipamentos obrigatórios (extintor, triângulo etc.)
+o	Cintas, catracas, lonas
+•	Campo de observações
+•	Upload obrigatório de ao menos uma foto
+•	Botão "Enviar checklist"
+________________________________________
+🔧 5. Solicitação de Manutenção
+•	Ação disponível logo após o login ou via menu
+•	Formulário:
+o	Veículo afetado: Tração, Implemento ou ambos
+o	Descrição do problema
+o	Data e nome do motorista preenchidos automaticamente
+o	Botão "Enviar solicitação"
+________________________________________
+🛠️ 6. Registro de Manutenção em Viagem
+•	Quando uma manutenção é feita fora da base:
+o	Placa do veículo
+o	Data do serviço
+o	Nome do fornecedor
+o	Valor do serviço
+o	Tipo de manutenção (dropdown)
+o	Campo de observações
+o	Upload de:
+	Foto do serviço
+	Foto da nota fiscal
+o	Botão "Registrar"
+________________________________________
+🚨 7. Comunicação de Sinistro
+•	Formulário detalhado para ocorrências:
+o	Data e hora do sinistro
+o	Placa da tração
+o	Local e endereço
+o	Tipo de colisão
+o	Houve vítima? (sim/não)
+o	Condições de trajeto e carga
+o	Quem sofreu a avaria
+o	Percepção de gravidade
+o	Campo de observações
+o	Upload de até 6 imagens (mínimo 1 obrigatório)
+o	Botão "Registrar Sinistro"
+o	Botão de WhatsApp para contato direto com o setor de segurança

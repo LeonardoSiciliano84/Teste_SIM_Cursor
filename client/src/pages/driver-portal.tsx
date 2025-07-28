@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, User, Mail, Shield, Car, FileText, Download } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Search, User, Mail, Shield, Car, FileText, Download, AlertTriangle, CheckSquare, Wrench, Phone } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -333,16 +333,68 @@ export default function DriverPortal() {
                 <p className="text-sm text-orange-600">
                   {selectedImplementData.name}
                 </p>
+                {/* Botão para documentos do implemento */}
+                <Button 
+                  className="w-full mt-3 bg-orange-600 hover:bg-orange-700"
+                  onClick={() => handleViewDocuments(selectedImplementData.id)}
+                >
+                  Ver Documentos do Implemento
+                </Button>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Botão para continuar */}
+        {/* Botões de Acesso Rápido */}
         {selectedVehicle && (
-          <Button className="w-full bg-green-600 hover:bg-green-700 text-lg py-3">
-            Continuar para Próxima Etapa
-          </Button>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800 text-center">
+              Acesso Rápido
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {/* Botão 1: Aviso Pré-Checklist */}
+              <Button 
+                className="h-20 flex flex-col items-center justify-center bg-yellow-600 hover:bg-yellow-700 text-white"
+                onClick={() => toast({ title: "Navegando...", description: "Abrindo Aviso Pré-Checklist" })}
+              >
+                <AlertTriangle className="h-6 w-6 mb-1" />
+                <span className="text-xs text-center">Aviso Pré-Checklist</span>
+              </Button>
+
+              {/* Botão 2: Checklist de Saída */}
+              <Button 
+                className="h-20 flex flex-col items-center justify-center bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => toast({ title: "Navegando...", description: "Abrindo Checklist de Saída" })}
+              >
+                <CheckSquare className="h-6 w-6 mb-1" />
+                <span className="text-xs text-center">Checklist de Saída</span>
+              </Button>
+
+              {/* Botão 3: Solicitação de Manutenção */}
+              <Button 
+                className="h-20 flex flex-col items-center justify-center bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => toast({ title: "Navegando...", description: "Abrindo Solicitação de Manutenção" })}
+              >
+                <Wrench className="h-6 w-6 mb-1" />
+                <span className="text-xs text-center">Solicitação Manutenção</span>
+              </Button>
+
+              {/* Botão 4: Comunicação de Sinistro */}
+              <Button 
+                className="h-20 flex flex-col items-center justify-center bg-red-600 hover:bg-red-700 text-white"
+                onClick={() => toast({ title: "Navegando...", description: "Abrindo Comunicação de Sinistro" })}
+              >
+                <Phone className="h-6 w-6 mb-1" />
+                <span className="text-xs text-center">Comunicação Sinistro</span>
+              </Button>
+            </div>
+
+            {/* Botão para continuar para próxima etapa */}
+            <Button className="w-full bg-gray-600 hover:bg-gray-700 text-lg py-3 mt-4">
+              Continuar para Próxima Etapa
+            </Button>
+          </div>
         )}
 
         {/* Modal de Documentos */}
@@ -353,6 +405,9 @@ export default function DriverPortal() {
                 <FileText className="h-5 w-5 text-blue-600" />
                 <span>Documentos do Veículo</span>
               </DialogTitle>
+              <DialogDescription>
+                Acesse e baixe os documentos do veículo selecionado
+              </DialogDescription>
             </DialogHeader>
             
             {selectedVehicleData && (
