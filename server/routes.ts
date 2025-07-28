@@ -1,10 +1,17 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { fileURLToPath } from 'url';
 import multer from "multer";
 import PDFDocument from "pdfkit";
 import * as fs from "fs";
 import * as path from "path";
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { storage } from "./storage";
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { 
   insertVehicleSchema, 
   insertDriverSchema, 
@@ -1515,6 +1522,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename=sinistro_${sinistro.tipo}_${sinistro.id}.pdf`);
       
+      // Handle PDF stream errors
+      doc.on('error', (err) => {
+        console.error('PDF document error:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ message: "Erro ao gerar PDF" });
+        }
+      });
+
+      res.on('error', (err) => {
+        console.error('Response stream error:', err);
+        try {
+          doc.end();
+        } catch (e) {
+          // Document might already be ended
+        }
+      });
+
       // Pipe do PDF para a resposta
       doc.pipe(res);
 
@@ -1528,7 +1552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       doc.fontSize(10).font('Helvetica').fillColor('black')
         .text(`Tipo: ${sinistro.tipo.toUpperCase()}`, 50, yPos); yPos += 15;
-      doc.text(`Status: ${sinistro.status.toUpperCase()}`, 50, yPos); yPos += 15;
+      doc.text(`Status: ${sinistro.status?.toUpperCase() || 'N/A'}`, 50, yPos); yPos += 15;
       doc.text(`Data: ${sinistro.dataOcorrido}`, 50, yPos); yPos += 15;
       doc.text(`Hora: ${sinistro.horaOcorrido}`, 50, yPos); yPos += 15;
       doc.text(`Local: ${sinistro.localEndereco}`, 50, yPos); yPos += 25;
@@ -1576,12 +1600,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       doc.fontSize(10).font('Helvetica').fillColor('black')
         .text(`Registrado por: ${sinistro.nomeRegistrador}`, 50, yPos); yPos += 15;
       doc.text(`Cargo: ${sinistro.cargoRegistrador}`, 50, yPos); yPos += 15;
-      doc.text(`Data de Criação: ${format(new Date(sinistro.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 50, yPos);
+      doc.text(`Data de Criação: ${sinistro.createdAt ? format(new Date(sinistro.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : 'N/A'}`, 50, yPos);
 
       doc.end();
     } catch (error) {
       console.error('Erro ao gerar PDF do sinistro:', error);
-      res.status(500).json({ message: "Erro ao gerar PDF" });
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Erro ao gerar PDF" });
+      }
     }
   });
 
