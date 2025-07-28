@@ -11,21 +11,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertTriangle, Eye, FileText, Search, Filter, Calendar, User, MapPin, Download, Edit, CheckCircle, Printer } from "lucide-react";
 import { SinistroFormGeneral } from "@/components/sinistros/sinistro-form-general";
+import { SinistroEditForm } from "@/components/sinistros/sinistro-edit-form";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import * as XLSX from 'xlsx';
 
 interface Sinistro {
   id: string;
   tipo: string;
+  classificacao?: string;
   placaTracao?: string;
   dataOcorrido: string;
+  horaOcorrido: string;
   localEndereco: string;
-  observacoes: string;
-  status: string;
+  tipoColisao?: string;
   vitimas: boolean;
+  condicoesTrajeto?: string;
+  quemSofreuAvaria?: string;
+  percepcaoGravidade?: string;
+  observacoes: string;
+  nomeEnvolvido: string;
+  cargoEnvolvido?: string;
+  descricaoVitimas?: string;
+  status: string;
+  registradoPor: string;
   nomeRegistrador: string;
   cargoRegistrador: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export default function SinistrosPage() {
@@ -104,7 +117,7 @@ export default function SinistrosPage() {
   // Função para exportar dados para Excel
   const exportToExcel = () => {
     // Preparar dados para exportação
-    const exportData = filteredSinistros.map((sinistro: Sinistro) => ({
+    const exportData = filteredSinistros.map((sinistro) => ({
       'ID': sinistro.id,
       'Tipo': sinistro.tipo,
       'Status': sinistro.status,
@@ -127,7 +140,6 @@ export default function SinistrosPage() {
     }));
 
     // Criar workbook e worksheet
-    const XLSX = require('xlsx');
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sinistros');
@@ -161,7 +173,7 @@ export default function SinistrosPage() {
     XLSX.writeFile(wb, fileName);
   };
 
-  const { data: sinistros = [], isLoading } = useQuery({
+  const { data: sinistros = [], isLoading } = useQuery<Sinistro[]>({
     queryKey: ["/api/sinistros"],
   });
 
@@ -584,22 +596,11 @@ export default function SinistrosPage() {
       </Dialog>
 
       {/* Modal de Edição */}
-      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Editar Sinistro</DialogTitle>
-          </DialogHeader>
-          <div className="p-4">
-            <p className="text-gray-600">Funcionalidade de edição será implementada em breve.</p>
-            <Button 
-              onClick={() => setEditModalOpen(false)}
-              className="mt-4"
-            >
-              Fechar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <SinistroEditForm 
+        sinistro={selectedSinistro}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+      />
     </div>
   );
 }
