@@ -41,13 +41,13 @@ function EmployeeSelect({ onValueChange, value }: { onValueChange: (value: strin
 const sinistroFormSchema = z.object({
   tipo: z.string().min(1, "Tipo é obrigatório"),
   classificacao: z.string().optional(),
-  placa: z.string().optional(),
+  placaTracao: z.string().optional(),
   nomeEnvolvido: z.string().min(1, "Nome do envolvido é obrigatório"),
   cargoEnvolvido: z.string().optional(),
   dataOcorrido: z.string().min(1, "Data é obrigatória"),
   horaOcorrido: z.string().min(1, "Hora é obrigatória"),
-  local: z.string().min(1, "Local é obrigatório"),
-  descricao: z.string().min(1, "Descrição é obrigatória"),
+  localEndereco: z.string().min(1, "Local é obrigatório"),
+  observacoes: z.string().min(1, "Descrição é obrigatória"),
   vitimas: z.boolean().default(false),
   descricaoVitimas: z.string().optional(),
   testemunhas: z.string().optional(),
@@ -201,7 +201,7 @@ export function SinistroFormGeneral({ userInfo, trigger }: SinistroFormGeneralPr
 
               <FormField
                 control={form.control}
-                name="placa"
+                name="placaTracao"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Placa do Veículo (se aplicável)</FormLabel>
@@ -241,7 +241,7 @@ export function SinistroFormGeneral({ userInfo, trigger }: SinistroFormGeneralPr
 
               <FormField
                 control={form.control}
-                name="local"
+                name="localEndereco"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Local do Ocorrido *</FormLabel>
@@ -334,7 +334,7 @@ export function SinistroFormGeneral({ userInfo, trigger }: SinistroFormGeneralPr
 
             <FormField
               control={form.control}
-              name="descricao"
+              name="observacoes"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Descrição Detalhada do Ocorrido *</FormLabel>

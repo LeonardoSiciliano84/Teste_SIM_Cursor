@@ -51,6 +51,8 @@ const sinistroFormSchema = z.object({
   quemSofreuAvaria: z.string().min(1, "Informar quem sofreu avaria é obrigatório"),
   percepcaoGravidade: z.string().min(1, "Percepção de gravidade é obrigatória"),
   observacoes: z.string().min(1, "Observações são obrigatórias"),
+  nomeEnvolvido: z.string().min(1, "Nome do envolvido é obrigatório"),
+  cargoEnvolvido: z.string().optional(),
   registradoPor: z.string(),
   nomeRegistrador: z.string(),
   cargoRegistrador: z.string(),
@@ -78,6 +80,8 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
     defaultValues: {
       tipo: isDriverPortal ? "veicular" : "",
       vitimas: false,
+      nomeEnvolvido: userInfo?.name || "",
+      cargoEnvolvido: userInfo?.role === "driver" ? "Motorista" : "Administrador",
       registradoPor: userInfo?.id || "",
       nomeRegistrador: userInfo?.name || "",
       cargoRegistrador: userInfo?.role === "driver" ? "Motorista" : "Administrador",
@@ -389,7 +393,7 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
                 disabled={createSinistroMutation.isPending}
                 className="bg-red-600 hover:bg-red-700"
               >
-                {createSinistroMutation.isPending ? "Registrando..." : "Comunicar Sinistro"}
+{createSinistroMutation.isPending ? "Comunicando..." : "Comunicar Sinistro"}
               </Button>
             </div>
           </form>

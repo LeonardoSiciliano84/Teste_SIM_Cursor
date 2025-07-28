@@ -648,7 +648,38 @@ export const insertSinistroSchema = createInsertSchema(sinistros).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-  status: true
+  status: true,
+  acaoCorretiva: true,
+  acaoPreventiva: true,
+  observacoesInternas: true,
+  finalizadoPor: true,
+  dataFinalizacao: true,
+  nomeFinalizador: true
+}).extend({
+  // Campos obrigatórios
+  tipo: z.string().min(1, "Tipo é obrigatório"),
+  nomeEnvolvido: z.string().min(1, "Nome do envolvido é obrigatório"),
+  dataOcorrido: z.string().min(1, "Data é obrigatória"),
+  horaOcorrido: z.string().min(1, "Hora é obrigatória"),
+  localEndereco: z.string().min(1, "Local é obrigatório"),
+  observacoes: z.string().min(1, "Observações são obrigatórias"),
+  registradoPor: z.string().min(1, "Registrado por é obrigatório"),
+  nomeRegistrador: z.string().min(1, "Nome do registrador é obrigatório"),
+  cargoRegistrador: z.string().min(1, "Cargo do registrador é obrigatório"),
+  
+  // Campos opcionais
+  classificacao: z.string().optional(),
+  placaTracao: z.string().optional(),
+  tipoColisao: z.string().optional(),
+  percepcaoGravidade: z.string().optional(),
+  quemSofreuAvaria: z.string().optional(),
+  condicoesTrajeto: z.string().optional(),
+  cargoEnvolvido: z.string().optional(),
+  vitimas: z.boolean().default(false),
+  descricaoVitimas: z.string().optional(),
+  testemunhas: z.string().optional(),
+  condicoesTempo: z.string().optional(),
+  condicoesPista: z.string().optional(),
 });
 
 export const insertSinistroDocumentSchema = createInsertSchema(sinistroDocuments).omit({
