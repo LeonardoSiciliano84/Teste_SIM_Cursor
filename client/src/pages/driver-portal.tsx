@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, User, Mail, Shield, Car } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Search, User, Mail, Shield, Car, FileText, Download } from "lucide-react";
 import { authManager } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 interface DriverInfo {
   id: string;
@@ -27,6 +29,8 @@ export default function DriverPortal() {
   const [vehicleSearchTerm, setVehicleSearchTerm] = useState("");
   const [implementSearchTerm, setImplementSearchTerm] = useState("");
   const [selectedImplement, setSelectedImplement] = useState<string>("");
+  const [showDocuments, setShowDocuments] = useState(false);
+  const { toast } = useToast();
   
   // Obter informações do motorista logado
   const { data: driverInfo, isLoading: driverLoading } = useQuery<DriverInfo>({
@@ -56,6 +60,20 @@ export default function DriverPortal() {
   // Obter dados do veículo selecionado
   const selectedVehicleData = vehicles.find((v: any) => v.id === selectedVehicle);
   const selectedImplementData = vehicles.find((v: any) => v.id === selectedImplement);
+
+  // Função para visualizar documentos
+  const handleViewDocuments = (vehicleId: string) => {
+    setShowDocuments(true);
+  };
+
+  // Função para download de documento
+  const handleDownloadDocument = (docType: string) => {
+    toast({
+      title: "Download iniciado",
+      description: `Baixando documento: ${docType}`,
+    });
+    // Em produção, aqui faria o download real do documento
+  };
 
   if (driverLoading) {
     return (
@@ -248,7 +266,10 @@ export default function DriverPortal() {
               </div>
 
               {/* Botão para documentos */}
-              <Button className="w-full mt-4 bg-blue-600 hover:bg-blue-700">
+              <Button 
+                className="w-full mt-4 bg-blue-600 hover:bg-blue-700"
+                onClick={() => handleViewDocuments(selectedVehicleData.id)}
+              >
                 Ver Documentos do Veículo
               </Button>
             </CardContent>
@@ -323,6 +344,66 @@ export default function DriverPortal() {
             Continuar para Próxima Etapa
           </Button>
         )}
+
+        {/* Modal de Documentos */}
+        <Dialog open={showDocuments} onOpenChange={setShowDocuments}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <FileText className="h-5 w-5 text-blue-600" />
+                <span>Documentos do Veículo</span>
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedVehicleData && (
+              <div className="space-y-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="font-semibold text-blue-800">
+                    {selectedVehicleData.plate} - {selectedVehicleData.name}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {[
+                    { name: "CRLV", type: "crlv", description: "Certificado de Registro e Licenciamento" },
+                    { name: "ANTT", type: "antt", description: "Registro na ANTT" },
+                    { name: "Seguro", type: "seguro", description: "Apólice de Seguro" },
+                    { name: "Tacógrafo", type: "tacogorafo", description: "Certificado do Tacógrafo" }
+                  ].map((doc) => (
+                    <div 
+                      key={doc.type}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-800">{doc.name}</p>
+                        <p className="text-sm text-gray-600">{doc.description}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDownloadDocument(doc.name)}
+                        className="ml-3"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Baixar
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4 border-t">
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    onClick={() => setShowDocuments(false)}
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
