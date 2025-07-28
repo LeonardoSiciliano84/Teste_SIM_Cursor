@@ -547,6 +547,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Função auxiliar para cabeçalho e rodapé padronizado
+  const addFelkaHeaderAndFooter = (doc: any, title: string) => {
+    // Cabeçalho com logo e informações da empresa
+    doc.fontSize(18).font('Helvetica-Bold').fillColor('#0C29AB').text('FELKA TRANSPORTES LTDA', 50, 30);
+    doc.fontSize(9).font('Helvetica').fillColor('black')
+       .text('CNPJ: 12.345.678/0001-90 - Inscrição Estadual: 123.456.789.012', 50, 55)
+       .text('Endereço: Rua dos Transportes, 1000 - Centro - São Paulo/SP - CEP: 01234-567', 50, 68)
+       .text('Telefone: (11) 3456-7890 - Email: contato@felkatransportes.com.br', 50, 81);
+    
+    // Linha separadora do cabeçalho
+    doc.strokeColor('#0C29AB').lineWidth(2)
+       .moveTo(50, 100).lineTo(545, 100).stroke();
+    
+    // Título do documento
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#0C29AB')
+       .text(title, 50, 115);
+    
+    // Linha separadora do título
+    doc.strokeColor('black').lineWidth(1)
+       .moveTo(50, 138).lineTo(545, 138).stroke();
+    
+    // Rodapé
+    const pageHeight = doc.page.height;
+    doc.strokeColor('#0C29AB').lineWidth(1)
+       .moveTo(50, pageHeight - 65).lineTo(545, pageHeight - 65).stroke();
+    
+    doc.fontSize(8).font('Helvetica').fillColor('black')
+       .text('www.felkatransportes.com.br', 50, pageHeight - 55)
+       .text(`Documento gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 50, pageHeight - 45)
+       .text('Sistema FELKA Transportes - Gestão Empresarial', 50, pageHeight - 35);
+    
+    return 155; // Posição Y inicial para conteúdo
+  };
+
   // Employee PDF generation
   app.get("/api/employees/:id/pdf", async (req, res) => {
     try {
@@ -564,77 +598,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Pipe do PDF para a resposta
       doc.pipe(res);
 
-      // Header do documento
-      doc.fontSize(20).text('FELKA TRANSPORTES', { align: 'center' });
-      doc.fontSize(16).text('FICHA DO COLABORADOR', { align: 'center' });
-      doc.moveDown(2);
+      // Aplicar cabeçalho e rodapé padronizado
+      let yPos = addFelkaHeaderAndFooter(doc, 'FICHA DO COLABORADOR');
+      yPos += 10;
 
       // Informações principais
-      doc.fontSize(14).text('DADOS PESSOAIS', { underline: true });
-      doc.fontSize(12)
-        .text(`Nome Completo: ${employee.fullName}`)
-        .text(`CPF: ${employee.cpf}`)
-        .text(`RG: ${employee.rg || 'N/A'}`)
-        .text(`Matrícula: #${employee.employeeNumber}`)
-        .text(`Data de Nascimento: ${employee.birthDate ? new Date(employee.birthDate).toLocaleDateString('pt-BR') : 'N/A'}`)
-        .text(`Gênero: ${employee.gender || 'N/A'}`)
-        .text(`Estado Civil: ${employee.maritalStatus || 'N/A'}`)
-        .moveDown();
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('DADOS PESSOAIS', 50, yPos);
+      yPos += 20;
+      doc.fontSize(10).font('Helvetica').fillColor('black')
+        .text(`Nome Completo: ${employee.fullName}`, 50, yPos); yPos += 15;
+      doc.text(`CPF: ${employee.cpf}`, 50, yPos); yPos += 15;
+      doc.text(`RG: ${employee.rg || 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Matrícula: #${employee.employeeNumber}`, 50, yPos); yPos += 15;
+      doc.text(`Data de Nascimento: ${employee.birthDate ? new Date(employee.birthDate).toLocaleDateString('pt-BR') : 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Gênero: ${employee.gender || 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Estado Civil: ${employee.maritalStatus || 'N/A'}`, 50, yPos); yPos += 25;
 
       // Contato
-      doc.fontSize(14).text('DADOS DE CONTATO', { underline: true });
-      doc.fontSize(12)
-        .text(`Telefone: ${employee.phone}`)
-        .text(`E-mail Corporativo: ${employee.email || 'N/A'}`)
-        .text(`E-mail Pessoal: ${employee.personalEmail || 'N/A'}`)
-        .moveDown();
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('DADOS DE CONTATO', 50, yPos);
+      yPos += 20;
+      doc.fontSize(10).font('Helvetica').fillColor('black')
+        .text(`Telefone: ${employee.phone}`, 50, yPos); yPos += 15;
+      doc.text(`E-mail Corporativo: ${employee.email || 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`E-mail Pessoal: ${employee.personalEmail || 'N/A'}`, 50, yPos); yPos += 25;
 
       // Endereço
       if (employee.address) {
-        doc.fontSize(14).text('ENDEREÇO', { underline: true });
-        doc.fontSize(12)
-          .text(`Endereço: ${employee.address}`)
-          .text(`Cidade: ${employee.city || 'N/A'} - ${employee.state || 'N/A'}`)
-          .text(`CEP: ${employee.zipCode || 'N/A'}`)
-          .moveDown();
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('ENDEREÇO', 50, yPos);
+        yPos += 20;
+        doc.fontSize(10).font('Helvetica').fillColor('black')
+          .text(`Endereço: ${employee.address}`, 50, yPos); yPos += 15;
+        doc.text(`Cidade: ${employee.city || 'N/A'} - ${employee.state || 'N/A'}`, 50, yPos); yPos += 15;
+        doc.text(`CEP: ${employee.zipCode || 'N/A'}`, 50, yPos); yPos += 25;
       }
 
       // Informações Profissionais
-      doc.fontSize(14).text('DADOS PROFISSIONAIS', { underline: true });
-      doc.fontSize(12)
-        .text(`Cargo: ${employee.position}`)
-        .text(`Departamento: ${employee.department}`)
-        .text(`Data de Admissão: ${employee.admissionDate ? new Date(employee.admissionDate).toLocaleDateString('pt-BR') : 'N/A'}`)
-        .text(`Status: ${employee.status === 'active' ? 'Ativo' : 'Inativo'}`)
-        .text(`Gestor: ${employee.manager || 'N/A'}`)
-        .text(`Horário de Trabalho: ${employee.workSchedule || 'N/A'}`)
-        .moveDown();
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('DADOS PROFISSIONAIS', 50, yPos);
+      yPos += 20;
+      doc.fontSize(10).font('Helvetica').fillColor('black')
+        .text(`Cargo: ${employee.position}`, 50, yPos); yPos += 15;
+      doc.text(`Departamento: ${employee.department}`, 50, yPos); yPos += 15;
+      doc.text(`Data de Admissão: ${employee.admissionDate ? new Date(employee.admissionDate).toLocaleDateString('pt-BR') : 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Status: ${employee.status === 'active' ? 'Ativo' : 'Inativo'}`, 50, yPos); yPos += 15;
+      doc.text(`Gestor: ${employee.manager || 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Horário de Trabalho: ${employee.workSchedule || 'N/A'}`, 50, yPos); yPos += 25;
 
       // Informações Salariais (se disponível)
       if (employee.salary) {
-        doc.fontSize(14).text('INFORMAÇÕES SALARIAIS', { underline: true });
-        doc.fontSize(12)
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('INFORMAÇÕES SALARIAIS', 50, yPos);
+        yPos += 20;
+        doc.fontSize(10).font('Helvetica').fillColor('black')
           .text(`Salário Base: ${new Intl.NumberFormat('pt-BR', {
             style: 'currency',
             currency: 'BRL'
-          }).format(Number(employee.salary))}`)
-          .moveDown();
+          }).format(Number(employee.salary))}`, 50, yPos); yPos += 25;
       }
 
       // Dados Educacionais (se disponível)
       if (employee.education) {
-        doc.fontSize(14).text('FORMAÇÃO ACADÊMICA', { underline: true });
-        doc.fontSize(12)
-          .text(`Escolaridade: ${employee.education}`)
-          .text(`Curso: ${employee.course || 'N/A'}`)
-          .text(`Instituição: ${employee.institution || 'N/A'}`)
-          .moveDown();
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('FORMAÇÃO ACADÊMICA', 50, yPos);
+        yPos += 20;
+        doc.fontSize(10).font('Helvetica').fillColor('black')
+          .text(`Escolaridade: ${employee.education}`, 50, yPos); yPos += 15;
+        doc.text(`Curso: ${employee.course || 'N/A'}`, 50, yPos); yPos += 15;
+        doc.text(`Instituição: ${employee.institution || 'N/A'}`, 50, yPos); yPos += 25;
       }
-
-      // Footer
-      doc.fontSize(10)
-        .text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, { align: 'center' })
-        .text('Sistema FELKA Transportes - Gestão de RH', { align: 'center' });
 
       doc.end();
     } catch (error) {
