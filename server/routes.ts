@@ -1499,6 +1499,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Gerar PDF do sinistro
+  app.get("/api/sinistros/:id/pdf", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const sinistro = await storage.getSinistro(id);
+      
+      if (!sinistro) {
+        return res.status(404).json({ message: "Sinistro não encontrado" });
+      }
+
+      const doc = new PDFDocument();
+      
+      // Configurar headers para download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=sinistro_${sinistro.tipo}_${sinistro.id}.pdf`);
+      
+      // Pipe do PDF para a resposta
+      doc.pipe(res);
+
+      // Aplicar cabeçalho e rodapé padronizado
+      let yPos = addFelkaHeaderAndFooter(doc, 'RELATÓRIO DE SINISTRO');
+      yPos += 10;
+
+      // Informações principais
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('DADOS DO SINISTRO', 50, yPos);
+      yPos += 20;
+      
+      doc.fontSize(10).font('Helvetica').fillColor('black')
+        .text(`Tipo: ${sinistro.tipo.toUpperCase()}`, 50, yPos); yPos += 15;
+      doc.text(`Status: ${sinistro.status.toUpperCase()}`, 50, yPos); yPos += 15;
+      doc.text(`Data: ${sinistro.dataOcorrido}`, 50, yPos); yPos += 15;
+      doc.text(`Hora: ${sinistro.horaOcorrido}`, 50, yPos); yPos += 15;
+      doc.text(`Local: ${sinistro.localEndereco}`, 50, yPos); yPos += 25;
+
+      // Dados do envolvido
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('DADOS DO ENVOLVIDO', 50, yPos);
+      yPos += 20;
+      
+      doc.fontSize(10).font('Helvetica').fillColor('black')
+        .text(`Nome: ${sinistro.nomeEnvolvido}`, 50, yPos); yPos += 15;
+      doc.text(`Cargo: ${sinistro.cargoEnvolvido || 'N/A'}`, 50, yPos); yPos += 15;
+      doc.text(`Vítimas: ${sinistro.vitimas ? 'SIM' : 'NÃO'}`, 50, yPos); yPos += 15;
+      
+      if (sinistro.descricaoVitimas) {
+        doc.text(`Descrição das Vítimas: ${sinistro.descricaoVitimas}`, 50, yPos); yPos += 15;
+      }
+      yPos += 10;
+
+      // Informações veiculares (se aplicável)
+      if (sinistro.tipo === 'veicular') {
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('INFORMAÇÕES VEICULARES', 50, yPos);
+        yPos += 20;
+        
+        doc.fontSize(10).font('Helvetica').fillColor('black')
+          .text(`Placa Tração: ${sinistro.placaTracao || 'N/A'}`, 50, yPos); yPos += 15;
+        doc.text(`Tipo de Colisão: ${sinistro.tipoColisao || 'N/A'}`, 50, yPos); yPos += 15;
+        doc.text(`Condições do Trajeto: ${sinistro.condicoesTrajeto || 'N/A'}`, 50, yPos); yPos += 15;
+        doc.text(`Gravidade: ${sinistro.percepcaoGravidade || 'N/A'}`, 50, yPos); yPos += 15;
+        doc.text(`Quem Sofreu Avaria: ${sinistro.quemSofreuAvaria || 'N/A'}`, 50, yPos); yPos += 25;
+      }
+
+      // Observações
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('OBSERVAÇÕES', 50, yPos);
+      yPos += 20;
+      
+      const observacoesLines = doc.heightOfString(sinistro.observacoes, { width: 500 });
+      doc.fontSize(10).font('Helvetica').fillColor('black')
+        .text(sinistro.observacoes, 50, yPos, { width: 500 });
+      yPos += observacoesLines + 25;
+
+      // Informações do registro
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0C29AB').text('REGISTRO', 50, yPos);
+      yPos += 20;
+      
+      doc.fontSize(10).font('Helvetica').fillColor('black')
+        .text(`Registrado por: ${sinistro.nomeRegistrador}`, 50, yPos); yPos += 15;
+      doc.text(`Cargo: ${sinistro.cargoRegistrador}`, 50, yPos); yPos += 15;
+      doc.text(`Data de Criação: ${format(new Date(sinistro.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 50, yPos);
+
+      doc.end();
+    } catch (error) {
+      console.error('Erro ao gerar PDF do sinistro:', error);
+      res.status(500).json({ message: "Erro ao gerar PDF" });
+    }
+  });
+
   // Upload de documento para sinistro
   app.post("/api/sinistros/:id/documents", upload.single('document'), async (req, res) => {
     try {

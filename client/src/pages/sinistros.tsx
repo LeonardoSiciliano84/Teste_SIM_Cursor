@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, Eye, FileText, Search, Filter, Calendar, User, MapPin, Download } from "lucide-react";
+import { AlertTriangle, Eye, FileText, Search, Filter, Calendar, User, MapPin, Download, Edit, CheckCircle, Printer } from "lucide-react";
 import { SinistroFormGeneral } from "@/components/sinistros/sinistro-form-general";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -31,6 +34,72 @@ export default function SinistrosPage() {
   const [tipoFilter, setTipoFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
+  const [selectedSinistro, setSelectedSinistro] = useState<Sinistro | null>(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Função para visualizar sinistro
+  const handleView = (sinistro: Sinistro) => {
+    setSelectedSinistro(sinistro);
+    setViewModalOpen(true);
+  };
+
+  // Função para editar sinistro
+  const handleEdit = (sinistro: Sinistro) => {
+    setSelectedSinistro(sinistro);
+    setEditModalOpen(true);
+  };
+
+  // Função para finalizar sinistro
+  const finalizarSinistroMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/sinistros/${id}/finalizar`, "PATCH", {
+        finalizadoPor: "admin-1",
+        nomeFinalizador: "Administrador QSMS"
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sucesso",
+        description: "Sinistro finalizado com sucesso",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/sinistros"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao finalizar sinistro",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Função para imprimir sinistro
+  const handlePrint = async (sinistro: Sinistro) => {
+    try {
+      const response = await fetch(`/api/sinistros/${sinistro.id}/pdf`);
+      if (!response.ok) throw new Error("Erro ao gerar PDF");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sinistro_${sinistro.id}_${sinistro.tipo}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao gerar PDF do sinistro",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Função para exportar dados para Excel
   const exportToExcel = () => {
@@ -396,13 +465,43 @@ export default function SinistrosPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline">
+                      <div className="flex space-x-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleView(sinistro)}
+                          title="Visualizar detalhes"
+                        >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="outline">
-                          <FileText className="w-4 h-4" />
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handlePrint(sinistro)}
+                          title="Imprimir PDF"
+                        >
+                          <Printer className="w-4 h-4" />
                         </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEdit(sinistro)}
+                          title="Editar sinistro"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        {sinistro.status !== "finalizado" && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => finalizarSinistroMutation.mutate(sinistro.id)}
+                            disabled={finalizarSinistroMutation.isPending}
+                            title="Finalizar sinistro"
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -412,6 +511,95 @@ export default function SinistrosPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de Visualização */}
+      <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Sinistro</DialogTitle>
+          </DialogHeader>
+          {selectedSinistro && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Informações Básicas</h3>
+                  <div className="space-y-2">
+                    <p><strong>Tipo:</strong> {selectedSinistro.tipo}</p>
+                    <p><strong>Status:</strong> <Badge variant={selectedSinistro.status === 'finalizado' ? 'default' : selectedSinistro.status === 'aberto' ? 'destructive' : 'secondary'}>{selectedSinistro.status}</Badge></p>
+                    <p><strong>Data:</strong> {selectedSinistro.dataOcorrido}</p>
+                    <p><strong>Hora:</strong> {selectedSinistro.horaOcorrido}</p>
+                    <p><strong>Local:</strong> {selectedSinistro.localEndereco}</p>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Envolvidos</h3>
+                  <div className="space-y-2">
+                    <p><strong>Nome:</strong> {selectedSinistro.nomeEnvolvido}</p>
+                    <p><strong>Cargo:</strong> {selectedSinistro.cargoEnvolvido || 'N/A'}</p>
+                    <p><strong>Vítimas:</strong> {selectedSinistro.vitimas ? 'Sim' : 'Não'}</p>
+                    {selectedSinistro.descricaoVitimas && (
+                      <p><strong>Descrição das Vítimas:</strong> {selectedSinistro.descricaoVitimas}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {selectedSinistro.tipo === 'veicular' && (
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Informações Veiculares</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p><strong>Placa Tração:</strong> {selectedSinistro.placaTracao || 'N/A'}</p>
+                      <p><strong>Tipo de Colisão:</strong> {selectedSinistro.tipoColisao || 'N/A'}</p>
+                      <p><strong>Condições do Trajeto:</strong> {selectedSinistro.condicoesTrajeto || 'N/A'}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p><strong>Gravidade:</strong> {selectedSinistro.percepcaoGravidade || 'N/A'}</p>
+                      <p><strong>Quem Sofreu Avaria:</strong> {selectedSinistro.quemSofreuAvaria || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <h3 className="font-semibold text-lg mb-3">Observações</h3>
+                <p className="bg-gray-50 p-3 rounded-md">{selectedSinistro.observacoes}</p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-lg mb-3">Registro</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p><strong>Registrado por:</strong> {selectedSinistro.nomeRegistrador}</p>
+                    <p><strong>Cargo:</strong> {selectedSinistro.cargoRegistrador}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p><strong>Data de Criação:</strong> {format(new Date(selectedSinistro.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Edição */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar Sinistro</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p className="text-gray-600">Funcionalidade de edição será implementada em breve.</p>
+            <Button 
+              onClick={() => setEditModalOpen(false)}
+              className="mt-4"
+            >
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
