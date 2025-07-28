@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Search, User, Mail, Shield, Car, FileText, Download, AlertTriangle, CheckSquare, Wrench, Phone } from "lucide-react";
+import { Search, User, Mail, Shield, Car, FileText, Download, AlertTriangle, CheckSquare, Wrench, Phone, Camera, MapPin, Clock } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -30,6 +30,12 @@ export default function DriverPortal() {
   const [implementSearchTerm, setImplementSearchTerm] = useState("");
   const [selectedImplement, setSelectedImplement] = useState<string>("");
   const [showDocuments, setShowDocuments] = useState(false);
+  const [selectedDocumentVehicle, setSelectedDocumentVehicle] = useState<any>(null);
+  const [showPreChecklistWarning, setShowPreChecklistWarning] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(false);
+  const [showMaintenanceRequest, setShowMaintenanceRequest] = useState(false);
+  const [showMaintenanceCommunication, setShowMaintenanceCommunication] = useState(false);
+  const [showTravelMaintenance, setShowTravelMaintenance] = useState(false);
   const { toast } = useToast();
   
   // Obter informações do motorista logado
@@ -63,6 +69,8 @@ export default function DriverPortal() {
 
   // Função para visualizar documentos
   const handleViewDocuments = (vehicleId: string) => {
+    const vehicle = vehicles.find((v: any) => v.id === vehicleId);
+    setSelectedDocumentVehicle(vehicle);
     setShowDocuments(true);
   };
 
@@ -353,40 +361,40 @@ export default function DriverPortal() {
             </h3>
             
             <div className="grid grid-cols-2 gap-3">
-              {/* Botão 1: Aviso Pré-Checklist */}
-              <Button 
-                className="h-20 flex flex-col items-center justify-center bg-yellow-600 hover:bg-yellow-700 text-white"
-                onClick={() => toast({ title: "Navegando...", description: "Abrindo Aviso Pré-Checklist" })}
-              >
-                <AlertTriangle className="h-6 w-6 mb-1" />
-                <span className="text-xs text-center">Aviso Pré-Checklist</span>
-              </Button>
-
-              {/* Botão 2: Checklist de Saída */}
+              {/* Botão 1: Checklist */}
               <Button 
                 className="h-20 flex flex-col items-center justify-center bg-green-600 hover:bg-green-700 text-white"
-                onClick={() => toast({ title: "Navegando...", description: "Abrindo Checklist de Saída" })}
+                onClick={() => setShowPreChecklistWarning(true)}
               >
                 <CheckSquare className="h-6 w-6 mb-1" />
-                <span className="text-xs text-center">Checklist de Saída</span>
+                <span className="text-xs text-center">Checklist</span>
               </Button>
 
-              {/* Botão 3: Solicitação de Manutenção */}
+              {/* Botão 2: Solicitar Manutenção */}
               <Button 
                 className="h-20 flex flex-col items-center justify-center bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => toast({ title: "Navegando...", description: "Abrindo Solicitação de Manutenção" })}
+                onClick={() => setShowMaintenanceRequest(true)}
               >
                 <Wrench className="h-6 w-6 mb-1" />
-                <span className="text-xs text-center">Solicitação Manutenção</span>
+                <span className="text-xs text-center">Solicitar Manutenção</span>
               </Button>
 
-              {/* Botão 4: Comunicação de Sinistro */}
+              {/* Botão 3: Comunicar Manutenção */}
               <Button 
-                className="h-20 flex flex-col items-center justify-center bg-red-600 hover:bg-red-700 text-white"
-                onClick={() => toast({ title: "Navegando...", description: "Abrindo Comunicação de Sinistro" })}
+                className="h-20 flex flex-col items-center justify-center bg-orange-600 hover:bg-orange-700 text-white"
+                onClick={() => setShowMaintenanceCommunication(true)}
               >
                 <Phone className="h-6 w-6 mb-1" />
-                <span className="text-xs text-center">Comunicação Sinistro</span>
+                <span className="text-xs text-center">Comunicar Manutenção</span>
+              </Button>
+
+              {/* Botão 4: Registrar Manutenção em Viagem */}
+              <Button 
+                className="h-20 flex flex-col items-center justify-center bg-purple-600 hover:bg-purple-700 text-white"
+                onClick={() => setShowTravelMaintenance(true)}
+              >
+                <Wrench className="h-6 w-6 mb-1" />
+                <span className="text-xs text-center">Manutenção Viagem</span>
               </Button>
             </div>
 
@@ -410,11 +418,11 @@ export default function DriverPortal() {
               </DialogDescription>
             </DialogHeader>
             
-            {selectedVehicleData && (
+            {selectedDocumentVehicle && (
               <div className="space-y-4">
                 <div className="bg-blue-50 p-3 rounded-lg">
                   <p className="font-semibold text-blue-800">
-                    {selectedVehicleData.plate} - {selectedVehicleData.name}
+                    {selectedDocumentVehicle.plate} - {selectedDocumentVehicle.name}
                   </p>
                 </div>
 
@@ -457,6 +465,345 @@ export default function DriverPortal() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Aviso Pré-Checklist */}
+        <Dialog open={showPreChecklistWarning} onOpenChange={setShowPreChecklistWarning}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-yellow-600">
+                <AlertTriangle className="h-5 w-5" />
+                <span>Aviso de Segurança</span>
+              </DialogTitle>
+              <DialogDescription>
+                Leia atentamente antes de prosseguir
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                <p className="text-sm font-medium text-yellow-800">
+                  ⚠️ ATENÇÃO: Se detectar vazamentos ou falhas, NÃO inicie a operação. 
+                  Comunique imediatamente a manutenção.
+                </p>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  Declaro que sou responsável pelo preenchimento correto de todas as informações do checklist e pela verificação completa do veículo.
+                </p>
+              </div>
+
+              <div className="flex space-x-3">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setShowPreChecklistWarning(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  onClick={() => {
+                    setShowPreChecklistWarning(false);
+                    setShowChecklist(true);
+                  }}
+                >
+                  Continuar
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Checklist de Saída */}
+        <Dialog open={showChecklist} onOpenChange={setShowChecklist}>
+          <DialogContent className="max-w-md max-h-screen overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <CheckSquare className="h-5 w-5 text-green-600" />
+                <span>Checklist de Saída</span>
+              </DialogTitle>
+              <DialogDescription>
+                Preencha todos os itens obrigatórios
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {/* Data e hora */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Data</Label>
+                  <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+                </div>
+                <div>
+                  <Label>Hora</Label>
+                  <Input type="time" defaultValue={new Date().toTimeString().slice(0,5)} />
+                </div>
+              </div>
+
+              {/* Base de saída */}
+              <div>
+                <Label>Base de Saída</Label>
+                <Input placeholder="Ex: Terminal São Paulo" />
+              </div>
+
+              {/* Placas */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Placa Tração</Label>
+                  <Input value={selectedVehicleData?.plate || ""} readOnly />
+                </div>
+                <div>
+                  <Label>Placa Implemento</Label>
+                  <Input value={selectedImplementData?.plate || ""} readOnly />
+                </div>
+              </div>
+
+              {/* KM atual */}
+              <div>
+                <Label>KM Atual</Label>
+                <Input type="number" placeholder="Ex: 125000" />
+              </div>
+
+              {/* Lista de verificação */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Lista de Verificação</Label>
+                {[
+                  "Documentos válidos",
+                  "Cartão de abastecimento",
+                  "Níveis de óleo e água",
+                  "Elétrica, faróis, buzina, retrovisores",
+                  "Pneus e calibragem",
+                  "Equipamentos obrigatórios (extintor, triângulo)",
+                  "Cintas, catracas, lonas"
+                ].map((item, index) => (
+                  <div key={index} className="flex items-center space-x-3">
+                    <input type="checkbox" className="rounded" />
+                    <span className="text-sm">{item}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Observações */}
+              <div>
+                <Label>Observações</Label>
+                <textarea 
+                  className="w-full p-2 border rounded-md resize-none" 
+                  rows={3}
+                  placeholder="Observações adicionais..."
+                />
+              </div>
+
+              {/* Upload de foto */}
+              <div>
+                <Label>Foto Obrigatória *</Label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                  <Camera className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-600">Toque para adicionar foto</p>
+                </div>
+              </div>
+
+              <Button className="w-full bg-green-600 hover:bg-green-700">
+                Enviar Checklist
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Solicitação de Manutenção */}
+        <Dialog open={showMaintenanceRequest} onOpenChange={setShowMaintenanceRequest}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Wrench className="h-5 w-5 text-blue-600" />
+                <span>Solicitação de Manutenção</span>
+              </DialogTitle>
+              <DialogDescription>
+                Descreva o problema encontrado
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {/* Veículo afetado */}
+              <div>
+                <Label>Veículo Afetado</Label>
+                <select className="w-full p-2 border rounded-md">
+                  <option>Tração</option>
+                  <option>Implemento</option>
+                  <option>Ambos</option>
+                </select>
+              </div>
+
+              {/* Descrição do problema */}
+              <div>
+                <Label>Descrição do Problema *</Label>
+                <textarea 
+                  className="w-full p-2 border rounded-md resize-none" 
+                  rows={4}
+                  placeholder="Descreva detalhadamente o problema encontrado..."
+                  required
+                />
+              </div>
+
+              {/* Data e motorista (preenchidos automaticamente) */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Data</Label>
+                  <Input value={new Date().toLocaleDateString('pt-BR')} readOnly />
+                </div>
+                <div>
+                  <Label>Motorista</Label>
+                  <Input value={driverInfo?.fullName || ""} readOnly />
+                </div>
+              </div>
+
+              <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                Enviar Solicitação
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Comunicação de Manutenção */}
+        <Dialog open={showMaintenanceCommunication} onOpenChange={setShowMaintenanceCommunication}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Phone className="h-5 w-5 text-orange-600" />
+                <span>Comunicação de Manutenção</span>
+              </DialogTitle>
+              <DialogDescription>
+                Comunique problemas urgentes
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                <p className="text-sm font-medium text-orange-800">
+                  Para problemas que impedem a continuidade da viagem
+                </p>
+              </div>
+
+              {/* Placa do veículo */}
+              <div>
+                <Label>Placa do Veículo</Label>
+                <Input value={selectedVehicleData?.plate || ""} readOnly />
+              </div>
+
+              {/* Localização atual */}
+              <div>
+                <Label>Localização Atual</Label>
+                <div className="flex space-x-2">
+                  <Input placeholder="Endereço ou coordenadas" className="flex-1" />
+                  <Button variant="outline" size="sm">
+                    <MapPin className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Descrição do problema */}
+              <div>
+                <Label>Descrição do Problema *</Label>
+                <textarea 
+                  className="w-full p-2 border rounded-md resize-none" 
+                  rows={3}
+                  placeholder="Descreva o problema..."
+                  required
+                />
+              </div>
+
+              <div className="flex space-x-3">
+                <Button className="flex-1 bg-orange-600 hover:bg-orange-700">
+                  Enviar Comunicação
+                </Button>
+                <Button variant="outline" className="flex-1">
+                  WhatsApp Emergência
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Registro de Manutenção em Viagem */}
+        <Dialog open={showTravelMaintenance} onOpenChange={setShowTravelMaintenance}>
+          <DialogContent className="max-w-md max-h-screen overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Wrench className="h-5 w-5 text-purple-600" />
+                <span>Manutenção em Viagem</span>
+              </DialogTitle>
+              <DialogDescription>
+                Registre manutenção feita fora da base
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {/* Placa do veículo */}
+              <div>
+                <Label>Placa do Veículo</Label>
+                <Input value={selectedVehicleData?.plate || ""} readOnly />
+              </div>
+
+              {/* Data do serviço */}
+              <div>
+                <Label>Data do Serviço</Label>
+                <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+              </div>
+
+              {/* Nome do fornecedor */}
+              <div>
+                <Label>Nome do Fornecedor *</Label>
+                <Input placeholder="Ex: Oficina São José" required />
+              </div>
+
+              {/* Valor do serviço */}
+              <div>
+                <Label>Valor do Serviço (R$)</Label>
+                <Input type="number" step="0.01" placeholder="0,00" />
+              </div>
+
+              {/* Tipo de manutenção */}
+              <div>
+                <Label>Tipo de Manutenção</Label>
+                <select className="w-full p-2 border rounded-md">
+                  <option>Preventiva</option>
+                  <option>Corretiva</option>
+                  <option>Emergencial</option>
+                  <option>Troca de peças</option>
+                </select>
+              </div>
+
+              {/* Observações */}
+              <div>
+                <Label>Observações</Label>
+                <textarea 
+                  className="w-full p-2 border rounded-md resize-none" 
+                  rows={3}
+                  placeholder="Descreva o serviço realizado..."
+                />
+              </div>
+
+              {/* Upload de fotos */}
+              <div className="space-y-3">
+                <Label>Fotos</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center">
+                    <Camera className="h-6 w-6 mx-auto text-gray-400 mb-1" />
+                    <p className="text-xs text-gray-600">Foto do Serviço</p>
+                  </div>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center">
+                    <FileText className="h-6 w-6 mx-auto text-gray-400 mb-1" />
+                    <p className="text-xs text-gray-600">Nota Fiscal</p>
+                  </div>
+                </div>
+              </div>
+
+              <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                Registrar Manutenção
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
