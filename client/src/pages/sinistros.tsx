@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertTriangle, Eye, FileText, Search, Filter, Calendar, User, MapPin, Download, Edit, CheckCircle, Printer } from "lucide-react";
 import { SinistroFormGeneral } from "@/components/sinistros/sinistro-form-general";
 import { SinistroEditForm } from "@/components/sinistros/sinistro-edit-form";
+import SinistroDocuments from "@/components/sinistros/sinistro-documents";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from 'xlsx';
@@ -590,6 +591,9 @@ export default function SinistrosPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Seção de Documentos Anexados */}
+              <SinistroDocuments sinistroId={selectedSinistro.id} />
             </div>
           )}
         </DialogContent>

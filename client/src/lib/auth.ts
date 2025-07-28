@@ -10,11 +10,37 @@ class AuthManager {
   private currentUser: User | null = null;
   private listeners: Set<(state: AuthState) => void> = new Set();
 
+  constructor() {
+    // Tentar restaurar sessão do localStorage na inicialização
+    this.restoreSession();
+  }
+
   getState(): AuthState {
     return {
       user: this.currentUser,
       isAuthenticated: !!this.currentUser,
     };
+  }
+
+  private restoreSession() {
+    try {
+      const savedUser = localStorage.getItem('felka_auth_user');
+      if (savedUser) {
+        this.currentUser = JSON.parse(savedUser);
+        this.notify();
+      }
+    } catch (error) {
+      console.error('Erro ao restaurar sessão:', error);
+      localStorage.removeItem('felka_auth_user');
+    }
+  }
+
+  private saveSession(user: User) {
+    localStorage.setItem('felka_auth_user', JSON.stringify(user));
+  }
+
+  private clearSession() {
+    localStorage.removeItem('felka_auth_user');
   }
 
   subscribe(listener: (state: AuthState) => void) {
@@ -44,6 +70,7 @@ class AuthManager {
 
       const { user } = await response.json();
       this.currentUser = user;
+      this.saveSession(user);
       this.notify();
       return { success: true };
     } catch (error) {
@@ -53,7 +80,18 @@ class AuthManager {
 
   logout() {
     this.currentUser = null;
+    this.clearSession();
     this.notify();
+  }
+
+  // Verificar se usuário pode acessar área administrativa
+  canAccessAdmin(): boolean {
+    return this.currentUser?.role === 'admin' || this.currentUser?.role === 'user';
+  }
+
+  // Verificar se usuário é motorista
+  isDriver(): boolean {
+    return this.currentUser?.role === 'driver';
   }
 }
 
@@ -73,6 +111,8 @@ export const useAuth = () => {
   return {
     user: authState.user,
     isAuthenticated: authState.isAuthenticated,
+    canAccessAdmin: authManager.canAccessAdmin,
+    isDriver: authManager.isDriver,
     login: authManager.login.bind(authManager),
     logout: authManager.logout.bind(authManager),
   };

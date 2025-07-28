@@ -23,7 +23,7 @@ const navigation = [
   { name: "Colaboradores", href: "/employees", icon: Users },
   { name: "Ocorrências", href: "/occurrences", icon: FileText },
   { name: "Sinistros", href: "/sinistros", icon: AlertTriangle },
-  { name: "Portal Motorista", href: "/driver-login", icon: Smartphone },
+  { name: "Portal Motorista", href: "/driver-portal", icon: Smartphone },
   { name: "Gestão de Prancha", href: "/prancha-management", icon: Package },
   { name: "Rotas", href: "/routes", icon: Map },
   { name: "Reservas", href: "/bookings", icon: Package },

@@ -83,11 +83,35 @@ function App() {
     };
   }, []);
 
+  if (!authState.isAuthenticated) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Login />
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  // Se o usuário é motorista, redirecionar apenas para o portal
+  if (authState.user?.role === 'driver') {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <DriverPortal />
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  // Usuários admin e user podem acessar a área administrativa
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <AuthenticatedApp />
         <Toaster />
-        {authState.isAuthenticated ? <AuthenticatedApp /> : <Login />}
       </TooltipProvider>
     </QueryClientProvider>
   );
