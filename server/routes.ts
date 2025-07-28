@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import PDFDocument from "pdfkit";
+import * as fs from "fs";
+import * as path from "path";
 import { storage } from "./storage";
 import { 
   insertVehicleSchema, 
@@ -12,7 +14,7 @@ import {
   insertEmployeeSchema,
   insertEmployeeDependentSchema,
   insertEmployeeDocumentSchema,
-
+  insertEmployeeOccurrenceSchema,
   insertEmployeeMovementSchema,
   insertEmployeeFileSchema
 } from "@shared/schema";
@@ -543,28 +545,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Função auxiliar para cabeçalho e rodapé padronizado FELKA
   const addFelkaHeaderAndFooter = (doc: any, title: string) => {
-    // Cabeçalho oficial FELKA
-    doc.fontSize(16).font('Helvetica-Bold').fillColor('#0C29AB')
-       .text('FELKA TRANSPORTES LTDA', 50, 25);
+    try {
+      // Cabeçalho com imagem oficial FELKA
+      const headerImagePath = path.join(__dirname, 'assets', 'felka-header.png');
+      
+      if (fs.existsSync(headerImagePath)) {
+        // Inserir imagem do cabeçalho (proporção adequada para PDF)
+        doc.image(headerImagePath, 50, 20, { 
+          width: 500, 
+          height: 60 
+        });
+      } else {
+        // Fallback caso a imagem não seja encontrada
+        doc.fontSize(16).font('Helvetica-Bold').fillColor('#0C29AB')
+           .text('FELKA TRANSPORTES LTDA', 50, 25);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar imagem do cabeçalho:', error);
+      // Fallback em caso de erro
+      doc.fontSize(16).font('Helvetica-Bold').fillColor('#0C29AB')
+         .text('FELKA TRANSPORTES LTDA', 50, 25);
+    }
     
-    doc.fontSize(8).font('Helvetica').fillColor('black')
-       .text('CNPJ: 01.234.567/0001-89 | Inscrição Estadual: 123.456.789.123', 50, 45)
-       .text('Rua das Indústrias, 2500 - Distrito Industrial - São Paulo/SP - CEP: 08150-000', 50, 58)
-       .text('Tel: (11) 2345-6789 | Email: comercial@felkatransportes.com.br', 50, 71)
-       .text('Site: www.felkatransportes.com.br', 50, 84);
-    
-    // Linha dupla separadora (estilo timbrado)
+    // Linha separadora após o cabeçalho
     doc.strokeColor('#0C29AB').lineWidth(1.5)
-       .moveTo(50, 100).lineTo(545, 100).stroke()
-       .moveTo(50, 103).lineTo(545, 103).stroke();
+       .moveTo(50, 90).lineTo(545, 90).stroke();
     
     // Título do documento centralizado
     doc.fontSize(14).font('Helvetica-Bold').fillColor('#0C29AB')
-       .text(title, 0, 120, { width: doc.page.width, align: 'center' });
+       .text(title, 0, 105, { width: doc.page.width, align: 'center' });
     
     // Linha separadora do título
     doc.strokeColor('black').lineWidth(0.5)
-       .moveTo(50, 143).lineTo(545, 143).stroke();
+       .moveTo(50, 128).lineTo(545, 128).stroke();
     
     // Rodapé com informações legais
     const pageHeight = doc.page.height;
@@ -579,7 +592,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
        .text(`Emissão: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')} | Sistema FELKA v2.0`, 50, pageHeight - 40)
        .text('Página 1 de 1', 500, pageHeight - 40);
     
-    return 160; // Posição Y inicial para conteúdo
+    return 145; // Posição Y inicial para conteúdo (ajustado para a imagem)
   };
 
   // Employee PDF generation
@@ -661,8 +674,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         yPos += 20;
         doc.fontSize(10).font('Helvetica').fillColor('black')
           .text(`Escolaridade: ${employee.education}`, 50, yPos); yPos += 15;
-        doc.text(`Curso: ${employee.course || 'N/A'}`, 50, yPos); yPos += 15;
-        doc.text(`Instituição: ${employee.institution || 'N/A'}`, 50, yPos); yPos += 25;
+        doc.text(`Curso: ${(employee as any).course || 'N/A'}`, 50, yPos); yPos += 15;
+        doc.text(`Instituição: ${(employee as any).institution || 'N/A'}`, 50, yPos); yPos += 25;
       }
 
       doc.end();
@@ -797,7 +810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(occurrence);
     } catch (error) {
       console.error("Erro ao criar ocorrência:", error);
-      res.status(500).json({ message: "Erro ao criar ocorrência", error: error.message });
+      res.status(500).json({ message: "Erro ao criar ocorrência", error: error instanceof Error ? error.message : 'Erro desconhecido' });
     }
   });
 
