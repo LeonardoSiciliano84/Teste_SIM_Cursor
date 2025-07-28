@@ -8,7 +8,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Search, User, Mail, Shield, Car, FileText, Download, AlertTriangle, CheckSquare, Wrench, Phone, Camera, MapPin, Clock, Truck, Fuel, Settings, Package, MessageSquare, Calendar } from "lucide-react";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Search, User, Mail, Shield, Car, FileText, Download, AlertTriangle, CheckSquare, Wrench, Phone, Camera, MapPin, Clock, Truck, Fuel, Settings, Package, MessageSquare, Calendar, LogOut, Lock, UserCircle, ChevronDown } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { SinistroForm } from "@/components/sinistros/sinistro-form";
@@ -52,6 +60,8 @@ export default function DriverPortal() {
   const [showFinalizationModal, setShowFinalizationModal] = useState(false);
   const [finalizationNotes, setFinalizationNotes] = useState('');
   const [finalizationFile, setFinalizationFile] = useState<File | null>(null);
+  const [showUserProfile, setShowUserProfile] = useState(false);
+  const [showSecuritySettings, setShowSecuritySettings] = useState(false);
   const { toast } = useToast();
 
   // Dados mock para Ordens de Coleta
@@ -223,6 +233,14 @@ export default function DriverPortal() {
     );
   }
 
+  const handleLogout = () => {
+    authManager.logout();
+    toast({
+      title: "Sessão encerrada",
+      description: "Você foi desconectado com sucesso.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4">
       <div className="max-w-md mx-auto space-y-6">
@@ -248,6 +266,33 @@ export default function DriverPortal() {
                   <span className="text-sm">Mat: {driverInfo.employeeNumber}</span>
                 </div>
               </div>
+              
+              {/* Menu do usuário */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-white hover:bg-blue-600">
+                    <Settings className="h-4 w-4 mr-2" />
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>Opções da Conta</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowUserProfile(true)}>
+                    <UserCircle className="mr-2 h-4 w-4" />
+                    <span>Meus Dados</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowSecuritySettings(true)}>
+                    <Lock className="mr-2 h-4 w-4" />
+                    <span>Segurança</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Encerrar Sessão</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </CardHeader>
           <CardContent className="p-4">
@@ -1656,6 +1701,129 @@ export default function DriverPortal() {
                 >
                   Finalizar Serviço
                 </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Dados do Usuário */}
+        <Dialog open={showUserProfile} onOpenChange={setShowUserProfile}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Meus Dados Pessoais</DialogTitle>
+              <DialogDescription>
+                Visualize suas informações pessoais e profissionais
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={driverInfo.profilePhoto} />
+                  <AvatarFallback className="bg-blue-500 text-white text-lg">
+                    {driverInfo.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-semibold text-lg">{driverInfo.fullName}</h3>
+                  <p className="text-sm text-gray-600">{driverInfo.position}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <Label className="text-gray-600">Email</Label>
+                  <p className="font-medium">{driverInfo.email}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">Matrícula</Label>
+                  <p className="font-medium">{driverInfo.employeeNumber}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">Telefone</Label>
+                  <p className="font-medium">{driverInfo.phone}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">Departamento</Label>
+                  <p className="font-medium">{driverInfo.department}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">CNH</Label>
+                  <p className="font-medium">{driverInfo.driverLicense}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">Categoria</Label>
+                  <p className="font-medium">{driverInfo.driverLicenseCategory}</p>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-gray-600">Validade da CNH</Label>
+                  <p className="font-medium text-blue-600">
+                    {new Date(driverInfo.driverLicenseExpiry).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Configurações de Segurança */}
+        <Dialog open={showSecuritySettings} onOpenChange={setShowSecuritySettings}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Configurações de Segurança</DialogTitle>
+              <DialogDescription>
+                Gerencie suas configurações de segurança e acesso
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Lock className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="font-medium">Alterar Senha</p>
+                    <p className="text-sm text-gray-600">Altere sua senha de acesso</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm">
+                  Alterar
+                </Button>
+              </div>
+              
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Shield className="h-5 w-5 text-green-600" />
+                  <div>
+                    <p className="font-medium">Sessões Ativas</p>
+                    <p className="text-sm text-gray-600">Visualizar dispositivos conectados</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm">
+                  Visualizar
+                </Button>
+              </div>
+              
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <UserCircle className="h-5 w-5 text-purple-600" />
+                  <div>
+                    <p className="font-medium">Histórico de Acesso</p>
+                    <p className="text-sm text-gray-600">Últimos acessos ao sistema</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm">
+                  Ver Histórico
+                </Button>
+              </div>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-yellow-800">Dica de Segurança</p>
+                    <p className="text-sm text-yellow-700">
+                      Sempre faça logout ao usar dispositivos compartilhados
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </DialogContent>
