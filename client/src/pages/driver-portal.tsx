@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Search, User, Mail, Shield, Car, FileText, Download, AlertTriangle, CheckSquare, Wrench, Phone, Camera, MapPin, Clock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Search, User, Mail, Shield, Car, FileText, Download, AlertTriangle, CheckSquare, Wrench, Phone, Camera, MapPin, Clock, Truck, Fuel, Settings, Package, MessageSquare, Calendar } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,7 +38,52 @@ export default function DriverPortal() {
   const [showMaintenanceRequest, setShowMaintenanceRequest] = useState(false);
   const [showMaintenanceCommunication, setShowMaintenanceCommunication] = useState(false);
   const [showTravelMaintenance, setShowTravelMaintenance] = useState(false);
+  const [activeTab, setActiveTab] = useState("dados-iniciais");
+  const [selectedOC, setSelectedOC] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Dados mock para Ordens de Coleta
+  const ordensColeta = [
+    {
+      id: "OC001",
+      cliente: "Empresa ABC Ltda",
+      origem: "São Paulo - SP",
+      destino: "Rio de Janeiro - RJ", 
+      descricao: "Carga geral - Produtos eletrônicos",
+      status: "Pendente",
+      dataColeta: "2025-01-28",
+      prazo: "2025-01-30",
+      peso: "2.5 toneladas",
+      valor: "R$ 1.850,00",
+      observacoes: "Carga frágil, manuseio cuidadoso"
+    },
+    {
+      id: "OC002", 
+      cliente: "Transportadora XYZ",
+      origem: "Campinas - SP",
+      destino: "Belo Horizonte - MG",
+      descricao: "Produtos farmacêuticos",
+      status: "Em Andamento",
+      dataColeta: "2025-01-27",
+      prazo: "2025-01-29",
+      peso: "1.8 toneladas", 
+      valor: "R$ 2.200,00",
+      observacoes: "Temperatura controlada necessária"
+    },
+    {
+      id: "OC003",
+      cliente: "Indústria 123",
+      origem: "Santos - SP", 
+      destino: "Salvador - BA",
+      descricao: "Peças automotivas",
+      status: "Nova",
+      dataColeta: "2025-01-29",
+      prazo: "2025-02-01",
+      peso: "3.2 toneladas",
+      valor: "R$ 3.100,00", 
+      observacoes: "Carga pesada, verificar distribuição"
+    }
+  ];
   
   // Obter informações do motorista logado
   const { data: driverInfo, isLoading: driverLoading } = useQuery<DriverInfo>({
@@ -161,7 +208,22 @@ export default function DriverPortal() {
           </CardContent>
         </Card>
 
-        {/* Seleção de Veículo de Tração */}
+        {/* Sistema de Abas */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="dados-iniciais">Dados Iniciais</TabsTrigger>
+            <TabsTrigger value="dados-veiculos">Dados dos Veículos</TabsTrigger>
+            <TabsTrigger value="registros-oc" className="relative">
+              Registros de O.C.
+              <Badge className="ml-2 bg-red-500 text-white text-xs">
+                {ordensColeta.filter(oc => oc.status === "Nova").length}
+              </Badge>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Aba Dados Iniciais */}
+          <TabsContent value="dados-iniciais" className="space-y-4">
+            {/* Seleção de Veículo de Tração */}
         <Card className="border-gray-200 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2 text-gray-800">
@@ -434,6 +496,249 @@ export default function DriverPortal() {
             </Button>
           )}
         </div>
+          </TabsContent>
+
+          {/* Aba Dados dos Veículos */}
+          <TabsContent value="dados-veiculos" className="space-y-4">
+            {selectedVehicleData ? (
+              <Card className="border-blue-200 shadow-lg">
+                <CardHeader className="bg-blue-50">
+                  <CardTitle className="flex items-center space-x-2 text-blue-800">
+                    <Truck className="h-5 w-5" />
+                    <span>Especificações - {selectedVehicleData.plate}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 space-y-4">
+                  {/* Informações Técnicas */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Truck className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm font-semibold text-gray-700">Capacidade de Carga</span>
+                      </div>
+                      <p className="text-xl font-bold text-blue-600">
+                        {selectedVehicleData.loadCapacity || '15.000'} kg
+                      </p>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Fuel className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm font-semibold text-gray-700">Tanque de Combustível</span>
+                      </div>
+                      <p className="text-xl font-bold text-green-600">
+                        {selectedVehicleData.fuelTankCapacity || '300'} L
+                      </p>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Settings className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm font-semibold text-gray-700">Consumo Médio</span>
+                      </div>
+                      <p className="text-xl font-bold text-orange-600">
+                        {selectedVehicleData.fuelConsumption || '3.2'} km/L
+                      </p>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Calendar className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm font-semibold text-gray-700">Próxima Preventiva</span>
+                      </div>
+                      <p className="text-xl font-bold text-red-600">
+                        {selectedVehicleData.preventiveMaintenanceKm || '10.000'} km
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Manutenções Programadas */}
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center space-x-2">
+                      <Settings className="h-4 w-4" />
+                      <span>Manutenções Programadas</span>
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                        <span className="text-sm">Rodízio de Pneus</span>
+                        <Badge variant="outline" className="text-yellow-700">
+                          {selectedVehicleData.tireRotationKm || '10.000'} km
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                        <span className="text-sm">Revisão Preventiva</span>
+                        <Badge variant="outline" className="text-red-700">
+                          {selectedVehicleData.preventiveMaintenanceKm || '10.000'} km
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                        <span className="text-sm">Troca de Óleo</span>
+                        <Badge variant="outline" className="text-blue-700">
+                          15.000 km
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Histórico de Combustível */}
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center space-x-2">
+                      <Fuel className="h-4 w-4" />
+                      <span>Histórico Recente</span>
+                    </h4>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="bg-green-50 p-2 rounded">
+                        <p className="text-xs text-green-600">Última Revisão</p>
+                        <p className="font-bold text-green-800">15 dias</p>
+                      </div>
+                      <div className="bg-blue-50 p-2 rounded">
+                        <p className="text-xs text-blue-600">KM Atual</p>
+                        <p className="font-bold text-blue-800">
+                          {selectedVehicleData.mileage || '85.420'} km
+                        </p>
+                      </div>
+                      <div className="bg-orange-50 p-2 rounded">
+                        <p className="text-xs text-orange-600">Último Abastecimento</p>
+                        <p className="font-bold text-orange-800">2 dias</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-gray-200">
+                <CardContent className="p-8 text-center">
+                  <Truck className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-600">Selecione um veículo na aba "Dados Iniciais" para ver as especificações</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Dados do Implemento se selecionado */}
+            {selectedImplementData && (
+              <Card className="border-orange-200 shadow-lg">
+                <CardHeader className="bg-orange-50">
+                  <CardTitle className="flex items-center space-x-2 text-orange-800">
+                    <Package className="h-5 w-5" />
+                    <span>Implemento - {selectedImplementData.plate}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-600">Tipo</Label>
+                      <p className="font-semibold">{selectedImplementData.name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-gray-600">Capacidade</Label>
+                      <p className="font-semibold">{selectedImplementData.loadCapacity || 'N/A'} kg</p>
+                    </div>
+                    <div>
+                      <Label className="text-gray-600">Status</Label>
+                      <Badge className="bg-green-100 text-green-800">
+                        {selectedImplementData.status || 'Ativo'}
+                      </Badge>
+                    </div>
+                    <div>
+                      <Label className="text-gray-600">Último Check</Label>
+                      <p className="font-semibold">5 dias atrás</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Aba Registros de O.C. */}
+          <TabsContent value="registros-oc" className="space-y-4">
+            <Card className="border-gray-200 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-gray-800">
+                  <MessageSquare className="h-5 w-5" />
+                  <span>Ordens de Coleta</span>
+                  <Badge className="bg-red-500 text-white">
+                    {ordensColeta.filter(oc => oc.status === "Nova").length} novas
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {ordensColeta.map((oc) => (
+                  <div key={oc.id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h4 className="font-semibold text-gray-800">{oc.id}</h4>
+                          <Badge 
+                            className={
+                              oc.status === "Nova" ? "bg-red-100 text-red-800" :
+                              oc.status === "Em Andamento" ? "bg-blue-100 text-blue-800" :
+                              "bg-gray-100 text-gray-800"
+                            }
+                          >
+                            {oc.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">{oc.cliente}</p>
+                        <p className="text-sm text-gray-500">{oc.descricao}</p>
+                        <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                          <span>📍 {oc.origem} → {oc.destino}</span>
+                          <span>📅 {oc.dataColeta}</span>
+                          <span>⚖️ {oc.peso}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {selectedOC === oc.id && (
+                      <div className="mt-3 pt-3 border-t bg-blue-50 rounded p-3">
+                        <h5 className="font-semibold text-blue-800 mb-2">Detalhes Completos da O.C.</h5>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <Label className="text-blue-600">Valor da Carga</Label>
+                            <p className="font-semibold">{oc.valor}</p>
+                          </div>
+                          <div>
+                            <Label className="text-blue-600">Prazo de Entrega</Label>
+                            <p className="font-semibold">{oc.prazo}</p>
+                          </div>
+                          <div className="col-span-2">
+                            <Label className="text-blue-600">Observações</Label>
+                            <p className="text-gray-700">{oc.observacoes}</p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2 mt-3">
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                            Aceitar O.C.
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            Solicitar Alteração
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setSelectedOC(null)}
+                          >
+                            Fechar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {selectedOC !== oc.id && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full mt-2"
+                        onClick={() => setSelectedOC(oc.id)}
+                      >
+                        Ver Detalhes Completos
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Modal de Documentos */}
         <Dialog open={showDocuments} onOpenChange={setShowDocuments}>
