@@ -7,19 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertTriangle, Eye, FileText, Search, Filter, Calendar, User, MapPin } from "lucide-react";
-import { SinistroForm } from "@/components/sinistros/sinistro-form";
+import { SinistroFormGeneral } from "@/components/sinistros/sinistro-form-general";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Sinistro {
   id: string;
   tipo: string;
-  placa?: string;
-  nomeEnvolvido: string;
-  cargoEnvolvido?: string;
+  placaTracao?: string;
   dataOcorrido: string;
-  local: string;
-  descricao: string;
+  localEndereco: string;
+  observacoes: string;
   status: string;
   vitimas: boolean;
   nomeRegistrador: string;
@@ -38,10 +36,9 @@ export default function SinistrosPage() {
 
   const filteredSinistros = sinistros.filter((sinistro: Sinistro) => {
     const matchesSearch = 
-      sinistro.nomeEnvolvido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sinistro.local.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sinistro.placa?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sinistro.descricao.toLowerCase().includes(searchTerm.toLowerCase());
+      sinistro.localEndereco.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sinistro.placaTracao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sinistro.observacoes.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || sinistro.status === statusFilter;
     const matchesTipo = tipoFilter === "all" || sinistro.tipo === tipoFilter;
@@ -98,7 +95,7 @@ export default function SinistrosPage() {
             Controle e gerenciamento de acidentes e incidentes - Módulo QSMS
           </p>
         </div>
-        <SinistroForm 
+        <SinistroFormGeneral 
           userInfo={{ id: "admin-1", name: "Administrador", role: "admin" }}
         />
       </div>
@@ -245,7 +242,7 @@ export default function SinistrosPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Envolvido</TableHead>
+                  <TableHead>Placa</TableHead>
                   <TableHead>Local</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Status</TableHead>
@@ -258,25 +255,15 @@ export default function SinistrosPage() {
                 {filteredSinistros.map((sinistro: Sinistro) => (
                   <TableRow key={sinistro.id}>
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{getTipoLabel(sinistro.tipo)}</span>
-                        {sinistro.placa && (
-                          <span className="text-sm text-gray-500">{sinistro.placa}</span>
-                        )}
-                      </div>
+                      <span className="font-medium">{getTipoLabel(sinistro.tipo)}</span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{sinistro.nomeEnvolvido}</span>
-                        {sinistro.cargoEnvolvido && (
-                          <span className="text-sm text-gray-500">{sinistro.cargoEnvolvido}</span>
-                        )}
-                      </div>
+                      {sinistro.placaTracao || "-"}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center">
                         <MapPin className="w-4 h-4 mr-1 text-gray-400" />
-                        {sinistro.local}
+                        {sinistro.localEndereco}
                       </div>
                     </TableCell>
                     <TableCell>

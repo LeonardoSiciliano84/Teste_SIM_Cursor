@@ -529,6 +529,7 @@ export default function DriverPortal() {
                 name: driverInfo.fullName,
                 role: "driver"
               }}
+              isDriverPortal={true}
               trigger={
                 <Button 
                   className="h-20 flex flex-col items-center justify-center bg-red-600 hover:bg-red-700 text-white"

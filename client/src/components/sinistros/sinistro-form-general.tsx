@@ -11,22 +11,24 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, Plus, Camera } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const sinistroFormSchema = z.object({
   tipo: z.string().min(1, "Tipo é obrigatório"),
   classificacao: z.string().optional(),
-  placaTracao: z.string().min(1, "Placa da tração é obrigatória"),
+  placa: z.string().optional(),
+  nomeEnvolvido: z.string().min(1, "Nome do envolvido é obrigatório"),
+  cargoEnvolvido: z.string().optional(),
   dataOcorrido: z.string().min(1, "Data é obrigatória"),
   horaOcorrido: z.string().min(1, "Hora é obrigatória"),
-  localEndereco: z.string().min(1, "Local e endereço são obrigatórios"),
-  tipoColisao: z.string().min(1, "Tipo de colisão é obrigatório"),
+  local: z.string().min(1, "Local é obrigatório"),
+  descricao: z.string().min(1, "Descrição é obrigatória"),
   vitimas: z.boolean().default(false),
-  condicoesTrajeto: z.string().min(1, "Condições de trajeto são obrigatórias"),
-  quemSofreuAvaria: z.string().min(1, "Informar quem sofreu avaria é obrigatório"),
-  percepcaoGravidade: z.string().min(1, "Percepção de gravidade é obrigatória"),
-  observacoes: z.string().min(1, "Observações são obrigatórias"),
+  descricaoVitimas: z.string().optional(),
+  testemunhas: z.string().optional(),
+  condicoesTempo: z.string().optional(),
+  condicoesPista: z.string().optional(),
   registradoPor: z.string(),
   nomeRegistrador: z.string(),
   cargoRegistrador: z.string(),
@@ -34,17 +36,16 @@ const sinistroFormSchema = z.object({
 
 type SinistroFormData = z.infer<typeof sinistroFormSchema>;
 
-interface SinistroFormProps {
+interface SinistroFormGeneralProps {
   userInfo?: {
     id: string;
     name: string;
     role: string;
   };
   trigger?: React.ReactNode;
-  isDriverPortal?: boolean; // Para distinguir entre portal do motorista e página geral
 }
 
-export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: SinistroFormProps) {
+export function SinistroFormGeneral({ userInfo, trigger }: SinistroFormGeneralProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -52,7 +53,6 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
   const form = useForm<SinistroFormData>({
     resolver: zodResolver(sinistroFormSchema),
     defaultValues: {
-      tipo: isDriverPortal ? "veicular" : "",
       vitimas: false,
       registradoPor: userInfo?.id || "",
       nomeRegistrador: userInfo?.name || "",
@@ -118,7 +118,7 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
         <DialogHeader>
           <DialogTitle className="flex items-center text-red-600">
             <AlertTriangle className="w-5 h-5 mr-2" />
-            {isDriverPortal ? "Comunicar Sinistro Veicular" : "Registro de Sinistro / Acidente"}
+            Registro de Sinistro / Acidente
           </DialogTitle>
         </DialogHeader>
 
@@ -127,10 +127,116 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
+                name="tipo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Sinistro *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {tiposSinistro.map((tipo) => (
+                          <SelectItem key={tipo.value} value={tipo.value}>
+                            {tipo.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="classificacao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Classificação da Causa</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a classificação" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {classificacoes.map((classe) => (
+                          <SelectItem key={classe.value} value={classe.value}>
+                            {classe.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="placa"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Placa do Veículo (se aplicável)</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="ABC-1234" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="nomeEnvolvido"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome do Envolvido *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Nome completo" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="cargoEnvolvido"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cargo/Função do Envolvido</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Ex: Motorista, Operador" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="local"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Local do Ocorrido *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Ex: Base, Cliente, Rodovia BR-101" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="dataOcorrido"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data do Sinistro *</FormLabel>
+                    <FormLabel>Data do Ocorrido *</FormLabel>
                     <FormControl>
                       <Input {...field} type="date" />
                     </FormControl>
@@ -144,7 +250,7 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
                 name="horaOcorrido"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Hora do Sinistro *</FormLabel>
+                    <FormLabel>Hora do Ocorrido *</FormLabel>
                     <FormControl>
                       <Input {...field} type="time" />
                     </FormControl>
@@ -155,40 +261,22 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
 
               <FormField
                 control={form.control}
-                name="placaTracao"
+                name="condicoesTempo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Placa da Tração *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="ABC-1234" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="tipoColisao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de Colisão *</FormLabel>
+                    <FormLabel>Condições do Tempo</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
+                          <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="frontal">Frontal</SelectItem>
-                        <SelectItem value="traseira">Traseira</SelectItem>
-                        <SelectItem value="lateral">Lateral</SelectItem>
-                        <SelectItem value="capotagem">Capotagem</SelectItem>
-                        <SelectItem value="tombamento">Tombamento</SelectItem>
-                        <SelectItem value="atropelamento">Atropelamento</SelectItem>
-                        <SelectItem value="engavetamento">Engavetamento</SelectItem>
-                        <SelectItem value="choque_objeto">Choque com Objeto</SelectItem>
-                        <SelectItem value="saida_pista">Saída de Pista</SelectItem>
+                        <SelectItem value="sol">Sol</SelectItem>
+                        <SelectItem value="chuva">Chuva</SelectItem>
+                        <SelectItem value="garoa">Garoa</SelectItem>
+                        <SelectItem value="nublado">Nublado</SelectItem>
+                        <SelectItem value="neblina">Neblina</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -198,10 +286,10 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
 
               <FormField
                 control={form.control}
-                name="percepcaoGravidade"
+                name="condicoesPista"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Percepção de Gravidade *</FormLabel>
+                    <FormLabel>Condições da Pista</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -209,36 +297,11 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="baixa">Baixa - Danos materiais leves</SelectItem>
-                        <SelectItem value="media">Média - Danos significativos</SelectItem>
-                        <SelectItem value="alta">Alta - Danos graves ou vítimas</SelectItem>
-                        <SelectItem value="critica">Crítica - Risco de vida</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="quemSofreuAvaria"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quem Sofreu a Avaria *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="veiculo_proprio">Veículo Próprio</SelectItem>
-                        <SelectItem value="veiculo_terceiro">Veículo de Terceiro</SelectItem>
-                        <SelectItem value="ambos">Ambos os Veículos</SelectItem>
-                        <SelectItem value="carga">Carga</SelectItem>
-                        <SelectItem value="propriedade_publica">Propriedade Pública</SelectItem>
-                        <SelectItem value="propriedade_privada">Propriedade Privada</SelectItem>
+                        <SelectItem value="seca">Seca</SelectItem>
+                        <SelectItem value="molhada">Molhada</SelectItem>
+                        <SelectItem value="escorregadia">Escorregadia</SelectItem>
+                        <SelectItem value="em_obras">Em Obras</SelectItem>
+                        <SelectItem value="buracos">Com Buracos</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -249,33 +312,15 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
 
             <FormField
               control={form.control}
-              name="localEndereco"
+              name="descricao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Local e Endereço *</FormLabel>
+                  <FormLabel>Descrição Detalhada do Ocorrido *</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      placeholder="Informe o endereço completo, pontos de referência e detalhes da localização..."
-                      className="min-h-20"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="condicoesTrajeto"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Condições de Trajeto e Carga *</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      placeholder="Descreva as condições do trajeto, estado da carga, condições climáticas, pista..."
-                      className="min-h-20"
+                      placeholder="Descreva detalhadamente como o acidente/sinistro ocorreu..."
+                      className="min-h-24"
                     />
                   </FormControl>
                   <FormMessage />
@@ -303,44 +348,43 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
               )}
             />
 
+            {form.watch("vitimas") && (
+              <FormField
+                control={form.control}
+                name="descricaoVitimas"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição das Vítimas</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Descreva as vítimas, ferimentos, atendimento prestado..."
+                        className="min-h-20"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <FormField
               control={form.control}
-              name="observacoes"
+              name="testemunhas"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Observações *</FormLabel>
+                  <FormLabel>Testemunhas</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      placeholder="Descreva detalhadamente como o acidente ocorreu, medidas tomadas, contatos realizados..."
-                      className="min-h-32"
+                      placeholder="Nome, telefone e relato das testemunhas..."
+                      className="min-h-20"
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            {/* Upload de Imagens */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Camera className="w-5 h-5 text-red-600" />
-                <h4 className="font-semibold text-gray-800">Upload de Imagens</h4>
-                <span className="text-sm text-red-600">(Mínimo 1, Máximo 6)</span>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {[1, 2, 3, 4, 5, 6].map((index) => (
-                  <div key={index} className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                    <Camera className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm text-gray-500">Imagem {index}</p>
-                    <Input type="file" accept="image/*" className="mt-2" />
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500">
-                * Pelo menos 1 imagem é obrigatória. Formatos suportados: JPG, PNG. Máximo 5MB por imagem.
-              </p>
-            </div>
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button
@@ -355,7 +399,7 @@ export function SinistroForm({ userInfo, trigger, isDriverPortal = false }: Sini
                 disabled={createSinistroMutation.isPending}
                 className="bg-red-600 hover:bg-red-700"
               >
-                {createSinistroMutation.isPending ? "Registrando..." : "Comunicar Sinistro"}
+                {createSinistroMutation.isPending ? "Registrando..." : "Registrar Sinistro"}
               </Button>
             </div>
           </form>
