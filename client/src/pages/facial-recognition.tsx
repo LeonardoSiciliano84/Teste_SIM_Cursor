@@ -167,26 +167,17 @@ export default function FacialRecognition() {
   // Camera functions
   const startCamera = useCallback(async () => {
     try {
-      console.log("Starting camera...");
+      console.log("Starting camera with simple approach...");
       
-      // Verificar se o navegador suporta getUserMedia
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Seu navegador não suporta acesso à câmera");
-      }
-
-      console.log("Requesting camera access...");
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true,
+        video: { width: 640, height: 480 },
         audio: false
       });
       
       console.log("Camera stream obtained:", stream);
-      console.log("Stream tracks:", stream.getTracks());
       
       if (videoRef.current) {
-        console.log("Setting video source...");
-        
-        // Limpar qualquer stream anterior
+        // Parar stream anterior se existir
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => track.stop());
         }
@@ -194,29 +185,21 @@ export default function FacialRecognition() {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
         
-        // Aguardar o vídeo carregar e reproduzir
-        const playVideo = async () => {
-          try {
-            await videoRef.current?.play();
-            console.log("Video playing successfully");
-            setIsCapturing(true);
-            setVideoError(null);
-          } catch (playError) {
-            console.error("Play error:", playError);
-            setVideoError("Vídeo pode não estar reproduzindo. Tente o botão Play.");
-            setIsCapturing(true); // Definir como capturing mesmo se o play falhar
+        // Definir capturing imediatamente e tentar reproduzir
+        setIsCapturing(true);
+        setVideoError(null);
+        
+        // Forçar reprodução
+        setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.play().then(() => {
+              console.log("Video playing successfully");
+            }).catch((error) => {
+              console.warn("Auto-play failed:", error);
+              setVideoError("Clique no botão Play para iniciar o vídeo");
+            });
           }
-        };
-
-        videoRef.current.onloadedmetadata = () => {
-          console.log("Video metadata loaded");
-          playVideo();
-        };
-
-        // Se já tem metadados, reproduzir imediatamente
-        if (videoRef.current.readyState >= 1) {
-          playVideo();
-        }
+        }, 100);
       }
       
     } catch (error) {
@@ -224,15 +207,12 @@ export default function FacialRecognition() {
       let errorMessage = "Erro ao acessar a câmera";
       
       if (error instanceof Error) {
-        console.error("Error details:", error.name, error.message);
         if (error.name === "NotAllowedError") {
           errorMessage = "Acesso à câmera negado. Permita o acesso nas configurações do navegador.";
         } else if (error.name === "NotFoundError") {
           errorMessage = "Nenhuma câmera encontrada no dispositivo.";
         } else if (error.name === "NotReadableError") {
           errorMessage = "Câmera já está sendo usada por outro aplicativo.";
-        } else if (error.name === "OverconstrainedError") {
-          errorMessage = "Configurações de câmera não suportadas pelo dispositivo.";
         }
       }
       
@@ -396,58 +376,32 @@ export default function FacialRecognition() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden min-h-[300px]">
+                <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden min-h-[300px] flex items-center justify-center">
                   {isCapturing ? (
-                    <div className="relative w-full h-full bg-black flex items-center justify-center">
+                    <>
                       <video
                         ref={videoRef}
-                        width="640"
-                        height="480"
                         className="w-full h-full object-cover"
-                        autoPlay={true}
-                        playsInline={true}
-                        muted={true}
-                        controls={false}
-                        style={{ 
-                          transform: 'scaleX(-1)',
-                          display: 'block'
-                        }}
-                        onLoadedMetadata={() => {
-                          console.log("Video loaded metadata");
-                          if (videoRef.current) {
-                            console.log("Video dimensions:", videoRef.current.videoWidth, "x", videoRef.current.videoHeight);
-                            console.log("Video ready state:", videoRef.current.readyState);
-                            console.log("Video paused:", videoRef.current.paused);
-                          }
-                        }}
-                        onCanPlay={() => {
-                          console.log("Video can play");
-                          if (videoRef.current) {
-                            videoRef.current.play().catch(console.error);
-                          }
-                        }}
-                        onPlay={() => {
-                          console.log("Video started playing");
-                        }}
-                        onPause={() => {
-                          console.log("Video paused");
-                        }}
-                        onError={(e) => {
-                          console.error("Video error:", e);
-                          console.error("Video error target:", e.target);
-                        }}
+                        autoPlay
+                        playsInline
+                        muted
+                        style={{ transform: 'scaleX(-1)' }}
+                        onLoadedMetadata={() => console.log("Video metadata loaded")}
+                        onCanPlay={() => console.log("Video can play")}
+                        onPlay={() => console.log("Video playing")}
+                        onError={(e) => console.error("Video error:", e)}
                       />
-                      {/* Indicador de status */}
-                      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs">
-                        LIVE
+                      {/* Indicador LIVE */}
+                      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
+                        ● LIVE
                       </div>
-                      {/* Aviso de erro de vídeo */}
+                      {/* Aviso de erro */}
                       {videoError && (
-                        <div className="absolute bottom-2 left-2 right-2 bg-yellow-500 text-black px-2 py-1 rounded text-xs">
+                        <div className="absolute bottom-2 left-2 right-2 bg-yellow-500/90 text-black px-2 py-1 rounded text-xs">
                           {videoError}
                         </div>
                       )}
-                    </div>
+                    </>
                   ) : capturedImage ? (
                     <img
                       src={capturedImage}
