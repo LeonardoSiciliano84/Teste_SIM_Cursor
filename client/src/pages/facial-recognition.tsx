@@ -39,6 +39,26 @@ interface AccessLog {
   location: string;
 }
 
+interface Employee {
+  id: string;
+  fullName: string;
+  cpf: string;
+  phone: string;
+  employeeNumber: string;
+  position: string;
+  department: string;
+  email: string;
+  status: string;
+  accessLevel: string;
+  profilePhoto: string;
+  admissionDate: string;
+  manager: string;
+  workLocation: string;
+  allowedModules: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface FacialRecognitionResult {
   recognized: boolean;
   person?: any;
@@ -457,6 +477,9 @@ export default function FacialRecognition() {
     department: "",
   });
 
+  const [employeeSearch, setEmployeeSearch] = useState("");
+  const [showEmployeeList, setShowEmployeeList] = useState(false);
+
   // Queries
   const { data: visitors = [] } = useQuery<Visitor[]>({
     queryKey: ["/api/access-control/visitors"],
@@ -464,6 +487,10 @@ export default function FacialRecognition() {
 
   const { data: accessLogs = [] } = useQuery<AccessLog[]>({
     queryKey: ["/api/access-control/logs"],
+  });
+
+  const { data: employees = [] } = useQuery<Employee[]>({
+    queryKey: ["/api/employees"],
   });
 
   // Mutations
@@ -1221,32 +1248,92 @@ export default function FacialRecognition() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
                       <div>
-                        <Label htmlFor="employeeId">ID do Funcionário</Label>
+                        <Label htmlFor="employeeSearch">Buscar Funcionário</Label>
                         <Input
-                          id="employeeId"
-                          value={employeeForm.employeeId}
-                          onChange={(e) => setEmployeeForm({ ...employeeForm, employeeId: e.target.value })}
+                          id="employeeSearch"
+                          value={employeeSearch}
+                          onChange={(e) => {
+                            setEmployeeSearch(e.target.value);
+                            setShowEmployeeList(e.target.value.length > 0);
+                          }}
+                          placeholder="Digite o nome do funcionário..."
+                        />
+                        
+                        {showEmployeeList && employeeSearch && (
+                          <div className="mt-2 max-h-48 overflow-y-auto border rounded-lg bg-white">
+                            {employees
+                              .filter(emp => 
+                                emp.fullName.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+                                emp.employeeNumber.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+                                emp.department.toLowerCase().includes(employeeSearch.toLowerCase())
+                              )
+                              .slice(0, 5)
+                              .map(employee => (
+                                <div
+                                  key={employee.id}
+                                  className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                                  onClick={() => {
+                                    setEmployeeForm({
+                                      employeeId: employee.employeeNumber,
+                                      name: employee.fullName,
+                                      department: employee.department,
+                                    });
+                                    setEmployeeSearch(employee.fullName);
+                                    setShowEmployeeList(false);
+                                  }}
+                                >
+                                  <div className="font-medium">{employee.fullName}</div>
+                                  <div className="text-sm text-gray-500">
+                                    {employee.employeeNumber} • {employee.department} • {employee.position}
+                                  </div>
+                                </div>
+                              ))
+                            }
+                            {employees.filter(emp => 
+                              emp.fullName.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+                              emp.employeeNumber.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+                              emp.department.toLowerCase().includes(employeeSearch.toLowerCase())
+                            ).length === 0 && (
+                              <div className="p-3 text-gray-500 text-center">
+                                Nenhum funcionário encontrado
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="employeeId">ID do Funcionário</Label>
+                          <Input
+                            id="employeeId"
+                            value={employeeForm.employeeId}
+                            onChange={(e) => setEmployeeForm({ ...employeeForm, employeeId: e.target.value })}
+                            readOnly
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="employeeName">Nome</Label>
+                          <Input
+                            id="employeeName"
+                            value={employeeForm.name}
+                            onChange={(e) => setEmployeeForm({ ...employeeForm, name: e.target.value })}
+                            readOnly
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="department">Departamento</Label>
+                        <Input
+                          id="department"
+                          value={employeeForm.department}
+                          onChange={(e) => setEmployeeForm({ ...employeeForm, department: e.target.value })}
+                          readOnly
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="employeeName">Nome</Label>
-                        <Input
-                          id="employeeName"
-                          value={employeeForm.name}
-                          onChange={(e) => setEmployeeForm({ ...employeeForm, name: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="department">Departamento</Label>
-                      <Input
-                        id="department"
-                        value={employeeForm.department}
-                        onChange={(e) => setEmployeeForm({ ...employeeForm, department: e.target.value })}
-                      />
                     </div>
                     
                     <Button
