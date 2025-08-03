@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, User, Users, Clock, CheckCircle, XCircle, Search, UserPlus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { QrCode, User, Users, Clock, CheckCircle, XCircle, Search, UserPlus, Camera, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -15,6 +16,7 @@ import {
   type AccessLog,
   type Employee
 } from "@shared/schema";
+import QrScanner from "qr-scanner";
 
 // Interfaces removidas - usando tipos do schema
 
@@ -28,9 +30,87 @@ export default function AccessControl() {
   });
   const [qrCodeValue, setQrCodeValue] = useState("");
   const [accessDirection, setAccessDirection] = useState<"entry" | "exit">("entry");
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const qrScannerRef = useRef<QrScanner | null>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Cleanup QR Scanner on unmount
+  useEffect(() => {
+    return () => {
+      if (qrScannerRef.current) {
+        qrScannerRef.current.destroy();
+      }
+    };
+  }, []);
+
+  // Start QR Scanner
+  const startQrScanner = async () => {
+    if (!videoRef.current) return;
+
+    try {
+      setIsScanning(true);
+      
+      const qrScanner = new QrScanner(
+        videoRef.current,
+        (result) => {
+          setQrCodeValue(result.data);
+          stopQrScanner();
+          setIsQrScannerOpen(false);
+          
+          // Auto-process the scanned QR code
+          processQrCode(result.data);
+        },
+        {
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          preferredCamera: 'environment'
+        }
+      );
+
+      qrScannerRef.current = qrScanner;
+      await qrScanner.start();
+      
+      toast({
+        title: "Scanner ativo",
+        description: "Aponte a câmera para o QR Code",
+      });
+    } catch (error) {
+      console.error('Erro ao iniciar scanner:', error);
+      setIsScanning(false);
+      toast({
+        title: "Erro na câmera",
+        description: "Não foi possível acessar a câmera. Verifique as permissões.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Stop QR Scanner
+  const stopQrScanner = () => {
+    if (qrScannerRef.current) {
+      qrScannerRef.current.destroy();
+      qrScannerRef.current = null;
+    }
+    setIsScanning(false);
+  };
+
+  // Handle scanner dialog close
+  const handleScannerClose = () => {
+    stopQrScanner();
+    setIsQrScannerOpen(false);
+  };
+
+  // Process QR Code (existing logic)
+  const processQrCode = (qrData: string) => {
+    processQrCodeMutation.mutate({
+      qrCodeData: qrData,
+      accessType: accessDirection
+    });
+  };
 
   // Queries
   const { data: visitors = [] } = useQuery<Visitor[]>({
@@ -65,7 +145,7 @@ export default function AccessControl() {
       } else {
         setVisitorForm({
           name: "",
-          cpf: cpf,
+          cpf: visitorCpf,
           photo: ""
         });
         toast({
@@ -78,11 +158,7 @@ export default function AccessControl() {
 
   const registerVisitorMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("/api/access-control/visitors", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" }
-      });
+      return await apiRequest("/api/access-control/visitors", "POST", data);
     },
     onSuccess: () => {
       toast({
@@ -96,12 +172,8 @@ export default function AccessControl() {
   });
 
   const processQrCodeMutation = useMutation({
-    mutationFn: async (data: { qrCode: string; direction: "entry" | "exit" }) => {
-      return await apiRequest("/api/access-control/qrcode", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" }
-      });
+    mutationFn: async (data: { qrCodeData: string; accessType: "entry" | "exit" }) => {
+      return await apiRequest("/api/access-control/qrcode", "POST", data);
     },
     onSuccess: (data) => {
       toast({
@@ -369,20 +441,84 @@ export default function AccessControl() {
               </div>
 
               <div>
-                <Label htmlFor="qrCodeValue">Código QR</Label>
+                <Label>Scanner de QR Code</Label>
                 <div className="flex gap-2">
-                  <Input
-                    id="qrCodeValue"
-                    value={qrCodeValue}
-                    onChange={(e) => setQrCodeValue(e.target.value)}
-                    placeholder="Cole ou digite o código QR aqui"
-                  />
-                  <Button 
-                    onClick={handleQrCodeProcess}
-                    disabled={!qrCodeValue || processQrCodeMutation.isPending}
-                  >
-                    Processar
-                  </Button>
+                  <Dialog open={isQrScannerOpen} onOpenChange={setIsQrScannerOpen}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        onClick={() => setIsQrScannerOpen(true)}
+                        className="flex-1 bg-felka-blue hover:bg-felka-blue/90"
+                        size="lg"
+                      >
+                        <Camera className="h-5 w-5 mr-2" />
+                        Abrir Câmera para Scanear QR Code
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <QrCode className="h-5 w-5" />
+                          Scanner de QR Code
+                        </DialogTitle>
+                      </DialogHeader>
+                      
+                      <div className="space-y-4">
+                        <div className="relative bg-black rounded-lg overflow-hidden">
+                          <video
+                            ref={videoRef}
+                            className="w-full h-64 object-cover"
+                            autoPlay
+                            playsInline
+                            muted
+                          />
+                          {!isScanning && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                              <div className="text-center text-white">
+                                <Camera className="h-12 w-12 mx-auto mb-2" />
+                                <p>Pressione "Iniciar Scanner" para começar</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          {!isScanning ? (
+                            <Button 
+                              onClick={startQrScanner}
+                              className="flex-1 bg-green-600 hover:bg-green-700"
+                            >
+                              <Camera className="h-4 w-4 mr-2" />
+                              Iniciar Scanner
+                            </Button>
+                          ) : (
+                            <Button 
+                              onClick={stopQrScanner}
+                              variant="destructive"
+                              className="flex-1"
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Parar Scanner
+                            </Button>
+                          )}
+                          
+                          <Button 
+                            onClick={handleScannerClose}
+                            variant="outline"
+                          >
+                            Fechar
+                          </Button>
+                        </div>
+                        
+                        {qrCodeValue && (
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <p className="text-sm text-green-700">
+                              <strong>QR Code detectado:</strong> {qrCodeValue.substring(0, 50)}...
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
 
@@ -392,7 +528,7 @@ export default function AccessControl() {
                   <br />
                   1. Selecione o tipo de acesso (Entrada ou Saída)
                   <br />
-                  2. Escaneie o QR Code do funcionário ou cole o código
+                  2. Clique em "Abrir Câmera" e aponte para o QR Code do funcionário
                   <br />
                   3. Clique em "Processar" para registrar o acesso
                 </p>
