@@ -636,7 +636,8 @@ export default function AccessControl() {
                     <DialogTrigger asChild>
                       <Button 
                         onClick={() => setIsQrScannerOpen(true)}
-                        className="flex-1 bg-felka-blue hover:bg-felka-blue/90"
+                        className="flex-1 hover:bg-[#0A237D]"
+                        style={{backgroundColor: '#0C29AB', borderColor: '#0C29AB'}}
                         size="lg"
                       >
                         <Camera className="h-5 w-5 mr-2" />
@@ -731,9 +732,9 @@ export default function AccessControl() {
                 </div>
               </div>
 
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  <strong>Instruções:</strong>
+              <div className="p-4 bg-blue-50 rounded-lg border-2" style={{borderColor: '#0C29AB'}}>
+                <p className="text-sm text-gray-700">
+                  <strong style={{color: '#0C29AB'}}>Instruções:</strong>
                   <br />
                   1. Selecione o tipo de acesso (Entrada ou Saída)
                   <br />
