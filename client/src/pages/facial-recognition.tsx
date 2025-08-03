@@ -489,15 +489,17 @@ export default function FacialRecognition() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden min-h-[300px] flex items-center justify-center">
-                  {isCapturing ? (
+                  {/* Sempre renderizar o vídeo, mas escondê-lo quando não estiver capturando */}
+                  <video
+                    ref={videoRef}
+                    className={`w-full h-full object-cover ${!isCapturing ? 'hidden' : ''}`}
+                    playsInline
+                    muted
+                    style={{ transform: 'scaleX(-1)' }}
+                  />
+                  
+                  {isCapturing && (
                     <>
-                      <video
-                        ref={videoRef}
-                        className="w-full h-full object-cover"
-                        playsInline
-                        muted
-                        style={{ transform: 'scaleX(-1)' }}
-                      />
                       {/* Indicador LIVE */}
                       <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
                         ● LIVE
@@ -509,13 +511,17 @@ export default function FacialRecognition() {
                         </div>
                       )}
                     </>
-                  ) : capturedImage ? (
+                  )}
+                  
+                  {!isCapturing && capturedImage && (
                     <img
                       src={capturedImage}
                       alt="Captured"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover absolute inset-0"
                     />
-                  ) : (
+                  )}
+                  
+                  {!isCapturing && !capturedImage && (
                     <div className="flex items-center justify-center h-full">
                       <Camera className="h-16 w-16 text-gray-400" />
                     </div>
