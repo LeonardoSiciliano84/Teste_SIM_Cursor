@@ -49,13 +49,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Nome e CPF são obrigatórios" });
       }
 
+      // Limpar formatação do CPF para validação
+      const cleanCpf = cpf.replace(/\D/g, '');
+      
+      if (cleanCpf.length !== 11) {
+        return res.status(400).json({ message: "CPF deve ter 11 dígitos" });
+      }
+
+      // Verificar se já existe visitante com este CPF
+      const existingVisitor = await storage.getVisitorByCpf(cleanCpf);
+      
       const visitor = await storage.upsertVisitor({
         name,
-        cpf,
+        cpf: cleanCpf,
         photo: photo || ""
       });
 
-      res.status(201).json({ visitor, message: "Visitante registrado com sucesso" });
+      const message = existingVisitor ? 
+        "Dados do visitante atualizados com sucesso" : 
+        "Visitante cadastrado com sucesso";
+
+      res.status(201).json({ visitor, message });
     } catch (error) {
       console.error("Erro ao registrar visitante:", error);
       res.status(500).json({ message: "Erro interno do servidor" });

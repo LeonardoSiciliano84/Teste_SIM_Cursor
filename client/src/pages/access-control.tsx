@@ -218,7 +218,7 @@ export default function AccessControl() {
   // Mutations
   const searchVisitorMutation = useMutation({
     mutationFn: async (cpf: string) => {
-      const response = await apiRequest(`/api/access-control/visitors/search?cpf=${cpf}`);
+      const response = await apiRequest(`/api/access-control/visitors/search?cpf=${encodeURIComponent(cpf)}`);
       return response;
     },
     onSuccess: (data) => {
@@ -344,7 +344,14 @@ export default function AccessControl() {
                     <Input
                       id="visitorCpf"
                       value={visitorCpf}
-                      onChange={(e) => setVisitorCpf(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        const formatted = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+                          .replace(/(\d{3})(\d{3})(\d{3})(\d{1})/, '$1.$2.$3-$4')
+                          .replace(/(\d{3})(\d{3})(\d{2})/, '$1.$2.$3')
+                          .replace(/(\d{3})(\d{2})/, '$1.$2');
+                        setVisitorCpf(formatted);
+                      }}
                       placeholder="000.000.000-00"
                       maxLength={14}
                     />
@@ -387,7 +394,14 @@ export default function AccessControl() {
                   <Input
                     id="visitorCpfForm"
                     value={visitorForm.cpf}
-                    onChange={(e) => setVisitorForm({ ...visitorForm, cpf: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      const formatted = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+                        .replace(/(\d{3})(\d{3})(\d{3})(\d{1})/, '$1.$2.$3-$4')
+                        .replace(/(\d{3})(\d{3})(\d{2})/, '$1.$2.$3')
+                        .replace(/(\d{3})(\d{2})/, '$1.$2');
+                      setVisitorForm({ ...visitorForm, cpf: formatted });
+                    }}
                     placeholder="000.000.000-00"
                     maxLength={14}
                   />
@@ -767,36 +781,39 @@ export default function AccessControl() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {accessLogs.slice(0, 20).map((log) => (
-                    <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full ${
-                          log.direction === "entry" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
-                        }`}>
-                          {log.direction === "entry" ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                  {accessLogs.slice(0, 20).map((log) => {
+                    console.log("Log direction:", log.direction, "Type:", typeof log.direction);
+                    return (
+                      <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${
+                            log.direction === "entry" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+                          }`}>
+                            {log.direction === "entry" ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                          </div>
+                          <div>
+                            <p className="font-medium">{log.personName}</p>
+                            <p className="text-sm text-gray-500">
+                              {log.personType === "visitor" ? "Visitante" : "Funcionário"} • CPF: {log.personCpf}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{log.personName}</p>
-                          <p className="text-sm text-gray-500">
-                            {log.personType === "visitor" ? "Visitante" : "Funcionário"} • CPF: {log.personCpf}
+                        <div className="text-right">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={log.accessMethod === "qrcode" ? "default" : "outline"}>
+                              {log.accessMethod === "qrcode" ? "QR Code" : "Manual"}
+                            </Badge>
+                            <Badge variant={log.direction === "entry" ? "default" : "secondary"}>
+                              {log.direction === "entry" ? "Entrada" : "Saída"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {new Date(log.timestamp).toLocaleString("pt-BR")}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={log.accessMethod === "qrcode" ? "default" : "outline"}>
-                            {log.accessMethod === "qrcode" ? "QR Code" : "Manual"}
-                          </Badge>
-                          <Badge variant={log.direction === "entry" ? "default" : "secondary"}>
-                            {log.direction === "entry" ? "Entrada" : "Saída"}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {new Date(log.timestamp).toLocaleString("pt-BR")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
