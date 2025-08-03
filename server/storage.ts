@@ -195,6 +195,7 @@ export interface IStorage {
   getVisitorByCpf(cpf: string): Promise<Visitor | undefined>;
   incrementVisitorVisits(id: string): Promise<Visitor>;
   upsertVisitor(visitor: InsertVisitor): Promise<Visitor>;
+  updateVisitor(id: string, updates: Partial<Visitor>): Promise<Visitor>;
   
   // Employee QR Code methods
   createEmployeeQrCode(qrCode: InsertEmployeeQrCode): Promise<EmployeeQrCode>;
@@ -2065,9 +2066,11 @@ export class MemStorage implements IStorage {
     return newVisitor;
   }
 
-  async updateVisitor(id: string, visitor: Partial<InsertVisitor>): Promise<Visitor | undefined> {
+  async updateVisitor(id: string, visitor: Partial<Visitor>): Promise<Visitor> {
     const existing = this.visitors.get(id);
-    if (!existing) return undefined;
+    if (!existing) {
+      throw new Error(`Visitor with id ${id} not found`);
+    }
     
     const updated: Visitor = {
       ...existing,
@@ -2078,25 +2081,24 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
-  async deleteVisitor(id: string): Promise<boolean> {
-    return this.visitors.delete(id);
-  }
-
-  // Método para upsert de visitante (criar ou atualizar)
   async incrementVisitorVisits(id: string): Promise<Visitor> {
-    const existing = this.visitors.get(id);
-    if (!existing) {
-      throw new Error("Visitante não encontrado");
+    const visitor = this.visitors.get(id);
+    if (!visitor) {
+      throw new Error(`Visitor with id ${id} not found`);
     }
     
     const updated: Visitor = {
-      ...existing,
-      totalVisits: existing.totalVisits + 1,
+      ...visitor,
+      totalVisits: visitor.totalVisits + 1,
       lastVisit: new Date(),
       updatedAt: new Date(),
     };
     this.visitors.set(id, updated);
     return updated;
+  }
+
+  async deleteVisitor(id: string): Promise<void> {
+    this.visitors.delete(id);
   }
 
   async upsertVisitor(visitor: InsertVisitor): Promise<Visitor> {

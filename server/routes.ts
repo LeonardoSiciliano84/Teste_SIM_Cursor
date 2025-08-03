@@ -591,7 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vehiclePlate: vehicle.plate,
         driverName: driver.name,
         originBase: originBase,
-        returnTime: new Date(),
+        returnTime: new Date().toISOString(),
       });
     } catch (error) {
       console.error("Erro ao registrar retorno do veículo:", error);
@@ -697,6 +697,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       console.error("Erro ao calcular estatísticas:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // API para registrar entrada de visitante
+  app.post("/api/access-control/visitor-entry", async (req, res) => {
+    try {
+      const { visitorId, accessReason, vehiclePlate, photo, authorizedBy } = req.body;
+      
+      if (!visitorId || !accessReason || !authorizedBy) {
+        return res.status(400).json({ message: "Dados obrigatórios: visitorId, accessReason, authorizedBy" });
+      }
+
+      // Buscar visitante
+      const visitor = await storage.getVisitor(visitorId);
+      if (!visitor) {
+        return res.status(404).json({ message: "Visitante não encontrado" });
+      }
+
+      // Registrar log de entrada
+      const entryTime = new Date();
+      await storage.createAccessLog({
+        personType: "visitor",
+        personId: visitorId,
+        personName: visitor.name,
+        personCpf: visitor.cpf,
+        direction: "entry",
+        accessMethod: "manual",
+        location: "Portaria Principal",
+        notes: `Motivo: ${accessReason}${vehiclePlate ? `, Veículo: ${vehiclePlate}` : ''}, Autorizado por: ${authorizedBy}`
+      });
+
+      // Atualizar dados do visitante
+      await storage.updateVisitor(visitorId, {
+        totalVisits: (visitor.totalVisits || 0) + 1,
+        lastVisit: entryTime.toISOString(),
+        isActive: true
+      });
+
+      res.json({
+        success: true,
+        visitor: visitor,
+        entryTime: entryTime.toISOString(),
+        message: "Entrada registrada com sucesso"
+      });
+    } catch (error) {
+      console.error("Erro ao registrar entrada do visitante:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   });

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { QrCode, User, Users, Clock, CheckCircle, XCircle, Search, UserPlus, Camera, X } from "lucide-react";
+import { QrCode, User, Users, Clock, CheckCircle, XCircle, Search, UserPlus, Camera, X, LogIn, Shield, Printer } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -25,6 +25,18 @@ export default function AccessControl() {
   const [visitorCpf, setVisitorCpf] = useState("");
   const [filteredVisitors, setFilteredVisitors] = useState<Visitor[]>([]);
   const [showAllVisitors, setShowAllVisitors] = useState(true);
+  
+  // Estados para modal de entrada de visitante
+  const [showEntryModal, setShowEntryModal] = useState(false);
+  const [selectedVisitorForEntry, setSelectedVisitorForEntry] = useState<Visitor | null>(null);
+  const [entryForm, setEntryForm] = useState({
+    accessReason: "",
+    vehiclePlate: "",
+    photo: "",
+    authorizedBy: ""
+  });
+  const [showVisitorBadge, setShowVisitorBadge] = useState(false);
+  const [visitorBadgeData, setVisitorBadgeData] = useState<any>(null);
   const [visitorForm, setVisitorForm] = useState({
     name: "",
     cpf: "",
@@ -323,6 +335,65 @@ export default function AccessControl() {
     }
   };
 
+  // Mutation para registrar entrada de visitante
+  const registerVisitorEntryMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("/api/access-control/visitor-entry", "POST", data);
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "✅ Entrada Registrada",
+        description: `Entrada de ${data.visitor.name} registrada com sucesso`,
+      });
+      
+      // Preparar dados para o crachá
+      setVisitorBadgeData({
+        ...data.visitor,
+        entryTime: data.entryTime,
+        accessReason: entryForm.accessReason,
+        vehiclePlate: entryForm.vehiclePlate,
+        authorizedBy: entryForm.authorizedBy
+      });
+      
+      // Fechar modal de entrada e mostrar crachá
+      setShowEntryModal(false);
+      setShowVisitorBadge(true);
+      
+      // Limpar formulário
+      setEntryForm({
+        accessReason: "",
+        vehiclePlate: "",
+        photo: "",
+        authorizedBy: ""
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/access-control/logs"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "❌ Erro ao Registrar",
+        description: "Erro ao registrar entrada do visitante",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleVisitorEntry = () => {
+    if (!selectedVisitorForEntry) return;
+    
+    registerVisitorEntryMutation.mutate({
+      visitorId: selectedVisitorForEntry.id,
+      accessReason: entryForm.accessReason,
+      vehiclePlate: entryForm.vehiclePlate,
+      photo: entryForm.photo,
+      authorizedBy: entryForm.authorizedBy
+    });
+  };
+
+  const printVisitorBadge = () => {
+    window.print();
+  };
+
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
@@ -578,15 +649,28 @@ export default function AccessControl() {
                           <p className="text-sm text-gray-500">CPF: {visitor.cpf}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <Badge variant={visitor.isActive ? "default" : "secondary"}>
-                          {visitor.totalVisits} visitas
-                        </Badge>
-                        {visitor.lastVisit && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            Última: {new Date(visitor.lastVisit).toLocaleString("pt-BR")}
-                          </p>
-                        )}
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <Badge variant={visitor.isActive ? "default" : "secondary"}>
+                            {visitor.totalVisits} visitas
+                          </Badge>
+                          {visitor.lastVisit && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              Última: {new Date(visitor.lastVisit).toLocaleString("pt-BR")}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          onClick={() => {
+                            setSelectedVisitorForEntry(visitor);
+                            setShowEntryModal(true);
+                          }}
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700"
+                          data-testid={`button-register-entry-${visitor.id}`}
+                        >
+                          Registrar Entrada
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -855,6 +939,194 @@ export default function AccessControl() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modal para Registrar Entrada de Visitante */}
+      <Dialog open={showEntryModal} onOpenChange={setShowEntryModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogIn className="h-5 w-5" />
+              Registrar Entrada - {selectedVisitorForEntry?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Informações do Visitante */}
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-medium mb-2">Dados do Visitante</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600">Nome:</span>
+                  <p className="font-medium">{selectedVisitorForEntry?.name}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600">CPF:</span>
+                  <p className="font-medium">{selectedVisitorForEntry?.cpf}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Formulário de Entrada */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="accessReason">Motivo do Acesso *</Label>
+                <Select value={entryForm.accessReason} onValueChange={(value) => setEntryForm({...entryForm, accessReason: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o motivo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cliente">Cliente</SelectItem>
+                    <SelectItem value="prestador">Prestador de Serviço</SelectItem>
+                    <SelectItem value="outros">Outros</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="vehiclePlate">Placa do Veículo</Label>
+                <Input
+                  id="vehiclePlate"
+                  value={entryForm.vehiclePlate}
+                  onChange={(e) => setEntryForm({...entryForm, vehiclePlate: e.target.value})}
+                  placeholder="ABC-1234 (opcional)"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="authorizedBy">Autorizado por *</Label>
+                <Input
+                  id="authorizedBy"
+                  value={entryForm.authorizedBy}
+                  onChange={(e) => setEntryForm({...entryForm, authorizedBy: e.target.value})}
+                  placeholder="Nome de quem autorizou a entrada"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="entryPhoto">Anexar Foto</Label>
+                <div className="space-y-2">
+                  <Input
+                    id="entryPhoto"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          setEntryForm({...entryForm, photo: e.target?.result as string});
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  {entryForm.photo && (
+                    <div className="mt-2">
+                      <img 
+                        src={entryForm.photo} 
+                        alt="Foto anexada" 
+                        className="w-20 h-20 rounded-lg object-cover border"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={handleVisitorEntry}
+                disabled={!entryForm.accessReason || !entryForm.authorizedBy || registerVisitorEntryMutation.isPending}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                {registerVisitorEntryMutation.isPending ? "Registrando..." : "Dar Entrada"}
+              </Button>
+              <Button
+                onClick={() => setShowEntryModal(false)}
+                variant="outline"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal do Crachá/Adesivo de Visitante */}
+      <Dialog open={showVisitorBadge} onOpenChange={setShowVisitorBadge}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Crachá de Visitante
+            </DialogTitle>
+          </DialogHeader>
+          
+          {visitorBadgeData && (
+            <div className="space-y-4">
+              {/* Crachá de Visitante */}
+              <div className="p-6 border-2 rounded-lg bg-white" style={{borderColor: '#0C29AB'}}>
+                <div className="text-center mb-4">
+                  <h3 className="font-bold text-lg" style={{color: '#0C29AB'}}>FELKA TRANSPORTES</h3>
+                  <p className="text-sm text-gray-600">VISITANTE</p>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="font-medium">Nome:</span>
+                    <p>{visitorBadgeData.name}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium">CPF:</span>
+                    <p>{visitorBadgeData.cpf}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium">Entrada:</span>
+                    <p>{new Date(visitorBadgeData.entryTime).toLocaleString("pt-BR")}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium">Motivo:</span>
+                    <p className="capitalize">{visitorBadgeData.accessReason}</p>
+                  </div>
+                  {visitorBadgeData.vehiclePlate && (
+                    <div>
+                      <span className="font-medium">Veículo:</span>
+                      <p>{visitorBadgeData.vehiclePlate}</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-medium">Autorizado por:</span>
+                    <p>{visitorBadgeData.authorizedBy}</p>
+                  </div>
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <div className="inline-block p-2 bg-gray-100 rounded">
+                    <QrCode className="h-8 w-8" />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">ID: {visitorBadgeData.id}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={printVisitorBadge}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Imprimir Crachá
+                </Button>
+                <Button
+                  onClick={() => setShowVisitorBadge(false)}
+                  variant="outline"
+                >
+                  Fechar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
