@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, decimal, integer, boolean, uuid, date, json } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, decimal, integer, boolean, uuid, date, json, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -942,3 +942,200 @@ export type EmployeeQrCode = typeof employeeQrCodes.$inferSelect;
 
 export type InsertAccessLog = z.infer<typeof insertAccessLogSchema>;
 export type AccessLog = typeof accessLogs.$inferSelect;
+
+// ============= MÓDULO DE MANUTENÇÃO =============
+
+// Tabela de requisições/ordens de serviço de manutenção
+export const maintenanceRequests = pgTable("maintenance_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderNumber: varchar("order_number").unique().notNull(), // OS-2025-00001 format
+  vehicleId: varchar("vehicle_id").references(() => vehicles.id).notNull(),
+  driverId: varchar("driver_id").references(() => drivers.id),
+  requestType: varchar("request_type").notNull(), // 'preventive' | 'corrective'
+  description: text("description"),
+  preventiveOrder: integer("preventive_order"), // 1-12 for preventive
+  preventiveLevel: varchar("preventive_level"), // M1-M5 for preventive
+  status: varchar("status").default("open").notNull(), // 'open' | 'scheduled' | 'in_progress' | 'completed' | 'closed'
+  maintenanceType: varchar("maintenance_type"), // 'internal' | 'external'
+  maintenanceClassification: varchar("maintenance_classification"), // 'mechanical' | 'electrical' | 'structural' | 'accessories' | 'painting' | 'brake' | 'air_conditioning' | 'bodywork'
+  mechanic: varchar("mechanic"),
+  supplier: varchar("supplier"),
+  expectedReleaseDate: timestamp("expected_release_date"),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  daysStoped: integer("days_stoped").default(0),
+  servicesPerformed: text("services_performed"),
+  partsUsed: text("parts_used"),
+  observations: text("observations"),
+  attachments: text("attachments").array(),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type MaintenanceRequest = typeof maintenanceRequests.$inferSelect;
+export type InsertMaintenanceRequest = typeof maintenanceRequests.$inferInsert;
+
+// Tabela de custos de manutenção
+export const maintenanceCosts = pgTable("maintenance_costs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  maintenanceRequestId: varchar("maintenance_request_id").references(() => maintenanceRequests.id),
+  vehicleId: varchar("vehicle_id").references(() => vehicles.id),
+  invoiceNumber: varchar("invoice_number").notNull(),
+  invoiceDate: timestamp("invoice_date").notNull(),
+  supplier: varchar("supplier").notNull(),
+  serviceType: varchar("service_type").notNull(), // 'preventive' | 'corrective'
+  description: text("description").notNull(),
+  classification: varchar("classification").notNull(), // Predefined classifications
+  costGroup: varchar("cost_group").notNull(), // 'fuel' | 'parts' | 'contracts' | 'services' | 'tires' | 'washing'
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unitValue: decimal("unit_value", { precision: 10, scale: 2 }).notNull(),
+  totalValue: decimal("total_value", { precision: 10, scale: 2 }).notNull(),
+  attachment: varchar("attachment"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type MaintenanceCost = typeof maintenanceCosts.$inferSelect;
+export type InsertMaintenanceCost = typeof maintenanceCosts.$inferInsert;
+
+// ============= MÓDULO DE ALMOXARIFADO =============
+
+// Tabela de materiais do almoxarifado central e manutenção
+export const warehouseMaterials = pgTable("warehouse_materials", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  materialNumber: serial("material_number").unique(),
+  description: varchar("description").notNull(),
+  unit: varchar("unit").notNull(), // 'unit' | 'box' | 'kg' | 'liter' | etc
+  currentQuantity: decimal("current_quantity", { precision: 10, scale: 2 }).default(sql`0`).notNull(),
+  minimumQuantity: decimal("minimum_quantity", { precision: 10, scale: 2 }).default(sql`0`).notNull(),
+  location: varchar("location"),
+  warehouseType: varchar("warehouse_type").default("central").notNull(), // 'central' | 'maintenance'
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type WarehouseMaterial = typeof warehouseMaterials.$inferSelect;
+export type InsertWarehouseMaterial = typeof warehouseMaterials.$inferInsert;
+
+// Tabela de movimentações de materiais (entradas e saídas)
+export const materialMovements = pgTable("material_movements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  materialId: varchar("material_id").references(() => warehouseMaterials.id).notNull(),
+  movementType: varchar("movement_type").notNull(), // 'entry' | 'exit'
+  entryType: varchar("entry_type"), // 'common' | 'loan_return_service' | 'loan_return_contract' | 'normal_return'
+  exitType: varchar("exit_type"), // 'normal' | 'disposal' | 'loan_service' | 'loan_contract'
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  invoiceNumber: varchar("invoice_number"),
+  purchaseOrder: varchar("purchase_order"),
+  supplier: varchar("supplier"),
+  vehiclePlate: varchar("vehicle_plate"),
+  recipientName: varchar("recipient_name"),
+  authenticationCode: varchar("authentication_code"), // For service loans
+  loanDate: timestamp("loan_date"),
+  expectedReturnDate: timestamp("expected_return_date"),
+  returnDate: timestamp("return_date"),
+  loanStatus: varchar("loan_status"), // 'active' | 'overdue' | 'returned'
+  observations: text("observations"),
+  attachment: varchar("attachment"),
+  createdBy: varchar("created_by").references(() => users.id),
+  editReason: text("edit_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type MaterialMovement = typeof materialMovements.$inferSelect;
+export type InsertMaterialMovement = typeof materialMovements.$inferInsert;
+
+// Tabela de materiais do armazém de clientes
+export const clientWarehouseMaterials = pgTable("client_warehouse_materials", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  materialNumber: serial("material_number").unique(),
+  description: varchar("description").notNull(),
+  partNumber: varchar("part_number"),
+  unit: varchar("unit").notNull(),
+  client: varchar("client").notNull(),
+  warehouse: integer("warehouse").notNull(), // 1-5
+  location: varchar("location"),
+  currentQuantity: decimal("current_quantity", { precision: 10, scale: 2 }).default(sql`0`).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type ClientWarehouseMaterial = typeof clientWarehouseMaterials.$inferSelect;
+export type InsertClientWarehouseMaterial = typeof clientWarehouseMaterials.$inferInsert;
+
+// Tabela de movimentações de materiais de clientes
+export const clientMaterialMovements = pgTable("client_material_movements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  materialId: varchar("material_id").references(() => clientWarehouseMaterials.id).notNull(),
+  movementType: varchar("movement_type").notNull(), // 'entry' | 'exit'
+  movementDate: timestamp("movement_date").notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  lot: varchar("lot"),
+  referenceInvoice: varchar("reference_invoice"),
+  coverageInvoice: varchar("coverage_invoice"),
+  exitInvoice: varchar("exit_invoice"),
+  inspector: varchar("inspector"),
+  requester: varchar("requester"),
+  vehiclePlate: varchar("vehicle_plate"),
+  driverName: varchar("driver_name"),
+  unitValue: decimal("unit_value", { precision: 10, scale: 2 }),
+  totalValue: decimal("total_value", { precision: 10, scale: 2 }),
+  status: varchar("status").default("pending"), // 'pending' | 'completed'
+  observations: text("observations"),
+  attachments: text("attachments").array(),
+  editReason: text("edit_reason"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type ClientMaterialMovement = typeof clientMaterialMovements.$inferSelect;
+export type InsertClientMaterialMovement = typeof clientMaterialMovements.$inferInsert;
+
+// ============= MÓDULO DE GESTÃO DE PNEUS =============
+
+// Tabela de pneus
+export const tires = pgTable("tires", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fireNumber: varchar("fire_number").unique().notNull(),
+  brand: varchar("brand").notNull(),
+  model: varchar("model").notNull(),
+  size: varchar("size").notNull(),
+  type: varchar("type").notNull(), // 'directional' | 'traction' | 'drag' | 'mixed'
+  purchaseValue: decimal("purchase_value", { precision: 10, scale: 2 }),
+  purchaseDate: timestamp("purchase_date"),
+  manufacturingYear: integer("manufacturing_year"),
+  currentLife: integer("current_life").default(1),
+  status: varchar("status").default("active"), // 'active' | 'in_use' | 'retreading' | 'loss' | 'sold' | 'discarded'
+  invoiceAttachment: varchar("invoice_attachment"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Tire = typeof tires.$inferSelect;
+export type InsertTire = typeof tires.$inferInsert;
+
+// Tabela de movimentações de pneus
+export const tireMovements = pgTable("tire_movements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tireId: varchar("tire_id").references(() => tires.id).notNull(),
+  vehicleId: varchar("vehicle_id").references(() => vehicles.id),
+  movementType: varchar("movement_type").notNull(), // 'entry' | 'installation' | 'rotation' | 'retreading' | 'disposal' | 'sale' | 'loss'
+  axle: integer("axle"),
+  side: varchar("side"), // 'internal' | 'external' | 'left' | 'right' | 'center'
+  currentKm: integer("current_km"),
+  twi: decimal("twi", { precision: 3, scale: 1 }),
+  lifeBefore: integer("life_before"),
+  lifeAfter: integer("life_after"),
+  retreadingType: varchar("retreading_type"), // 'drag' | 'traction'
+  reason: text("reason"),
+  attachment: varchar("attachment"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type TireMovement = typeof tireMovements.$inferSelect;
+export type InsertTireMovement = typeof tireMovements.$inferInsert;

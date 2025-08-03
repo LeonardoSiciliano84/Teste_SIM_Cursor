@@ -25,6 +25,7 @@ import ChecklistsPage from "@/pages/checklists";
 import AccessControl from "@/pages/access-control";
 import AccessControlAdmin from "@/pages/access-control-admin";
 import SecurityGuardAccess from "@/pages/security-guard-access";
+import Maintenance from "@/pages/maintenance";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import VehicleEdit from "@/components/vehicles/vehicle-edit";
@@ -57,6 +58,7 @@ function Router() {
       <Route path="/access-control" component={AccessControl} />
       <Route path="/access-control-admin" component={AccessControlAdmin} />
       <Route path="/security-guard" component={SecurityGuardAccess} />
+      <Route path="/maintenance" component={Maintenance} />
       <Route path="/routes" component={Routes} />
       <Route path="/bookings" component={Bookings} />
       <Route path="/analytics" component={Analytics} />

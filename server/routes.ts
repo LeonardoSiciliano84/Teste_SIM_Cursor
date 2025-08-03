@@ -827,6 +827,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== MÓDULO DE MANUTENÇÃO ====================
+  
+  // Listar requisições de manutenção
+  app.get("/api/maintenance/requests", async (req, res) => {
+    try {
+      const requests = await storage.getMaintenanceRequests();
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching maintenance requests:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Obter veículos em manutenção
+  app.get("/api/maintenance/vehicles-in-maintenance", async (req, res) => {
+    try {
+      const vehiclesInMaintenance = await storage.getVehiclesInMaintenance();
+      res.json(vehiclesInMaintenance);
+    } catch (error) {
+      console.error("Error fetching vehicles in maintenance:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Criar nova requisição de manutenção
+  app.post("/api/maintenance/requests", async (req, res) => {
+    try {
+      const newRequest = await storage.createMaintenanceRequest(req.body);
+      res.json(newRequest);
+    } catch (error) {
+      console.error("Error creating maintenance request:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Atualizar requisição de manutenção
+  app.put("/api/maintenance/requests/:id", async (req, res) => {
+    try {
+      const updated = await storage.updateMaintenanceRequest(req.params.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ message: "Maintenance request not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating maintenance request:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Listar materiais do almoxarifado
+  app.get("/api/maintenance/warehouse/materials", async (req, res) => {
+    try {
+      const warehouseType = req.query.warehouseType as string | undefined;
+      const materials = await storage.getWarehouseMaterials(warehouseType);
+      res.json(materials);
+    } catch (error) {
+      console.error("Error fetching warehouse materials:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Criar novo material
+  app.post("/api/maintenance/warehouse/materials", async (req, res) => {
+    try {
+      const newMaterial = await storage.createWarehouseMaterial(req.body);
+      res.json(newMaterial);
+    } catch (error) {
+      console.error("Error creating warehouse material:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Listar pneus
+  app.get("/api/maintenance/tires", async (req, res) => {
+    try {
+      const tires = await storage.getTires();
+      res.json(tires);
+    } catch (error) {
+      console.error("Error fetching tires:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Criar novo pneu
+  app.post("/api/maintenance/tires", async (req, res) => {
+    try {
+      const newTire = await storage.createTire(req.body);
+      res.json(newTire);
+    } catch (error) {
+      console.error("Error creating tire:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

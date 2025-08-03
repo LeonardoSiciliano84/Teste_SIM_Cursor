@@ -47,6 +47,23 @@ import {
   type InsertEmployeeQrCode,
   type AccessLog,
   type InsertAccessLog,
+  // Tipos do módulo de manutenção
+  type MaintenanceRequest,
+  type InsertMaintenanceRequest,
+  type MaintenanceCost,
+  type InsertMaintenanceCost,
+  type WarehouseMaterial,
+  type InsertWarehouseMaterial,
+  type MaterialMovement,
+  type InsertMaterialMovement,
+  type ClientWarehouseMaterial,
+  type InsertClientWarehouseMaterial,
+  type ClientMaterialMovement,
+  type InsertClientMaterialMovement,
+  type Tire,
+  type InsertTire,
+  type TireMovement,
+  type InsertTireMovement,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -221,6 +238,45 @@ export interface IStorage {
   getGateSystemConfigByKey(key: string): Promise<GateSystemConfig | undefined>;
   setGateSystemConfig(config: InsertGateSystemConfig): Promise<GateSystemConfig>;
   updateGateSystemConfig(key: string, value: string, updatedBy: string): Promise<GateSystemConfig | undefined>;
+
+  // ============= MAINTENANCE MODULE =============
+  // Maintenance Request methods
+  getMaintenanceRequests(): Promise<MaintenanceRequest[]>;
+  getMaintenanceRequest(id: string): Promise<MaintenanceRequest | undefined>;
+  createMaintenanceRequest(request: InsertMaintenanceRequest): Promise<MaintenanceRequest>;
+  updateMaintenanceRequest(id: string, request: Partial<InsertMaintenanceRequest>): Promise<MaintenanceRequest | undefined>;
+  deleteMaintenanceRequest(id: string): Promise<boolean>;
+  getVehicleMaintenanceHistory(vehicleId: string): Promise<MaintenanceRequest[]>;
+  getVehiclesInMaintenance(): Promise<MaintenanceRequest[]>;
+
+  // Maintenance Cost methods
+  getMaintenanceCosts(): Promise<MaintenanceCost[]>;
+  createMaintenanceCost(cost: InsertMaintenanceCost): Promise<MaintenanceCost>;
+  getVehicleMaintenanceCosts(vehicleId: string): Promise<MaintenanceCost[]>;
+
+  // Warehouse Material methods
+  getWarehouseMaterials(warehouseType?: string): Promise<WarehouseMaterial[]>;
+  getWarehouseMaterial(id: string): Promise<WarehouseMaterial | undefined>;
+  createWarehouseMaterial(material: InsertWarehouseMaterial): Promise<WarehouseMaterial>;
+  updateWarehouseMaterial(id: string, material: Partial<InsertWarehouseMaterial>): Promise<WarehouseMaterial | undefined>;
+  getMaterialsLowStock(warehouseType?: string): Promise<WarehouseMaterial[]>;
+
+  // Material Movement methods
+  getMaterialMovements(materialId?: string): Promise<MaterialMovement[]>;
+  createMaterialMovement(movement: InsertMaterialMovement): Promise<MaterialMovement>;
+  getActiveLoans(): Promise<MaterialMovement[]>;
+
+  // Tire Management methods
+  getTires(): Promise<Tire[]>;
+  getTire(id: string): Promise<Tire | undefined>;
+  getTireByFireNumber(fireNumber: string): Promise<Tire | undefined>;
+  createTire(tire: InsertTire): Promise<Tire>;
+  updateTire(id: string, tire: Partial<InsertTire>): Promise<Tire | undefined>;
+  getTiresByStatus(status: string): Promise<Tire[]>;
+
+  // Tire Movement methods
+  getTireMovements(tireId?: string): Promise<TireMovement[]>;
+  createTireMovement(movement: InsertTireMovement): Promise<TireMovement>;
 }
 
 export class MemStorage implements IStorage {
@@ -248,6 +304,15 @@ export class MemStorage implements IStorage {
   private visitors: Map<string, Visitor>;
   private employeeQrCodes: Map<string, EmployeeQrCode>;
   private accessLogs: Map<string, AccessLog>;
+  // Módulo de manutenção
+  private maintenanceRequests: Map<string, MaintenanceRequest>;
+  private maintenanceCosts: Map<string, MaintenanceCost>;
+  private warehouseMaterials: Map<string, WarehouseMaterial>;
+  private materialMovements: Map<string, MaterialMovement>;
+  private clientWarehouseMaterials: Map<string, ClientWarehouseMaterial>;
+  private clientMaterialMovements: Map<string, ClientMaterialMovement>;
+  private tires: Map<string, Tire>;
+  private tireMovements: Map<string, TireMovement>;
 
   constructor() {
     this.users = new Map();
@@ -274,10 +339,20 @@ export class MemStorage implements IStorage {
     this.visitors = new Map();
     this.employeeQrCodes = new Map();
     this.accessLogs = new Map();
+    // Módulo de manutenção
+    this.maintenanceRequests = new Map();
+    this.maintenanceCosts = new Map();
+    this.warehouseMaterials = new Map();
+    this.materialMovements = new Map();
+    this.clientWarehouseMaterials = new Map();
+    this.clientMaterialMovements = new Map();
+    this.tires = new Map();
+    this.tireMovements = new Map();
     
     // Initialize with default admin user and sample data
     this.initializeDefaultData();
     this.initializeChecklistTestData();
+    this.initializeMaintenanceTestData();
   }
 
   private initializeDefaultData() {
@@ -2039,6 +2114,218 @@ export class MemStorage implements IStorage {
     this.initializeVisitorTestData();
   }
 
+  private initializeMaintenanceTestData() {
+    // Obter veículos existentes para usar nos dados de teste
+    const vehicleIds = Array.from(this.vehicles.keys()).slice(0, 5);
+    
+    // Criar algumas requisições de manutenção de teste
+    const maintenanceRequests = [
+      {
+        id: randomUUID(),
+        orderNumber: "OS-2025-00001",
+        vehicleId: vehicleIds[0] || "ABC-1234",
+        requestType: "corrective" as const,
+        status: "open" as const,
+        priority: "high" as const,
+        description: "Falha no sistema de freios - necessita reparo urgente",
+        reportedBy: "Carlos Silva",
+        mechanic: null,
+        startDate: null,
+        endDate: null,
+        daysStoped: 0,
+        estimatedCost: 2500.00,
+        actualCost: null,
+        createdAt: new Date("2025-01-15"),
+        updatedAt: new Date("2025-01-15"),
+      },
+      {
+        id: randomUUID(),
+        orderNumber: "OS-2025-00002",
+        vehicleId: vehicleIds[1] || "DEF-5678",
+        requestType: "preventive" as const,
+        status: "in_progress" as const,
+        priority: "medium" as const,
+        description: "Manutenção preventiva - troca de óleo e filtros",
+        reportedBy: "Maria Santos",
+        mechanic: "José Oliveira",
+        startDate: new Date("2025-01-20"),
+        endDate: null,
+        daysStoped: 5,
+        estimatedCost: 800.00,
+        actualCost: null,
+        createdAt: new Date("2025-01-19"),
+        updatedAt: new Date("2025-01-20"),
+      },
+      {
+        id: randomUUID(),
+        orderNumber: "OS-2025-00003",
+        vehicleId: vehicleIds[2] || "GHI-9012",
+        requestType: "corrective" as const,
+        status: "completed" as const,
+        priority: "low" as const,
+        description: "Substituição de lâmpadas e ajuste de faróis",
+        reportedBy: "Pedro Santos",
+        mechanic: "André Costa",
+        startDate: new Date("2025-01-10"),
+        endDate: new Date("2025-01-11"),
+        daysStoped: 1,
+        estimatedCost: 150.00,
+        actualCost: 180.00,
+        createdAt: new Date("2025-01-10"),
+        updatedAt: new Date("2025-01-11"),
+      },
+      {
+        id: randomUUID(),
+        orderNumber: "OS-2025-00004",
+        vehicleId: vehicleIds[0] || "ABC-1234",
+        requestType: "preventive" as const,
+        status: "scheduled" as const,
+        priority: "medium" as const,
+        description: "Revisão geral de 50.000 km",
+        reportedBy: "Ana Paula",
+        mechanic: null,
+        startDate: new Date("2025-02-01"),
+        endDate: null,
+        daysStoped: 0,
+        estimatedCost: 3500.00,
+        actualCost: null,
+        createdAt: new Date("2025-01-20"),
+        updatedAt: new Date("2025-01-20"),
+      }
+    ];
+
+    maintenanceRequests.forEach(request => {
+      this.maintenanceRequests.set(request.id, request);
+    });
+
+    // Criar alguns materiais de almoxarifado
+    const warehouseMaterials = [
+      {
+        id: randomUUID(),
+        materialNumber: 1,
+        materialCode: "MAT-001",
+        description: "Óleo Motor 15W40",
+        unit: "L",
+        currentQuantity: "45",
+        minimumQuantity: "20",
+        maximumQuantity: "100",
+        location: "A1-B2",
+        warehouseType: "interno",
+        category: "Lubrificantes",
+        brand: "Shell",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        materialNumber: 2,
+        materialCode: "MAT-002",
+        description: "Filtro de Óleo",
+        unit: "UN",
+        currentQuantity: "15",
+        minimumQuantity: "10",
+        maximumQuantity: "50",
+        location: "A2-C3",
+        warehouseType: "interno",
+        category: "Filtros",
+        brand: "Mahle",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        materialNumber: 3,
+        materialCode: "MAT-003",
+        description: "Pastilha de Freio Dianteira",
+        unit: "JG",
+        currentQuantity: "8",
+        minimumQuantity: "5",
+        maximumQuantity: "20",
+        location: "B1-D2",
+        warehouseType: "interno",
+        category: "Freios",
+        brand: "Fras-le",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    ];
+
+    warehouseMaterials.forEach(material => {
+      this.warehouseMaterials.set(material.id, material);
+    });
+
+    // Criar alguns pneus de teste
+    const tires = [
+      {
+        id: randomUUID(),
+        fireNumber: "FN-001-2025",
+        brand: "Michelin",
+        model: "X Multi D",
+        size: "295/80R22.5",
+        dotCode: "2024",
+        purchaseDate: new Date("2024-12-01"),
+        purchaseValue: 2800.00,
+        supplier: "Pneus São Paulo Ltda",
+        currentLife: 1,
+        maxLives: 3,
+        status: "in_use" as const,
+        currentVehicleId: vehicleIds[0],
+        position: "DD1",
+        lastMeasurement: 15.5,
+        measurementDate: new Date("2025-01-15"),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        fireNumber: "FN-002-2025",
+        brand: "Firestone",
+        model: "FS400",
+        size: "295/80R22.5",
+        dotCode: "2024",
+        purchaseDate: new Date("2024-11-15"),
+        purchaseValue: 2500.00,
+        supplier: "Pneus São Paulo Ltda",
+        currentLife: 1,
+        maxLives: 3,
+        status: "stock" as const,
+        currentVehicleId: null,
+        position: null,
+        lastMeasurement: 16.0,
+        measurementDate: new Date("2024-11-15"),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        fireNumber: "FN-003-2025",
+        brand: "Goodyear",
+        model: "KMAX D",
+        size: "295/80R22.5",
+        dotCode: "2023",
+        purchaseDate: new Date("2023-10-20"),
+        purchaseValue: 2650.00,
+        supplier: "Distribuidora de Pneus ABC",
+        currentLife: 2,
+        maxLives: 3,
+        status: "retreading" as const,
+        currentVehicleId: null,
+        position: null,
+        lastMeasurement: 8.0,
+        measurementDate: new Date("2025-01-10"),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    ];
+
+    tires.forEach(tire => {
+      this.tires.set(tire.id, tire);
+    });
+  }
+
   // ============= MÉTODOS DO MÓDULO DE CONTROLE DE ACESSO =============
   
   // Métodos para Visitantes
@@ -2223,6 +2510,293 @@ export class MemStorage implements IStorage {
     };
     this.accessLogs.set(id, newLog);
     return newLog;
+  }
+
+  // ============= MAINTENANCE MODULE =============
+  // Maintenance Request methods
+  async getMaintenanceRequests(): Promise<MaintenanceRequest[]> {
+    return Array.from(this.maintenanceRequests.values()).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getMaintenanceRequest(id: string): Promise<MaintenanceRequest | undefined> {
+    return this.maintenanceRequests.get(id);
+  }
+
+  async createMaintenanceRequest(request: InsertMaintenanceRequest): Promise<MaintenanceRequest> {
+    const year = new Date().getFullYear();
+    const count = Array.from(this.maintenanceRequests.values()).filter(r => 
+      r.orderNumber.startsWith(`OS-${year}-`)
+    ).length + 1;
+    
+    const orderNumber = `OS-${year}-${count.toString().padStart(5, '0')}`;
+    
+    const newRequest: MaintenanceRequest = {
+      id: randomUUID(),
+      orderNumber,
+      ...request,
+      status: request.status || 'open',
+      daysStoped: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    this.maintenanceRequests.set(newRequest.id, newRequest);
+    return newRequest;
+  }
+
+  async updateMaintenanceRequest(id: string, request: Partial<InsertMaintenanceRequest>): Promise<MaintenanceRequest | undefined> {
+    const existing = this.maintenanceRequests.get(id);
+    if (!existing) return undefined;
+    
+    const updated = {
+      ...existing,
+      ...request,
+      updatedAt: new Date(),
+    };
+    
+    // Calculate days stopped if in maintenance
+    if (updated.startDate && !updated.endDate) {
+      const start = new Date(updated.startDate);
+      const now = new Date();
+      updated.daysStoped = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    }
+    
+    this.maintenanceRequests.set(id, updated);
+    return updated;
+  }
+
+  async deleteMaintenanceRequest(id: string): Promise<boolean> {
+    return this.maintenanceRequests.delete(id);
+  }
+
+  async getVehicleMaintenanceHistory(vehicleId: string): Promise<MaintenanceRequest[]> {
+    return Array.from(this.maintenanceRequests.values())
+      .filter(r => r.vehicleId === vehicleId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async getVehiclesInMaintenance(): Promise<MaintenanceRequest[]> {
+    return Array.from(this.maintenanceRequests.values()).filter(r => r.status === 'in_progress');
+  }
+
+  // Maintenance Cost methods
+  async getMaintenanceCosts(): Promise<MaintenanceCost[]> {
+    return Array.from(this.maintenanceCosts.values()).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async createMaintenanceCost(cost: InsertMaintenanceCost): Promise<MaintenanceCost> {
+    const newCost: MaintenanceCost = {
+      id: randomUUID(),
+      ...cost,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    this.maintenanceCosts.set(newCost.id, newCost);
+    return newCost;
+  }
+
+  async getVehicleMaintenanceCosts(vehicleId: string): Promise<MaintenanceCost[]> {
+    return Array.from(this.maintenanceCosts.values()).filter(c => c.vehicleId === vehicleId);
+  }
+
+  // Warehouse Material methods
+  async getWarehouseMaterials(warehouseType?: string): Promise<WarehouseMaterial[]> {
+    let materials = Array.from(this.warehouseMaterials.values());
+    if (warehouseType) {
+      materials = materials.filter(m => m.warehouseType === warehouseType);
+    }
+    return materials.filter(m => m.isActive);
+  }
+
+  async getWarehouseMaterial(id: string): Promise<WarehouseMaterial | undefined> {
+    return this.warehouseMaterials.get(id);
+  }
+
+  async createWarehouseMaterial(material: InsertWarehouseMaterial): Promise<WarehouseMaterial> {
+    const newMaterial: WarehouseMaterial = {
+      id: randomUUID(),
+      materialNumber: this.warehouseMaterials.size + 1,
+      ...material,
+      currentQuantity: material.currentQuantity || '0',
+      minimumQuantity: material.minimumQuantity || '0',
+      isActive: material.isActive !== false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    this.warehouseMaterials.set(newMaterial.id, newMaterial);
+    return newMaterial;
+  }
+
+  async updateWarehouseMaterial(id: string, material: Partial<InsertWarehouseMaterial>): Promise<WarehouseMaterial | undefined> {
+    const existing = this.warehouseMaterials.get(id);
+    if (!existing) return undefined;
+    
+    const updated = {
+      ...existing,
+      ...material,
+      updatedAt: new Date(),
+    };
+    
+    this.warehouseMaterials.set(id, updated);
+    return updated;
+  }
+
+  async getMaterialsLowStock(warehouseType?: string): Promise<WarehouseMaterial[]> {
+    let materials = await this.getWarehouseMaterials(warehouseType);
+    return materials.filter(m => 
+      parseFloat(m.currentQuantity) < parseFloat(m.minimumQuantity)
+    );
+  }
+
+  // Material Movement methods
+  async getMaterialMovements(materialId?: string): Promise<MaterialMovement[]> {
+    let movements = Array.from(this.materialMovements.values());
+    if (materialId) {
+      movements = movements.filter(m => m.materialId === materialId);
+    }
+    return movements.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async createMaterialMovement(movement: InsertMaterialMovement): Promise<MaterialMovement> {
+    const newMovement: MaterialMovement = {
+      id: randomUUID(),
+      ...movement,
+      authenticationCode: movement.exitType === 'loan_service' ? randomUUID().slice(0, 8) : undefined,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    // Update material quantity
+    const material = await this.getWarehouseMaterial(movement.materialId);
+    if (material) {
+      const currentQty = parseFloat(material.currentQuantity);
+      const movementQty = parseFloat(movement.quantity);
+      
+      const newQty = movement.movementType === 'entry' 
+        ? currentQty + movementQty 
+        : currentQty - movementQty;
+        
+      await this.updateWarehouseMaterial(movement.materialId, {
+        currentQuantity: newQty.toString()
+      });
+    }
+    
+    this.materialMovements.set(newMovement.id, newMovement);
+    return newMovement;
+  }
+
+  async getActiveLoans(): Promise<MaterialMovement[]> {
+    return Array.from(this.materialMovements.values()).filter(m => 
+      m.exitType && m.exitType.includes('loan') && m.loanStatus === 'active'
+    );
+  }
+
+  // Tire Management methods
+  async getTires(): Promise<Tire[]> {
+    return Array.from(this.tires.values()).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getTire(id: string): Promise<Tire | undefined> {
+    return this.tires.get(id);
+  }
+
+  async getTireByFireNumber(fireNumber: string): Promise<Tire | undefined> {
+    return Array.from(this.tires.values()).find(t => t.fireNumber === fireNumber);
+  }
+
+  async createTire(tire: InsertTire): Promise<Tire> {
+    const newTire: Tire = {
+      id: randomUUID(),
+      ...tire,
+      currentLife: tire.currentLife || 1,
+      status: tire.status || 'active',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    this.tires.set(newTire.id, newTire);
+    return newTire;
+  }
+
+  async updateTire(id: string, tire: Partial<InsertTire>): Promise<Tire | undefined> {
+    const existing = this.tires.get(id);
+    if (!existing) return undefined;
+    
+    const updated = {
+      ...existing,
+      ...tire,
+      updatedAt: new Date(),
+    };
+    
+    this.tires.set(id, updated);
+    return updated;
+  }
+
+  async getTiresByStatus(status: string): Promise<Tire[]> {
+    return Array.from(this.tires.values()).filter(t => t.status === status);
+  }
+
+  // Tire Movement methods
+  async getTireMovements(tireId?: string): Promise<TireMovement[]> {
+    let movements = Array.from(this.tireMovements.values());
+    if (tireId) {
+      movements = movements.filter(m => m.tireId === tireId);
+    }
+    return movements.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async createTireMovement(movement: InsertTireMovement): Promise<TireMovement> {
+    const newMovement: TireMovement = {
+      id: randomUUID(),
+      ...movement,
+      createdAt: new Date(),
+    };
+    
+    // Update tire status based on movement type
+    const tire = await this.getTire(movement.tireId);
+    if (tire) {
+      let newStatus = tire.status;
+      let newLife = tire.currentLife;
+      
+      switch (movement.movementType) {
+        case 'installation':
+          newStatus = 'in_use';
+          break;
+        case 'retreading':
+          newStatus = 'retreading';
+          newLife = (movement.lifeAfter || tire.currentLife) + 1;
+          break;
+        case 'disposal':
+          newStatus = 'discarded';
+          break;
+        case 'sale':
+          newStatus = 'sold';
+          break;
+        case 'loss':
+          newStatus = 'loss';
+          break;
+      }
+      
+      await this.updateTire(movement.tireId, {
+        status: newStatus,
+        currentLife: newLife
+      });
+    }
+    
+    this.tireMovements.set(newMovement.id, newMovement);
+    return newMovement;
   }
 
 
