@@ -165,63 +165,111 @@ export default function FacialRecognition() {
   // Camera functions
   const startCamera = useCallback(async () => {
     try {
+      console.log("Starting camera...");
+      
       // Verificar se o navegador suporta getUserMedia
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Seu navegador não suporta acesso à câmera");
       }
 
+      console.log("Requesting camera access...");
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          width: { ideal: 640 },
-          height: { ideal: 480 },
+          width: 640,
+          height: 480,
           facingMode: "user"
         },
         audio: false
       });
       
+      console.log("Camera stream obtained:", stream);
+      
       if (videoRef.current) {
+        console.log("Setting video source...");
         videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        setIsCapturing(true);
         
-        // Aguardar o vídeo carregar antes de reproduzir
-        videoRef.current.onloadedmetadata = () => {
-          if (videoRef.current) {
-            console.log("Video metadata loaded, attempting to play");
-            videoRef.current.play().then(() => {
-              console.log("Video is now playing");
-              setIsCapturing(true);
-            }).catch(error => {
-              console.error("Error playing video:", error);
-              toast({
-                title: "Erro",
-                description: "Erro ao reproduzir vídeo da câmera",
-                variant: "destructive",
-              });
-            });
-          }
-        };
-        
-        // Forçar o carregamento dos metadados
-        videoRef.current.load();
+        // Tentar reproduzir imediatamente
+        try {
+          await videoRef.current.play();
+          console.log("Video is playing successfully");
+        } catch (playError) {
+          console.warn("Auto-play failed, trying manual play:", playError);
+          // Tentar novamente após um pequeno delay
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.play().catch(e => console.error("Manual play failed:", e));
+            }
+          }, 100);
+        }
       }
       
-      streamRef.current = stream;
     } catch (error) {
       console.error("Error accessing camera:", error);
       let errorMessage = "Erro ao acessar a câmera";
       
       if (error instanceof Error) {
+        console.error("Error details:", error.name, error.message);
         if (error.name === "NotAllowedError") {
           errorMessage = "Acesso à câmera negado. Permita o acesso nas configurações do navegador.";
         } else if (error.name === "NotFoundError") {
           errorMessage = "Nenhuma câmera encontrada no dispositivo.";
         } else if (error.name === "NotReadableError") {
           errorMessage = "Câmera já está sendo usada por outro aplicativo.";
+        } else if (error.name === "OverconstrainedError") {
+          errorMessage = "Configurações de câmera não suportadas pelo dispositivo.";
         }
       }
       
       toast({
         title: "Erro",
         description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  const testCamera = useCallback(async () => {
+    console.log("Testing camera capabilities...");
+    try {
+      // Listar dispositivos de mídia disponíveis
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      console.log("Available devices:", devices);
+      
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      console.log("Video devices:", videoDevices);
+      
+      if (videoDevices.length === 0) {
+        throw new Error("Nenhuma câmera encontrada");
+      }
+      
+      // Testar configurações básicas
+      const constraints = {
+        video: {
+          deviceId: videoDevices[0].deviceId,
+          width: { min: 320, ideal: 640, max: 1920 },
+          height: { min: 240, ideal: 480, max: 1080 }
+        }
+      };
+      
+      console.log("Testing with constraints:", constraints);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log("Test stream obtained:", stream);
+      
+      // Parar o stream de teste
+      stream.getTracks().forEach(track => track.stop());
+      
+      toast({
+        title: "Teste de Câmera",
+        description: `✓ Câmera funcionando! Encontradas ${videoDevices.length} câmera(s)`,
+      });
+      
+    } catch (error) {
+      console.error("Camera test error:", error);
+      toast({
+        title: "Erro no Teste",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive",
       });
     }
@@ -337,21 +385,28 @@ export default function FacialRecognition() {
                   {isCapturing ? (
                     <video
                       ref={videoRef}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover bg-black"
                       autoPlay
                       playsInline
                       muted
-                      width="640"
-                      height="480"
+                      controls={false}
                       style={{ transform: 'scaleX(-1)' }}
                       onLoadedMetadata={() => {
                         console.log("Video loaded metadata");
                         if (videoRef.current) {
                           console.log("Video dimensions:", videoRef.current.videoWidth, "x", videoRef.current.videoHeight);
+                          console.log("Video ready state:", videoRef.current.readyState);
                         }
+                      }}
+                      onCanPlay={() => {
+                        console.log("Video can play");
+                      }}
+                      onPlay={() => {
+                        console.log("Video started playing");
                       }}
                       onError={(e) => {
                         console.error("Video error:", e);
+                        console.error("Video error target:", e.target);
                       }}
                     />
                   ) : capturedImage ? (
@@ -371,10 +426,15 @@ export default function FacialRecognition() {
                 
                 <div className="flex gap-2">
                   {!isCapturing && !capturedImage && (
-                    <Button onClick={startCamera} className="flex-1">
-                      <Camera className="h-4 w-4 mr-2" />
-                      Iniciar Câmera
-                    </Button>
+                    <>
+                      <Button onClick={startCamera} className="flex-1">
+                        <Camera className="h-4 w-4 mr-2" />
+                        Iniciar Câmera
+                      </Button>
+                      <Button onClick={testCamera} variant="outline" size="sm">
+                        Teste
+                      </Button>
+                    </>
                   )}
                   
                   {isCapturing && (
