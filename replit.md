@@ -16,6 +16,9 @@ FELKA Transportes is a comprehensive transport management system designed to man
 - **Tabs Reorganization:** Separated employee and visitor logs into distinct tabs for better organization
 - **Security Guard Interface:** Created responsive mobile/tablet page for security guard operations
 - **Mobile-Optimized Portal:** New /security-guard route with touch-friendly interface for access control
+- **Vehicle Control System:** Implemented comprehensive vehicle entry/exit tracking in security guard portal
+- **Admin Access to Driver Portal:** Enabled admin users to access driver portal with supervision banner
+- **Driver Portal API:** Created endpoints for driver profile and active service management
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -55,7 +58,9 @@ The application follows a monorepo structure, separating client, server, and sha
 **Key Features:**
 *   **HR Management:** Full CRUD for employees, including personal, professional, and document details. Document management with expiration tracking and notifications. Occurrence management (warnings, suspensions, medical certificates) with PDF generation.
 *   **Vehicle Management:** Full CRUD for vehicles with detailed information across multiple tabs (Principal, Financeira, Documentação, Técnica). Includes PDF report generation and document upload.
-*   **Driver Portal:** Mobile-optimized interface for drivers with vehicle selection, document access, and quick access buttons for pre-checklist, exit checklist, maintenance requests, and incident communication.
+*   **Access Control System:** Complete CPF-based visitor registration and QR Code employee access system with real-time logging and entry/exit tracking.
+*   **Security Guard Portal:** Mobile-optimized interface for security personnel with vehicle control, visitor management, employee access monitoring, and comprehensive logging.
+*   **Driver Portal:** Mobile-optimized interface for drivers with vehicle selection, document access, prancha service management, and maintenance communication. Admin users can access for supervision purposes.
 *   **Prancha Service System:** Persistent prancha service state across driver login sessions, automatic restoration, and service lifecycle management (start → active → finish) with file attachments.
 *   **Document Management:** System for uploading, downloading, and tracking documents with expiration dates and visual alerts.
 *   **Reporting & Export:** XLSX export for data and PDF generation with corporate branding for various reports (vehicle, employee, occurrences).
