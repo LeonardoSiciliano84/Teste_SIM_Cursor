@@ -318,21 +318,50 @@ export default function FacialRecognition() {
     try {
       console.log("[CAMERA] Tentativa com configurações simples...");
       
+      // Parar stream anterior
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: true,
         audio: false
       });
       
-      if (videoRef.current && stream) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setIsCapturing(true);
-        setVideoError(null);
-        console.log("[CAMERA] Configuração simples funcionou!");
+      console.log("[CAMERA] Stream simples obtido:", stream);
+      
+      if (!videoRef.current) {
+        throw new Error("Elemento de vídeo não encontrado");
       }
+
+      // Definir propriedades do vídeo antes de definir o stream
+      const video = videoRef.current;
+      video.srcObject = stream;
+      streamRef.current = stream;
+      
+      // Forçar reprodução imediata
+      setIsCapturing(true);
+      setVideoError(null);
+      
+      // Aguardar um pouco e tentar reproduzir
+      setTimeout(async () => {
+        if (video && video.srcObject) {
+          try {
+            await video.play();
+            console.log("[CAMERA] Vídeo reproduzindo em modo simples");
+          } catch (playError) {
+            console.warn("[CAMERA] Erro no autoplay:", playError);
+            setVideoError("Clique no botão Play para iniciar o vídeo");
+          }
+        }
+      }, 200);
+      
+      console.log("[CAMERA] Configuração simples funcionou!");
     } catch (error) {
       console.error("[CAMERA] Erro na configuração simples:", error);
-      setVideoError("Não foi possível iniciar a câmera com nenhuma configuração");
+      setVideoError(`Erro no modo simples: ${error instanceof Error ? error.message : 'Desconhecido'}`);
+      setIsCapturing(false);
     }
   }, []);
 
@@ -458,6 +487,28 @@ export default function FacialRecognition() {
     recognizeFaceMutation.mutate(capturedImage);
   };
 
+  const forcePlay = useCallback(async () => {
+    if (videoRef.current) {
+      try {
+        console.log("[CAMERA] Forçando reprodução do vídeo...");
+        console.log("[CAMERA] Video element:", videoRef.current);
+        console.log("[CAMERA] Video src:", videoRef.current.srcObject);
+        console.log("[CAMERA] Video paused:", videoRef.current.paused);
+        console.log("[CAMERA] Video ready state:", videoRef.current.readyState);
+        
+        await videoRef.current.play();
+        console.log("[CAMERA] Vídeo forçado a reproduzir com sucesso");
+        setVideoError(null);
+      } catch (error) {
+        console.error("[CAMERA] Erro ao forçar reprodução:", error);
+        setVideoError(`Erro na reprodução: ${error instanceof Error ? error.message : 'Desconhecido'}`);
+      }
+    } else {
+      console.error("[CAMERA] Elemento de vídeo não encontrado para forçar reprodução");
+      setVideoError("Elemento de vídeo não encontrado");
+    }
+  }, []);
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-2">
@@ -552,11 +603,7 @@ export default function FacialRecognition() {
                         Capturar Foto
                       </Button>
                       <Button 
-                        onClick={() => {
-                          if (videoRef.current) {
-                            videoRef.current.play().catch(console.error);
-                          }
-                        }} 
+                        onClick={forcePlay} 
                         variant="secondary" 
                         size="sm"
                       >
