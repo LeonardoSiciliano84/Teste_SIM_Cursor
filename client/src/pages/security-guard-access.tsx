@@ -20,9 +20,14 @@ import {
   CheckCircle,
   XCircle,
   UserCheck,
-  UserX
+  UserX,
+  Car,
+  Truck,
+  ArrowRight,
+  ArrowLeft,
+  MapPin
 } from "lucide-react";
-import type { Employee, Visitor, AccessLog } from "@shared/schema";
+import type { Employee, Visitor, AccessLog, Vehicle, Driver } from "@shared/schema";
 // import QrScanner from "qr-scanner"; // Para futuras implementações de câmera
 
 export default function SecurityGuardAccess() {
@@ -33,6 +38,8 @@ export default function SecurityGuardAccess() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [vehicleSearchTerm, setVehicleSearchTerm] = useState("");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -48,6 +55,18 @@ export default function SecurityGuardAccess() {
 
   const { data: recentLogs = [] } = useQuery<AccessLog[]>({
     queryKey: ["/api/access-control/logs"],
+  });
+
+  const { data: vehicles = [] } = useQuery<Vehicle[]>({
+    queryKey: ["/api/vehicles"],
+  });
+
+  const { data: drivers = [] } = useQuery<Driver[]>({
+    queryKey: ["/api/drivers"],
+  });
+
+  const { data: vehicleStatus = [] } = useQuery({
+    queryKey: ["/api/vehicles/status"],
   });
 
   // QR Code Processing Mutation
@@ -140,6 +159,58 @@ export default function SecurityGuardAccess() {
     },
   });
 
+  // Vehicle Exit Mutation
+  const vehicleExitMutation = useMutation({
+    mutationFn: async ({ vehicleId, driverId, destination }: { vehicleId: string; driverId: string; destination: string }) => {
+      const response = await apiRequest("/api/vehicles/exit", "POST", { vehicleId, driverId, destination });
+      return response;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "🚛 SAÍDA REGISTRADA",
+        description: `Veículo ${data.vehiclePlate} - ${data.driverName}`,
+        variant: "default",
+      });
+      
+      setSelectedVehicle(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/vehicles/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/access-control/logs"] });
+    },
+    onError: () => {
+      toast({
+        title: "❌ ERRO",
+        description: "Não foi possível registrar a saída do veículo",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Vehicle Return Mutation
+  const vehicleReturnMutation = useMutation({
+    mutationFn: async ({ vehicleId, driverId, originBase }: { vehicleId: string; driverId: string; originBase: string }) => {
+      const response = await apiRequest("/api/vehicles/return", "POST", { vehicleId, driverId, originBase });
+      return response;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "🏠 RETORNO REGISTRADO",
+        description: `Veículo ${data.vehiclePlate} - ${data.driverName}`,
+        variant: "default",
+      });
+      
+      setSelectedVehicle(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/vehicles/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/access-control/logs"] });
+    },
+    onError: () => {
+      toast({
+        title: "❌ ERRO",
+        description: "Não foi possível registrar o retorno do veículo",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Formatação de CPF
   const formatCpf = (value: string) => {
     const numbers = value.replace(/\D/g, "");
@@ -165,6 +236,18 @@ export default function SecurityGuardAccess() {
     visitor.cpf.includes(searchTerm.replace(/\D/g, ""))
   );
 
+  const filteredVehicles = vehicles.filter(vehicle => 
+    vehicle.plate.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
+    vehicle.model.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
+    vehicle.brand.toLowerCase().includes(vehicleSearchTerm.toLowerCase())
+  );
+
+  // Filtrar veículos prontos para saída (com checklist aprovado)
+  const vehiclesReadyForExit = vehicleStatus.filter(status => status.checklistStatus === 'approved' && status.status === 'available');
+  
+  // Filtrar veículos em trânsito (para retorno)
+  const vehiclesInTransit = vehicleStatus.filter(status => status.status === 'in_transit');
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       {/* Header Mobile */}
@@ -185,7 +268,7 @@ export default function SecurityGuardAccess() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger 
             value="employee-access" 
             className="text-xs data-[state=active]:bg-[#0C29AB] data-[state=active]:text-white"
@@ -199,6 +282,13 @@ export default function SecurityGuardAccess() {
           >
             <Users className="h-4 w-4 mr-1" />
             Visitantes
+          </TabsTrigger>
+          <TabsTrigger 
+            value="vehicle-control"
+            className="text-xs data-[state=active]:bg-[#0C29AB] data-[state=active]:text-white"
+          >
+            <Truck className="h-4 w-4 mr-1" />
+            Veículos
           </TabsTrigger>
           <TabsTrigger 
             value="recent-logs"
@@ -442,6 +532,247 @@ export default function SecurityGuardAccess() {
                   {filteredVisitors.length === 0 && (
                     <p className="text-center text-gray-500 py-4">
                       Nenhum visitante encontrado
+                    </p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Controle de Veículos */}
+        <TabsContent value="vehicle-control" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Saída de Veículos */}
+            <Card className="border-2 border-green-500">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-green-700 text-lg">
+                  <ArrowRight className="h-5 w-5" />
+                  Saída de Veículos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-gray-600 mb-3">
+                  Veículos com checklist aprovado
+                </div>
+                
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {vehiclesReadyForExit.length === 0 ? (
+                    <p className="text-center text-gray-500 py-4">
+                      Nenhum veículo liberado para saída
+                    </p>
+                  ) : (
+                    vehiclesReadyForExit.map((vehicleStatus) => {
+                      const vehicle = vehicles.find(v => v.id === vehicleStatus.vehicleId);
+                      const driver = drivers.find(d => d.id === vehicleStatus.driverId);
+                      
+                      if (!vehicle || !driver) return null;
+                      
+                      return (
+                        <div key={vehicle.id} className="border rounded-lg p-3 bg-green-50">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">{vehicle.plate}</p>
+                              <p className="text-xs text-gray-600">
+                                {vehicle.brand} {vehicle.model}
+                              </p>
+                              <p className="text-xs text-green-600">
+                                Motorista: {driver.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Checklist: {new Date(vehicleStatus.checklistDate).toLocaleTimeString("pt-BR")}
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => {
+                                const destination = prompt("Destino:");
+                                if (destination) {
+                                  vehicleExitMutation.mutate({
+                                    vehicleId: vehicle.id,
+                                    driverId: driver.id,
+                                    destination
+                                  });
+                                }
+                              }}
+                              disabled={vehicleExitMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
+                            >
+                              <ArrowRight className="h-3 w-3 mr-1" />
+                              Dar Saída
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Retorno de Veículos */}
+            <Card className="border-2 border-blue-500">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-blue-700 text-lg">
+                  <ArrowLeft className="h-5 w-5" />
+                  Retorno de Veículos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-gray-600 mb-3">
+                  Veículos em trânsito
+                </div>
+                
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {vehiclesInTransit.length === 0 ? (
+                    <p className="text-center text-gray-500 py-4">
+                      Nenhum veículo em trânsito
+                    </p>
+                  ) : (
+                    vehiclesInTransit.map((vehicleStatus) => {
+                      const vehicle = vehicles.find(v => v.id === vehicleStatus.vehicleId);
+                      const driver = drivers.find(d => d.id === vehicleStatus.driverId);
+                      
+                      if (!vehicle || !driver) return null;
+                      
+                      return (
+                        <div key={vehicle.id} className="border rounded-lg p-3 bg-blue-50">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">{vehicle.plate}</p>
+                              <p className="text-xs text-gray-600">
+                                {vehicle.brand} {vehicle.model}
+                              </p>
+                              <p className="text-xs text-blue-600">
+                                Motorista: {driver.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Saída: {new Date(vehicleStatus.exitTime).toLocaleString("pt-BR")}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Destino: {vehicleStatus.destination}
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => {
+                                const originBase = prompt("Base de origem:");
+                                if (originBase) {
+                                  vehicleReturnMutation.mutate({
+                                    vehicleId: vehicle.id,
+                                    driverId: driver.id,
+                                    originBase
+                                  });
+                                }
+                              }}
+                              disabled={vehicleReturnMutation.isPending}
+                              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1"
+                            >
+                              <ArrowLeft className="h-3 w-3 mr-1" />
+                              Retorno
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Busca Manual de Veículos */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-gray-700 text-lg">
+                <Search className="h-5 w-5" />
+                Busca Manual de Veículos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="searchVehicle" className="text-sm font-medium">
+                  Buscar por placa, modelo ou marca
+                </Label>
+                <Input
+                  id="searchVehicle"
+                  value={vehicleSearchTerm}
+                  onChange={(e) => setVehicleSearchTerm(e.target.value)}
+                  placeholder="ABC-1234, Scania, Mercedes..."
+                  className="mt-1 text-base"
+                />
+              </div>
+
+              {selectedVehicle && (
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Car className="h-8 w-8 text-gray-600" />
+                    <div>
+                      <p className="font-medium text-gray-900">{selectedVehicle.plate}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedVehicle.brand} {selectedVehicle.model} • {selectedVehicle.year}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={() => {
+                        const driverId = prompt("ID do Motorista:");
+                        const destination = prompt("Destino:");
+                        if (driverId && destination) {
+                          vehicleExitMutation.mutate({
+                            vehicleId: selectedVehicle.id,
+                            driverId,
+                            destination
+                          });
+                        }
+                      }}
+                      disabled={vehicleExitMutation.isPending}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <ArrowRight className="h-4 w-4 mr-1" />
+                      SAÍDA
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        const driverId = prompt("ID do Motorista:");
+                        const originBase = prompt("Base de origem:");
+                        if (driverId && originBase) {
+                          vehicleReturnMutation.mutate({
+                            vehicleId: selectedVehicle.id,
+                            driverId,
+                            originBase
+                          });
+                        }
+                      }}
+                      disabled={vehicleReturnMutation.isPending}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-1" />
+                      RETORNO
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {vehicleSearchTerm && !selectedVehicle && (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {filteredVehicles.slice(0, 5).map((vehicle) => (
+                    <div
+                      key={vehicle.id}
+                      onClick={() => setSelectedVehicle(vehicle)}
+                      className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                    >
+                      <Car className="h-8 w-8 text-gray-600" />
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{vehicle.plate}</p>
+                        <p className="text-xs text-gray-500">
+                          {vehicle.brand} {vehicle.model} • {vehicle.year}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {filteredVehicles.length === 0 && (
+                    <p className="text-center text-gray-500 py-4">
+                      Nenhum veículo encontrado
                     </p>
                   )}
                 </div>

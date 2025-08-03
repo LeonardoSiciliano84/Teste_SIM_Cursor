@@ -399,6 +399,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Vehicle Status Route
+  app.get("/api/vehicles/status", async (req, res) => {
+    try {
+      // Por enquanto retornamos dados simulados para teste
+      // Em produção, isso seria integrado com o sistema de checklists
+      const vehicleStatus = [
+        {
+          vehicleId: "aceabe60-ee08-4201-b825-13c9b5edfd68",
+          driverId: "edf9145c-5c7f-4dd9-8910-0dceebfca270",
+          status: "available",
+          checklistStatus: "approved",
+          checklistDate: new Date(),
+          exitTime: null,
+          destination: null
+        }
+      ];
+      
+      res.json(vehicleStatus);
+    } catch (error) {
+      console.error("Erro ao buscar status dos veículos:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Vehicle Exit Route
+  app.post("/api/vehicles/exit", async (req, res) => {
+    try {
+      const { vehicleId, driverId, destination } = req.body;
+      
+      if (!vehicleId || !driverId || !destination) {
+        return res.status(400).json({ message: "Dados obrigatórios: vehicleId, driverId, destination" });
+      }
+
+      // Buscar dados do veículo e motorista
+      const vehicle = await storage.getVehicle(vehicleId);
+      const driver = await storage.getDriver(driverId);
+      
+      if (!vehicle || !driver) {
+        return res.status(404).json({ message: "Veículo ou motorista não encontrado" });
+      }
+
+      // Registrar log de saída de veículo
+      await storage.createAccessLog({
+        personType: "vehicle",
+        personId: vehicleId,
+        personName: `${vehicle.plate} - ${driver.name}`,
+        personCpf: "", // Veículos não têm CPF
+        direction: "exit",
+        accessMethod: "manual",
+        location: "Portaria"
+      });
+
+      // Em produção, atualizaria o status do veículo no sistema
+      // Por enquanto apenas retornamos sucesso
+      
+      res.json({
+        success: true,
+        vehiclePlate: vehicle.plate,
+        driverName: driver.name,
+        destination: destination,
+        exitTime: new Date(),
+      });
+    } catch (error) {
+      console.error("Erro ao registrar saída do veículo:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Vehicle Return Route
+  app.post("/api/vehicles/return", async (req, res) => {
+    try {
+      const { vehicleId, driverId, originBase } = req.body;
+      
+      if (!vehicleId || !driverId || !originBase) {
+        return res.status(400).json({ message: "Dados obrigatórios: vehicleId, driverId, originBase" });
+      }
+
+      // Buscar dados do veículo e motorista
+      const vehicle = await storage.getVehicle(vehicleId);
+      const driver = await storage.getDriver(driverId);
+      
+      if (!vehicle || !driver) {
+        return res.status(404).json({ message: "Veículo ou motorista não encontrado" });
+      }
+
+      // Registrar log de retorno de veículo
+      await storage.createAccessLog({
+        personType: "vehicle",
+        personId: vehicleId,
+        personName: `${vehicle.plate} - ${driver.name}`,
+        personCpf: "", // Veículos não têm CPF
+        direction: "entry",
+        accessMethod: "manual",
+        location: "Portaria"
+      });
+
+      // Em produção, atualizaria o status do veículo no sistema
+      
+      res.json({
+        success: true,
+        vehiclePlate: vehicle.plate,
+        driverName: driver.name,
+        originBase: originBase,
+        returnTime: new Date(),
+      });
+    } catch (error) {
+      console.error("Erro ao registrar retorno do veículo:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
