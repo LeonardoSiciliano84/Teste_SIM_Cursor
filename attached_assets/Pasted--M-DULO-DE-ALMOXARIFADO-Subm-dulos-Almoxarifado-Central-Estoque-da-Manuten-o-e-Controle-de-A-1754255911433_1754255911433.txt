@@ -1,0 +1,133 @@
+
+🔧 MÓDULO DE ALMOXARIFADO
+Submódulos: Almoxarifado Central, Estoque da Manutenção e Controle de Armazéns (Clientes)
+________________________________________
+1. 📦 ALMOXARIFADO CENTRAL
+1.1 Tela Principal
+•	Lista de materiais com colunas: Nº do Material, Descrição, Unidade, Quantidade Atual, Estoque Mínimo, Endereçamento.
+•	Campo de busca (SearchBox).
+•	Alerta visual para materiais com estoque abaixo do mínimo.
+•	Botões:
+o	Cadastrar Novo Material
+o	Lançar Entrada de Material
+o	Registrar Saída de Material
+o	Histórico de Entradas
+o	Histórico de Saídas
+o	Exportar Lista (XLSX)
+________________________________________
+1.2 Cadastro de Material
+•	Nº sequencial automático
+•	Descrição
+•	Tipo de unidade (dropdown)
+•	Quantidade mínima
+•	Endereçamento (campo livre)
+•	Ações: Editar | Excluir
+________________________________________
+1.3 Entrada de Material
+•	SearchBox para seleção do material
+•	Dropdown “Tipo de Entrada” com as seguintes opções:
+✅ Entrada Comum
+Campos: Quantidade, Nº NF, Nº Ordem de Compra, Fornecedor.
+🔁 Devolução de Material Acautelado (Serviço)
+Campos: Nº de autenticação, Quantidade, Data da retirada, Nome do retirante, Observações.
+🧢 Devolução de Material Acautelado (Contratação)
+Campos: Nome do devolvente, Quantidade, Observações.
+↩ Devolução Normal
+Campos: Nome do retirante, Quantidade, Data da retirada, Observações.
+•	Todas as entradas registradas ficarão disponíveis no Histórico de Entradas, com filtros e opção de edição (com obrigatoriedade de registrar motivo da alteração).
+________________________________________
+1.4 Saída de Material
+•	Formulário com:
+o	Tipo de Saída (Normal, Descarte, Acautelamento Serviço, Acautelamento Contratação)
+o	Placa do veículo (livre)
+o	Nome do retirante (livre)
+o	Observações
+o	Campo de busca do material + Quantidade + Botão "Adicionar"
+o	Geração de lista dos itens a serem retirados
+o	Botão “Imprimir PDF” com formulário de assinatura
+o	Quando for acautelamento de serviço: gera código de autenticação único
+📝 Termos de PDF:
+•	Acautelamento Serviço: Inclui responsabilidade, prazo de 15 dias, possibilidade de desconto em folha caso não haja devolução.
+•	Acautelamento Contratação: Termo com regras de devolução no desligamento e possibilidade de desconto na rescisão.
+•	Descarte: Campo obrigatório para nome e assinatura do Técnico de Segurança.
+________________________________________
+1.5 Histórico de Entradas e Saídas
+•	Tabelas separadas com colunas completas, filtros por:
+o	Material
+o	Tipo de movimentação
+o	Nome do responsável
+o	Status (no caso de acautelamentos)
+•	Ações: Editar | Excluir (com motivo obrigatório e log do usuário)
+•	Exportar (XLSX)
+________________________________________
+1.6 Monitoramento de Acautelamentos (Serviço)
+•	Status automático:
+o	Em Andamento (até 15 dias)
+o	Vencido (após 15 dias corridos)
+o	Devolvido (quando entrada com código de autenticação ocorrer)
+•	Filtros por status e por nome do responsável
+•	Contador de dias visível na linha do item
+________________________________________
+
+2. 🏭 CONTROLE DE ARMAZÉNS DE CLIENTES
+3.1 Tela Principal
+•	Lista com: Nº do Material, Part Number, Cliente, Armazém (1 a 5), Endereçamento, Unidade, Quantidade
+•	Campo de busca
+•	Botões:
+o	Cadastrar Novo Material
+o	Registrar Entrada
+o	Registrar Saída
+o	Histórico de Movimentações
+o	Dashboard de Armazenagem
+________________________________________
+3.2 Cadastro de Material
+•	Nº automático
+•	Descrição do material
+•	Part Number
+•	Tipo de unidade
+•	Cliente (dropdown)
+•	Armazém (dropdown 1 a 5)
+•	Endereçamento (campo livre)
+•	Ações: Editar
+________________________________________
+3.3 Entrada de Material
+•	Data (editável)
+•	Quantidade
+•	Lote
+•	Nº da Nota Fiscal de Referência
+•	Nº da Nota Fiscal de Cobertura (quando disponível)
+•	Nome do conferente
+•	Valor unitário
+•	Upload das NFs
+•	Status:
+o	Entrada Pendente: à espera da NF de cobertura
+o	Finalizada: após inclusão da NF e valor
+•	Edição permitida com rastreamento do usuário
+________________________________________
+3.4 Saída de Material
+•	Data (editável)
+•	Quantidade
+•	Lote
+•	Nº da NF de saída
+•	Solicitante
+•	Placa do veículo
+•	Nome do motorista
+•	Valor unitário
+•	Observações
+•	Upload da NF
+•	Edição/exclusão com registro de motivo
+________________________________________
+3.5 Histórico de Movimentações
+•	Entradas e saídas separadas com:
+o	Filtros por cliente, armazém, material
+o	Status: pendente | finalizada
+o	Edição e exclusão com log e motivo obrigatório
+o	Exportar lista em XLSX
+________________________________________
+3.6 Dashboard
+•	Gráfico de:
+o	Quantidade total armazenada
+o	Valor total armazenado (base: valor unitário)
+•	Filtros por:
+o	Cliente
+o	Armazém

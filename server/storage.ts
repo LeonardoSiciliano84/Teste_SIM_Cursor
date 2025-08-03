@@ -52,14 +52,22 @@ import {
   type InsertMaintenanceRequest,
   type MaintenanceCost,
   type InsertMaintenanceCost,
-  type WarehouseMaterial,
-  type InsertWarehouseMaterial,
-  type MaterialMovement,
-  type InsertMaterialMovement,
+  // Tipos do módulo de almoxarifado
+  type CentralWarehouseMaterial,
+  type InsertCentralWarehouseMaterial,
+  type CentralWarehouseEntry,
+  type InsertCentralWarehouseEntry,
+  type CentralWarehouseExit,
+  type InsertCentralWarehouseExit,
+  type CentralWarehouseExitItem,
+  type WarehouseClient,
+  type InsertWarehouseClient,
   type ClientWarehouseMaterial,
   type InsertClientWarehouseMaterial,
-  type ClientMaterialMovement,
-  type InsertClientMaterialMovement,
+  type ClientWarehouseEntry,
+  type InsertClientWarehouseEntry,
+  type ClientWarehouseExit,
+  type InsertClientWarehouseExit,
   type Tire,
   type InsertTire,
   type TireMovement,
@@ -254,17 +262,48 @@ export interface IStorage {
   createMaintenanceCost(cost: InsertMaintenanceCost): Promise<MaintenanceCost>;
   getVehicleMaintenanceCosts(vehicleId: string): Promise<MaintenanceCost[]>;
 
-  // Warehouse Material methods
-  getWarehouseMaterials(warehouseType?: string): Promise<WarehouseMaterial[]>;
-  getWarehouseMaterial(id: string): Promise<WarehouseMaterial | undefined>;
-  createWarehouseMaterial(material: InsertWarehouseMaterial): Promise<WarehouseMaterial>;
-  updateWarehouseMaterial(id: string, material: Partial<InsertWarehouseMaterial>): Promise<WarehouseMaterial | undefined>;
-  getMaterialsLowStock(warehouseType?: string): Promise<WarehouseMaterial[]>;
+  // ============= WAREHOUSE MODULE =============
+  // Central Warehouse Material methods
+  getCentralWarehouseMaterials(): Promise<CentralWarehouseMaterial[]>;
+  getCentralWarehouseMaterial(id: string): Promise<CentralWarehouseMaterial | undefined>;
+  createCentralWarehouseMaterial(material: InsertCentralWarehouseMaterial): Promise<CentralWarehouseMaterial>;
+  updateCentralWarehouseMaterial(id: string, material: Partial<InsertCentralWarehouseMaterial>): Promise<CentralWarehouseMaterial | undefined>;
+  deleteCentralWarehouseMaterial(id: string): Promise<boolean>;
+  getCentralMaterialsLowStock(): Promise<CentralWarehouseMaterial[]>;
 
-  // Material Movement methods
-  getMaterialMovements(materialId?: string): Promise<MaterialMovement[]>;
-  createMaterialMovement(movement: InsertMaterialMovement): Promise<MaterialMovement>;
-  getActiveLoans(): Promise<MaterialMovement[]>;
+  // Central Warehouse Entry methods
+  getCentralWarehouseEntries(materialId?: string): Promise<CentralWarehouseEntry[]>;
+  createCentralWarehouseEntry(entry: InsertCentralWarehouseEntry): Promise<CentralWarehouseEntry>;
+  updateCentralWarehouseEntry(id: string, entry: Partial<InsertCentralWarehouseEntry>, editReason: string, editedBy: string): Promise<CentralWarehouseEntry | undefined>;
+
+  // Central Warehouse Exit methods
+  getCentralWarehouseExits(): Promise<CentralWarehouseExit[]>;
+  getCentralWarehouseExit(id: string): Promise<CentralWarehouseExit | undefined>;
+  createCentralWarehouseExit(exit: InsertCentralWarehouseExit, items: { materialId: string; quantity: string }[]): Promise<CentralWarehouseExit>;
+  updateCentralWarehouseExit(id: string, exit: Partial<InsertCentralWarehouseExit>, editReason: string, editedBy: string): Promise<CentralWarehouseExit | undefined>;
+  getActiveServiceLoans(): Promise<CentralWarehouseExit[]>;
+  markLoanAsReturned(authenticationCode: string): Promise<boolean>;
+
+  // Warehouse Client methods
+  getWarehouseClients(): Promise<WarehouseClient[]>;
+  createWarehouseClient(client: InsertWarehouseClient): Promise<WarehouseClient>;
+
+  // Client Warehouse Material methods
+  getClientWarehouseMaterials(clientId?: string, warehouse?: string): Promise<ClientWarehouseMaterial[]>;
+  getClientWarehouseMaterial(id: string): Promise<ClientWarehouseMaterial | undefined>;
+  createClientWarehouseMaterial(material: InsertClientWarehouseMaterial): Promise<ClientWarehouseMaterial>;
+  updateClientWarehouseMaterial(id: string, material: Partial<InsertClientWarehouseMaterial>): Promise<ClientWarehouseMaterial | undefined>;
+
+  // Client Warehouse Entry methods
+  getClientWarehouseEntries(materialId?: string, status?: string): Promise<ClientWarehouseEntry[]>;
+  createClientWarehouseEntry(entry: InsertClientWarehouseEntry): Promise<ClientWarehouseEntry>;
+  updateClientWarehouseEntry(id: string, entry: Partial<InsertClientWarehouseEntry>, editReason: string, editedBy: string): Promise<ClientWarehouseEntry | undefined>;
+  
+  // Client Warehouse Exit methods
+  getClientWarehouseExits(materialId?: string): Promise<ClientWarehouseExit[]>;
+  createClientWarehouseExit(exit: InsertClientWarehouseExit): Promise<ClientWarehouseExit>;
+  updateClientWarehouseExit(id: string, exit: Partial<InsertClientWarehouseExit>, editReason: string, editedBy: string): Promise<ClientWarehouseExit | undefined>;
+  deleteClientWarehouseExit(id: string, deleteReason: string, deletedBy: string): Promise<boolean>;
 
   // Tire Management methods
   getTires(): Promise<Tire[]>;
@@ -307,12 +346,17 @@ export class MemStorage implements IStorage {
   // Módulo de manutenção
   private maintenanceRequests: Map<string, MaintenanceRequest>;
   private maintenanceCosts: Map<string, MaintenanceCost>;
-  private warehouseMaterials: Map<string, WarehouseMaterial>;
-  private materialMovements: Map<string, MaterialMovement>;
-  private clientWarehouseMaterials: Map<string, ClientWarehouseMaterial>;
-  private clientMaterialMovements: Map<string, ClientMaterialMovement>;
   private tires: Map<string, Tire>;
   private tireMovements: Map<string, TireMovement>;
+  // Módulo de almoxarifado
+  private centralWarehouseMaterials: Map<string, CentralWarehouseMaterial>;
+  private centralWarehouseEntries: Map<string, CentralWarehouseEntry>;
+  private centralWarehouseExits: Map<string, CentralWarehouseExit>;
+  private centralWarehouseExitItems: Map<string, CentralWarehouseExitItem>;
+  private warehouseClients: Map<string, WarehouseClient>;
+  private clientWarehouseMaterials: Map<string, ClientWarehouseMaterial>;
+  private clientWarehouseEntries: Map<string, ClientWarehouseEntry>;
+  private clientWarehouseExits: Map<string, ClientWarehouseExit>;
 
   constructor() {
     this.users = new Map();
@@ -342,12 +386,17 @@ export class MemStorage implements IStorage {
     // Módulo de manutenção
     this.maintenanceRequests = new Map();
     this.maintenanceCosts = new Map();
-    this.warehouseMaterials = new Map();
-    this.materialMovements = new Map();
-    this.clientWarehouseMaterials = new Map();
-    this.clientMaterialMovements = new Map();
     this.tires = new Map();
     this.tireMovements = new Map();
+    // Módulo de almoxarifado
+    this.centralWarehouseMaterials = new Map();
+    this.centralWarehouseEntries = new Map();
+    this.centralWarehouseExits = new Map();
+    this.centralWarehouseExitItems = new Map();
+    this.warehouseClients = new Map();
+    this.clientWarehouseMaterials = new Map();
+    this.clientWarehouseEntries = new Map();
+    this.clientWarehouseExits = new Map();
     
     // Initialize with default admin user and sample data
     this.initializeDefaultData();
@@ -2326,9 +2375,7 @@ export class MemStorage implements IStorage {
       }
     ];
 
-    warehouseMaterials.forEach(material => {
-      this.warehouseMaterials.set(material.id, material);
-    });
+    // Dados de teste removidos - serão implementados no novo sistema de almoxarifado
 
     // Criar alguns pneus de teste
     const tires = [

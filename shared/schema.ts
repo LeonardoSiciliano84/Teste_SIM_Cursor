@@ -330,6 +330,172 @@ export const employeeFiles = pgTable("employee_files", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// ============= MÓDULO DE ALMOXARIFADO =============
+
+// 1. ALMOXARIFADO CENTRAL - Materiais
+export const centralWarehouseMaterials = pgTable("central_warehouse_materials", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  materialNumber: serial("material_number").unique(),
+  description: text("description").notNull(),
+  unitType: text("unit_type").notNull(), // pç, kg, m, L, etc.
+  currentQuantity: decimal("current_quantity").default("0"),
+  minimumStock: decimal("minimum_stock").default("0"),
+  addressing: text("addressing"), // endereçamento livre
+  
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+// 2. ALMOXARIFADO CENTRAL - Entradas
+export const centralWarehouseEntries = pgTable("central_warehouse_entries", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  materialId: uuid("material_id").references(() => centralWarehouseMaterials.id).notNull(),
+  
+  entryType: text("entry_type").notNull(), // entrada_comum, devolucao_servico, devolucao_contratacao, devolucao_normal
+  quantity: decimal("quantity").notNull(),
+  
+  // Para entrada comum
+  nfNumber: text("nf_number"),
+  purchaseOrderNumber: text("purchase_order_number"),
+  supplier: text("supplier"),
+  
+  // Para devoluções de acautelamento (serviço)
+  authenticationCode: text("authentication_code"),
+  withdrawalDate: date("withdrawal_date"),
+  withdrawerName: text("withdrawer_name"),
+  
+  // Para devoluções de acautelamento (contratação)
+  returnerName: text("returner_name"),
+  
+  observations: text("observations"),
+  
+  // Controle de edição
+  editReason: text("edit_reason"),
+  editedBy: uuid("edited_by").references(() => users.id),
+  editedAt: timestamp("edited_at"),
+  
+  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+// 3. ALMOXARIFADO CENTRAL - Saídas
+export const centralWarehouseExits = pgTable("central_warehouse_exits", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  exitType: text("exit_type").notNull(), // normal, descarte, acautelamento_servico, acautelamento_contratacao
+  vehiclePlate: text("vehicle_plate"),
+  withdrawerName: text("withdrawer_name").notNull(),
+  observations: text("observations"),
+  
+  // Para acautelamento de serviço
+  authenticationCode: text("authentication_code"), // código único gerado
+  
+  // Status para acautelamentos
+  status: text("status").default("em_andamento"), // em_andamento, vencido, devolvido
+  dueDate: date("due_date"), // 15 dias corridos para serviço
+  
+  // PDF gerado
+  pdfGenerated: boolean("pdf_generated").default(false),
+  pdfUrl: text("pdf_url"),
+  
+  // Controle de edição
+  editReason: text("edit_reason"),
+  editedBy: uuid("edited_by").references(() => users.id),
+  editedAt: timestamp("edited_at"),
+  
+  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+// 4. ALMOXARIFADO CENTRAL - Itens de Saída
+export const centralWarehouseExitItems = pgTable("central_warehouse_exit_items", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  exitId: uuid("exit_id").references(() => centralWarehouseExits.id).notNull(),
+  materialId: uuid("material_id").references(() => centralWarehouseMaterials.id).notNull(),
+  quantity: decimal("quantity").notNull(),
+});
+
+// 5. CONTROLE DE ARMAZÉNS - Clientes
+export const warehouseClients = pgTable("warehouse_clients", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  code: text("code").unique(),
+  
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+// 6. CONTROLE DE ARMAZÉNS - Materiais dos Clientes
+export const clientWarehouseMaterials = pgTable("client_warehouse_materials", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  materialNumber: serial("material_number").unique(),
+  description: text("description").notNull(),
+  partNumber: text("part_number"),
+  unitType: text("unit_type").notNull(),
+  clientId: uuid("client_id").references(() => warehouseClients.id).notNull(),
+  warehouse: text("warehouse").notNull(), // 1, 2, 3, 4, 5
+  addressing: text("addressing"),
+  currentQuantity: decimal("current_quantity").default("0"),
+  
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+// 7. CONTROLE DE ARMAZÉNS - Entradas
+export const clientWarehouseEntries = pgTable("client_warehouse_entries", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  materialId: uuid("material_id").references(() => clientWarehouseMaterials.id).notNull(),
+  
+  entryDate: date("entry_date").notNull(),
+  quantity: decimal("quantity").notNull(),
+  batch: text("batch"),
+  referenceNfNumber: text("reference_nf_number").notNull(),
+  coverageNfNumber: text("coverage_nf_number"),
+  conferentName: text("conferent_name").notNull(),
+  unitValue: decimal("unit_value"),
+  
+  // Upload de NFs
+  referenceNfUrl: text("reference_nf_url"),
+  coverageNfUrl: text("coverage_nf_url"),
+  
+  // Status
+  status: text("status").default("pendente"), // pendente, finalizada
+  
+  // Controle de edição
+  editReason: text("edit_reason"),
+  editedBy: uuid("edited_by").references(() => users.id),
+  editedAt: timestamp("edited_at"),
+  
+  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+// 8. CONTROLE DE ARMAZÉNS - Saídas
+export const clientWarehouseExits = pgTable("client_warehouse_exits", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  materialId: uuid("material_id").references(() => clientWarehouseMaterials.id).notNull(),
+  
+  exitDate: date("exit_date").notNull(),
+  quantity: decimal("quantity").notNull(),
+  batch: text("batch"),
+  exitNfNumber: text("exit_nf_number").notNull(),
+  requester: text("requester").notNull(),
+  vehiclePlate: text("vehicle_plate"),
+  driverName: text("driver_name"),
+  unitValue: decimal("unit_value"),
+  observations: text("observations"),
+  
+  // Upload de NF
+  exitNfUrl: text("exit_nf_url"),
+  
+  // Controle de edição/exclusão
+  editReason: text("edit_reason"),
+  editedBy: uuid("edited_by").references(() => users.id),
+  editedAt: timestamp("edited_at"),
+  
+  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -456,6 +622,87 @@ export const insertEmployeeFileSchema = createInsertSchema(employeeFiles).omit({
   id: true,
   createdAt: true,
 });
+
+// ============= SCHEMAS DE ALMOXARIFADO =============
+
+// Schemas para Almoxarifado Central
+export const insertCentralWarehouseMaterialSchema = createInsertSchema(centralWarehouseMaterials).omit({
+  id: true,
+  materialNumber: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCentralWarehouseEntrySchema = createInsertSchema(centralWarehouseEntries).omit({
+  id: true,
+  createdAt: true,
+  editedBy: true,
+  editedAt: true,
+});
+
+export const insertCentralWarehouseExitSchema = createInsertSchema(centralWarehouseExits).omit({
+  id: true,
+  createdAt: true,
+  editedBy: true,
+  editedAt: true,
+  authenticationCode: true,
+  status: true,
+  dueDate: true,
+  pdfGenerated: true,
+  pdfUrl: true,
+});
+
+// Schemas para Controle de Armazéns de Clientes
+export const insertWarehouseClientSchema = createInsertSchema(warehouseClients).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertClientWarehouseMaterialSchema = createInsertSchema(clientWarehouseMaterials).omit({
+  id: true,
+  materialNumber: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertClientWarehouseEntrySchema = createInsertSchema(clientWarehouseEntries).omit({
+  id: true,
+  createdAt: true,
+  editedBy: true,
+  editedAt: true,
+  status: true,
+});
+
+export const insertClientWarehouseExitSchema = createInsertSchema(clientWarehouseExits).omit({
+  id: true,
+  createdAt: true,
+  editedBy: true,
+  editedAt: true,
+});
+
+// Tipos TypeScript
+export type CentralWarehouseMaterial = typeof centralWarehouseMaterials.$inferSelect;
+export type InsertCentralWarehouseMaterial = z.infer<typeof insertCentralWarehouseMaterialSchema>;
+
+export type CentralWarehouseEntry = typeof centralWarehouseEntries.$inferSelect;
+export type InsertCentralWarehouseEntry = z.infer<typeof insertCentralWarehouseEntrySchema>;
+
+export type CentralWarehouseExit = typeof centralWarehouseExits.$inferSelect;
+export type InsertCentralWarehouseExit = z.infer<typeof insertCentralWarehouseExitSchema>;
+
+export type CentralWarehouseExitItem = typeof centralWarehouseExitItems.$inferSelect;
+
+export type WarehouseClient = typeof warehouseClients.$inferSelect;
+export type InsertWarehouseClient = z.infer<typeof insertWarehouseClientSchema>;
+
+export type ClientWarehouseMaterial = typeof clientWarehouseMaterials.$inferSelect;
+export type InsertClientWarehouseMaterial = z.infer<typeof insertClientWarehouseMaterialSchema>;
+
+export type ClientWarehouseEntry = typeof clientWarehouseEntries.$inferSelect;
+export type InsertClientWarehouseEntry = z.infer<typeof insertClientWarehouseEntrySchema>;
+
+export type ClientWarehouseExit = typeof clientWarehouseExits.$inferSelect;
+export type InsertClientWarehouseExit = z.infer<typeof insertClientWarehouseExitSchema>;
 
 // Login schema
 export const loginSchema = z.object({
@@ -1212,100 +1459,6 @@ export const maintenanceCosts = pgTable("maintenance_costs", {
 export type MaintenanceCost = typeof maintenanceCosts.$inferSelect;
 export type InsertMaintenanceCost = typeof maintenanceCosts.$inferInsert;
 
-// ============= MÓDULO DE ALMOXARIFADO =============
 
-// Tabela de materiais do almoxarifado central e manutenção
-export const warehouseMaterials = pgTable("warehouse_materials", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  materialNumber: serial("material_number").unique(),
-  description: varchar("description").notNull(),
-  unit: varchar("unit").notNull(), // 'unit' | 'box' | 'kg' | 'liter' | etc
-  currentQuantity: decimal("current_quantity", { precision: 10, scale: 2 }).default(sql`0`).notNull(),
-  minimumQuantity: decimal("minimum_quantity", { precision: 10, scale: 2 }).default(sql`0`).notNull(),
-  location: varchar("location"),
-  warehouseType: varchar("warehouse_type").default("central").notNull(), // 'central' | 'maintenance'
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export type WarehouseMaterial = typeof warehouseMaterials.$inferSelect;
-export type InsertWarehouseMaterial = typeof warehouseMaterials.$inferInsert;
-
-// Tabela de movimentações de materiais (entradas e saídas)
-export const materialMovements = pgTable("material_movements", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  materialId: varchar("material_id").references(() => warehouseMaterials.id).notNull(),
-  movementType: varchar("movement_type").notNull(), // 'entry' | 'exit'
-  entryType: varchar("entry_type"), // 'common' | 'loan_return_service' | 'loan_return_contract' | 'normal_return'
-  exitType: varchar("exit_type"), // 'normal' | 'disposal' | 'loan_service' | 'loan_contract'
-  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
-  invoiceNumber: varchar("invoice_number"),
-  purchaseOrder: varchar("purchase_order"),
-  supplier: varchar("supplier"),
-  vehiclePlate: varchar("vehicle_plate"),
-  recipientName: varchar("recipient_name"),
-  authenticationCode: varchar("authentication_code"), // For service loans
-  loanDate: timestamp("loan_date"),
-  expectedReturnDate: timestamp("expected_return_date"),
-  returnDate: timestamp("return_date"),
-  loanStatus: varchar("loan_status"), // 'active' | 'overdue' | 'returned'
-  observations: text("observations"),
-  attachment: varchar("attachment"),
-  createdBy: varchar("created_by").references(() => users.id),
-  editReason: text("edit_reason"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export type MaterialMovement = typeof materialMovements.$inferSelect;
-export type InsertMaterialMovement = typeof materialMovements.$inferInsert;
-
-// Tabela de materiais do armazém de clientes
-export const clientWarehouseMaterials = pgTable("client_warehouse_materials", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  materialNumber: serial("material_number").unique(),
-  description: varchar("description").notNull(),
-  partNumber: varchar("part_number"),
-  unit: varchar("unit").notNull(),
-  client: varchar("client").notNull(),
-  warehouse: integer("warehouse").notNull(), // 1-5
-  location: varchar("location"),
-  currentQuantity: decimal("current_quantity", { precision: 10, scale: 2 }).default(sql`0`).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export type ClientWarehouseMaterial = typeof clientWarehouseMaterials.$inferSelect;
-export type InsertClientWarehouseMaterial = typeof clientWarehouseMaterials.$inferInsert;
-
-// Tabela de movimentações de materiais de clientes
-export const clientMaterialMovements = pgTable("client_material_movements", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  materialId: varchar("material_id").references(() => clientWarehouseMaterials.id).notNull(),
-  movementType: varchar("movement_type").notNull(), // 'entry' | 'exit'
-  movementDate: timestamp("movement_date").notNull(),
-  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
-  lot: varchar("lot"),
-  referenceInvoice: varchar("reference_invoice"),
-  coverageInvoice: varchar("coverage_invoice"),
-  exitInvoice: varchar("exit_invoice"),
-  inspector: varchar("inspector"),
-  requester: varchar("requester"),
-  vehiclePlate: varchar("vehicle_plate"),
-  driverName: varchar("driver_name"),
-  unitValue: decimal("unit_value", { precision: 10, scale: 2 }),
-  totalValue: decimal("total_value", { precision: 10, scale: 2 }),
-  status: varchar("status").default("pending"), // 'pending' | 'completed'
-  observations: text("observations"),
-  attachments: text("attachments").array(),
-  editReason: text("edit_reason"),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export type ClientMaterialMovement = typeof clientMaterialMovements.$inferSelect;
-export type InsertClientMaterialMovement = typeof clientMaterialMovements.$inferInsert;
 
 

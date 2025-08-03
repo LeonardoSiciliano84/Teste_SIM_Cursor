@@ -15,7 +15,8 @@ import {
   CheckSquare,
   Shield,
   ShieldCheck,
-  Wrench
+  Wrench,
+  Warehouse
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ const navigation = [
   { name: "Sinistros", href: "/sinistros", icon: AlertTriangle },
   { name: "Checklists", href: "/checklists", icon: CheckSquare },
   { name: "Manutenção", href: "/maintenance", icon: Wrench },
+  { name: "Almoxarifado", href: "/warehouse", icon: Warehouse },
   { name: "Controle de Acesso", href: "/access-control", icon: Shield },
   { name: "Admin - Logs de Acesso", href: "/access-control-admin", icon: BarChart3 },
   { name: "Portaria", href: "/security-guard", icon: ShieldCheck },
