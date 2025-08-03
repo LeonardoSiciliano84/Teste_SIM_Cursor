@@ -55,7 +55,34 @@ const newMaintenanceRequestSchema = z.object({
   preventiveLevel: z.string().optional(),
 });
 
+// Schema para lançamento de custos seguindo PRD
+const costEntrySchema = z.object({
+  invoiceNumber: z.string().min(1, "Número da nota fiscal é obrigatório"),
+  invoiceDate: z.string().min(1, "Data da nota é obrigatória"),
+  supplier: z.string().min(1, "Nome do fornecedor é obrigatório"),
+  vehiclePlate: z.string().optional(),
+  maintenanceType: z.enum(["preventive", "corrective"]),
+  description: z.string().min(1, "Descrição é obrigatória"),
+  classification: z.string().min(1, "Classificação é obrigatória"),
+  quantity: z.number().min(0.01, "Quantidade deve ser maior que 0"),
+  unitPrice: z.number().min(0.01, "Valor unitário deve ser maior que 0"),
+  totalValue: z.number().min(0.01, "Valor total deve ser maior que 0"),
+});
+
+// Classificações pré-definidas conforme PRD
+const maintenanceClassifications = [
+  "Mecânica",
+  "Elétrica", 
+  "Estrutural",
+  "Acessórios",
+  "Pintura",
+  "Freio",
+  "Ar-condicionado",
+  "Lanternagem"
+];
+
 type NewMaintenanceRequestForm = z.infer<typeof newMaintenanceRequestSchema>;
+type CostEntryForm = z.infer<typeof costEntrySchema>;
 
 export default function Maintenance() {
   const [activeTab, setActiveTab] = useState("requests");
@@ -67,6 +94,7 @@ export default function Maintenance() {
   const [showAdvanceModal, setShowAdvanceModal] = useState(false);
   const [showFinishModal, setShowFinishModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
+  const [showCostModal, setShowCostModal] = useState(false);
   const { toast } = useToast();
 
   // Buscar requisições de manutenção
@@ -99,6 +127,23 @@ export default function Maintenance() {
       description: "",
       preventiveOrder: "",
       preventiveLevel: "",
+    },
+  });
+
+  // Formulário para lançamento de custos
+  const costForm = useForm<CostEntryForm>({
+    resolver: zodResolver(costEntrySchema),
+    defaultValues: {
+      invoiceNumber: "",
+      invoiceDate: "",
+      supplier: "",
+      vehiclePlate: "",
+      maintenanceType: "corrective",
+      description: "",
+      classification: "",
+      quantity: 0,
+      unitPrice: 0,
+      totalValue: 0,
     },
   });
 
@@ -205,6 +250,25 @@ export default function Maintenance() {
     }
   };
 
+  // Função para calcular valor total automaticamente
+  const calculateTotalValue = () => {
+    const quantity = costForm.watch("quantity");
+    const unitPrice = costForm.watch("unitPrice");
+    const totalValue = quantity * unitPrice;
+    costForm.setValue("totalValue", totalValue);
+  };
+
+  // Função para submeter lançamento de custos
+  const onSubmitCostEntry = (data: CostEntryForm) => {
+    console.log("Lançamento de custos:", data);
+    toast({
+      title: "Sucesso",
+      description: "Custo lançado com sucesso!",
+    });
+    costForm.reset();
+    setShowCostModal(false);
+  };
+
   // Estatísticas
   const stats = {
     openRequests: maintenanceRequests.filter(r => r.status === 'open').length,
@@ -306,25 +370,21 @@ export default function Maintenance() {
 
       {/* Tabs de navegação */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="requests">
             <FileText className="mr-2 h-4 w-4" />
-            Ordens de Serviço
-          </TabsTrigger>
-          <TabsTrigger value="warehouse">
-            <Package className="mr-2 h-4 w-4" />
-            Almoxarifado
-          </TabsTrigger>
-          <TabsTrigger value="tires">
-            <Circle className="mr-2 h-4 w-4" />
-            Gestão de Pneus
+            Kanban de Processos
           </TabsTrigger>
           <TabsTrigger value="costs">
             <DollarSign className="mr-2 h-4 w-4" />
-            Custos
+            Lançamento de Custos
+          </TabsTrigger>
+          <TabsTrigger value="control">
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Controle por Veículo
           </TabsTrigger>
           <TabsTrigger value="reports">
-            <BarChart3 className="mr-2 h-4 w-4" />
+            <FileText className="mr-2 h-4 w-4" />
             Relatórios
           </TabsTrigger>
         </TabsList>
@@ -678,32 +738,50 @@ export default function Maintenance() {
           </div>
         </TabsContent>
 
-        {/* Outras abas - Implementar posteriormente */}
-        <TabsContent value="warehouse">
+
+
+        {/* Aba de Lançamento de Custos */}
+        <TabsContent value="costs" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-[#0C29AB]">💰 Lançamento de Custos</h2>
+            <Button 
+              onClick={() => setShowCostModal(true)}
+              className="bg-[#0C29AB] hover:bg-[#0C29AB]/90"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Lançamento
+            </Button>
+          </div>
+
           <Card>
-            <CardContent className="py-12">
-              <div className="text-center text-muted-foreground">
-                Módulo de Almoxarifado - Em desenvolvimento
+            <CardHeader>
+              <CardTitle>Custos Registrados</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhum custo lançado ainda</p>
+                <p className="text-sm">Clique em "Novo Lançamento" para registrar custos</p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="tires">
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center text-muted-foreground">
-                Gestão de Pneus - Em desenvolvimento
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* Aba de Controle por Veículo */}
+        <TabsContent value="control" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-[#0C29AB]">📈 Controle de Custo por Veículo</h2>
+          </div>
 
-        <TabsContent value="costs">
           <Card>
-            <CardContent className="py-12">
-              <div className="text-center text-muted-foreground">
-                Controle de Custos - Em desenvolvimento
+            <CardHeader>
+              <CardTitle>Análise por Placa</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Controle de custos por veículo</p>
+                <p className="text-sm">Em desenvolvimento</p>
               </div>
             </CardContent>
           </Card>
@@ -896,6 +974,242 @@ export default function Maintenance() {
                   disabled={createMaintenanceRequestMutation.isPending}
                 >
                   {createMaintenanceRequestMutation.isPending ? "Criando..." : "Criar Solicitação"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Lançamento de Custos */}
+      <Dialog open={showCostModal} onOpenChange={setShowCostModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-[#0C29AB]">💰 Lançamento de Custos</DialogTitle>
+          </DialogHeader>
+          
+          <Form {...costForm}>
+            <form onSubmit={costForm.handleSubmit(onSubmitCostEntry)} className="space-y-6">
+              <div className="grid grid-cols-3 gap-4">
+                {/* Número da Nota Fiscal */}
+                <FormField
+                  control={costForm.control}
+                  name="invoiceNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nº da Nota Fiscal *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: 123456" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Data da Nota */}
+                <FormField
+                  control={costForm.control}
+                  name="invoiceDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data da Nota *</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Nome do Fornecedor */}
+                <FormField
+                  control={costForm.control}
+                  name="supplier"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Fornecedor *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Oficina Silva" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Placa (opcional) */}
+                <FormField
+                  control={costForm.control}
+                  name="vehiclePlate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Placa (opcional)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a placa" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {vehicles.map((vehicle) => (
+                            <SelectItem key={vehicle.id} value={vehicle.plate}>
+                              {vehicle.plate} - {vehicle.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Tipo */}
+                <FormField
+                  control={costForm.control}
+                  name="maintenanceType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="preventive">Preventiva</SelectItem>
+                          <SelectItem value="corrective">Corretiva</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Classificação */}
+                <FormField
+                  control={costForm.control}
+                  name="classification"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Classificação *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a classificação" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {maintenanceClassifications.map((classification) => (
+                            <SelectItem key={classification} value={classification}>
+                              {classification}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Descrição */}
+              <FormField
+                control={costForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição do Serviço ou Material *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Troca de óleo e filtros" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Valores */}
+              <div className="grid grid-cols-3 gap-4">
+                <FormField
+                  control={costForm.control}
+                  name="quantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantidade *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          step="0.01"
+                          placeholder="0.00"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(parseFloat(e.target.value) || 0);
+                            setTimeout(calculateTotalValue, 100);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={costForm.control}
+                  name="unitPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Valor Unitário *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          step="0.01"
+                          placeholder="0.00"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(parseFloat(e.target.value) || 0);
+                            setTimeout(calculateTotalValue, 100);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={costForm.control}
+                  name="totalValue"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Valor Total *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          step="0.01"
+                          placeholder="0.00"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          className="bg-gray-50"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="flex justify-end space-x-4 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowCostModal(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="bg-[#0C29AB] hover:bg-[#0C29AB]/90"
+                >
+                  Lançar Custo
                 </Button>
               </div>
             </form>
