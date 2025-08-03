@@ -4,14 +4,15 @@
 FELKA Transportes is a comprehensive transport management system designed to manage vehicles, drivers, routes, bookings, and analytics for a transport company. Built with a React frontend and Express.js backend, it features a modern UI using shadcn/ui and Drizzle ORM for full CRUD functionality. The system also includes a robust prancha service management system, ensuring persistent services tied to drivers with automatic state restoration and trip tracking.
 
 ## Recent Changes (Janeiro 2025)
-- **Access Control System Redesign:** Complete removal of facial recognition functionality
-- **Visitor Management:** CPF-based visitor system with photo, name, and CPF fields only
-- **Employee Access Control:** QR Code-based system instead of facial recognition
-- **QR Code Generation:** Individual QR codes for each employee containing CPF-based key
-- **Simplified Registration:** Streamlined visitor registration focusing on essential data only
-- **Access Logging:** QR Code-based entry/exit tracking with name, CPF, date/time, and direction
-- **HR Module Integration:** QR Code generation and management within employee profiles
-- **Test Data:** Populated employee database with 5 test employees for system testing
+- **Access Control System Complete:** Total replacement of facial recognition with CPF/QR Code system
+- **Facial Recognition Removal:** Completely removed facial-recognition page, components, and all related code
+- **Navigation Update:** Replaced "Reconhecimento Facial" with "Controle de Acesso" in sidebar menu
+- **Visitor Management:** CPF-based visitor search and registration system implemented
+- **Employee Access Control:** QR Code-based entry/exit system for all employees
+- **QR Code Auto-Generation:** Automatic QR code creation for all employees during system initialization
+- **Expanded Test Data:** Now includes 10 test employees across different departments and roles
+- **Clean Architecture:** Removed all face-api.js dependencies and camera diagnostic components
+- **URL Structure:** Changed from /facial-recognition to /access-control route
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
