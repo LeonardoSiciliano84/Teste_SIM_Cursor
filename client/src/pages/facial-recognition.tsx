@@ -164,10 +164,10 @@ export default function FacialRecognition() {
     },
   });
 
-  // Camera functions
+  // Camera functions - usando mesma lógica do diagnóstico que funciona
   const startCamera = useCallback(async () => {
     try {
-      console.log("Starting camera with simple approach...");
+      console.log("Starting camera with diagnostic approach...");
       
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { width: 640, height: 480 },
@@ -176,31 +176,45 @@ export default function FacialRecognition() {
       
       console.log("Camera stream obtained:", stream);
       
-      if (videoRef.current) {
-        // Parar stream anterior se existir
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-        }
-        
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        
-        // Definir capturing imediatamente e tentar reproduzir
-        setIsCapturing(true);
-        setVideoError(null);
-        
-        // Forçar reprodução
-        setTimeout(() => {
-          if (videoRef.current) {
-            videoRef.current.play().then(() => {
-              console.log("Video playing successfully");
-            }).catch((error) => {
-              console.warn("Auto-play failed:", error);
-              setVideoError("Clique no botão Play para iniciar o vídeo");
-            });
-          }
-        }, 100);
+      if (!videoRef.current) {
+        throw new Error("Elemento de vídeo não disponível");
       }
+
+      // Parar stream anterior se existir
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+
+      videoRef.current.srcObject = stream;
+      streamRef.current = stream;
+      
+      // Usar mesma Promise do diagnóstico que funciona
+      await new Promise((resolve, reject) => {
+        if (!videoRef.current) {
+          reject(new Error("Elemento de vídeo perdido"));
+          return;
+        }
+
+        const timeout = setTimeout(() => {
+          reject(new Error("Timeout na reprodução"));
+        }, 5000);
+
+        videoRef.current.onloadedmetadata = () => {
+          clearTimeout(timeout);
+          if (videoRef.current) {
+            videoRef.current.play().then(resolve).catch(reject);
+          }
+        };
+
+        videoRef.current.onerror = (e) => {
+          clearTimeout(timeout);
+          reject(new Error("Erro no elemento de vídeo"));
+        };
+      });
+
+      console.log("Video playing successfully");
+      setIsCapturing(true);
+      setVideoError(null);
       
     } catch (error) {
       console.error("Error accessing camera:", error);
@@ -213,9 +227,12 @@ export default function FacialRecognition() {
           errorMessage = "Nenhuma câmera encontrada no dispositivo.";
         } else if (error.name === "NotReadableError") {
           errorMessage = "Câmera já está sendo usada por outro aplicativo.";
+        } else if (error.message === "Timeout na reprodução") {
+          errorMessage = "Timeout na reprodução do vídeo. Tente novamente.";
         }
       }
       
+      setVideoError(errorMessage);
       toast({
         title: "Erro",
         description: errorMessage,
@@ -382,14 +399,9 @@ export default function FacialRecognition() {
                       <video
                         ref={videoRef}
                         className="w-full h-full object-cover"
-                        autoPlay
                         playsInline
                         muted
                         style={{ transform: 'scaleX(-1)' }}
-                        onLoadedMetadata={() => console.log("Video metadata loaded")}
-                        onCanPlay={() => console.log("Video can play")}
-                        onPlay={() => console.log("Video playing")}
-                        onError={(e) => console.error("Video error:", e)}
                       />
                       {/* Indicador LIVE */}
                       <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
