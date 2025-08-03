@@ -175,35 +175,51 @@ export default function FacialRecognition() {
 
       console.log("Requesting camera access...");
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: 640,
-          height: 480,
-          facingMode: "user"
-        },
+        video: true,
         audio: false
       });
       
       console.log("Camera stream obtained:", stream);
+      console.log("Stream tracks:", stream.getTracks());
       
       if (videoRef.current) {
         console.log("Setting video source...");
+        
+        // Limpar qualquer stream anterior
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        }
+        
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
-        setIsCapturing(true);
         
-        // Tentar reproduzir imediatamente
-        try {
-          await videoRef.current.play();
-          console.log("Video is playing successfully");
-        } catch (playError) {
-          console.warn("Auto-play failed, trying manual play:", playError);
-          // Tentar novamente após um pequeno delay
-          setTimeout(() => {
-            if (videoRef.current) {
-              videoRef.current.play().catch(e => console.error("Manual play failed:", e));
+        // Aguardar o vídeo carregar e reproduzir
+        videoRef.current.onloadedmetadata = async () => {
+          console.log("Video metadata loaded");
+          if (videoRef.current) {
+            try {
+              await videoRef.current.play();
+              console.log("Video playing successfully");
+              setIsCapturing(true);
+            } catch (playError) {
+              console.error("Play error:", playError);
+              // Tentar novamente
+              setTimeout(async () => {
+                if (videoRef.current) {
+                  try {
+                    await videoRef.current.play();
+                    setIsCapturing(true);
+                  } catch (e) {
+                    console.error("Retry play failed:", e);
+                  }
+                }
+              }, 500);
             }
-          }, 100);
-        }
+          }
+        };
+        
+        // Forçar carregamento
+        videoRef.current.load();
       }
       
     } catch (error) {
@@ -385,32 +401,33 @@ export default function FacialRecognition() {
               <CardContent className="space-y-4">
                 <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
                   {isCapturing ? (
-                    <video
-                      ref={videoRef}
-                      className="w-full h-full object-cover bg-black"
-                      autoPlay
-                      playsInline
-                      muted
-                      controls={false}
-                      style={{ transform: 'scaleX(-1)' }}
-                      onLoadedMetadata={() => {
-                        console.log("Video loaded metadata");
-                        if (videoRef.current) {
-                          console.log("Video dimensions:", videoRef.current.videoWidth, "x", videoRef.current.videoHeight);
-                          console.log("Video ready state:", videoRef.current.readyState);
-                        }
-                      }}
-                      onCanPlay={() => {
-                        console.log("Video can play");
-                      }}
-                      onPlay={() => {
-                        console.log("Video started playing");
-                      }}
-                      onError={(e) => {
-                        console.error("Video error:", e);
-                        console.error("Video error target:", e.target);
-                      }}
-                    />
+                    <div className="relative w-full h-full bg-gray-900 flex items-center justify-center">
+                      <video
+                        ref={videoRef}
+                        className="max-w-full max-h-full object-contain"
+                        autoPlay
+                        playsInline
+                        muted
+                        style={{ transform: 'scaleX(-1)' }}
+                        onLoadedMetadata={() => {
+                          console.log("Video loaded metadata");
+                          if (videoRef.current) {
+                            console.log("Video dimensions:", videoRef.current.videoWidth, "x", videoRef.current.videoHeight);
+                            console.log("Video ready state:", videoRef.current.readyState);
+                          }
+                        }}
+                        onCanPlay={() => {
+                          console.log("Video can play");
+                        }}
+                        onPlay={() => {
+                          console.log("Video started playing");
+                        }}
+                        onError={(e) => {
+                          console.error("Video error:", e);
+                          console.error("Video error target:", e.target);
+                        }}
+                      />
+                    </div>
                   ) : capturedImage ? (
                     <img
                       src={capturedImage}
@@ -443,6 +460,17 @@ export default function FacialRecognition() {
                     <>
                       <Button onClick={captureImage} className="flex-1">
                         Capturar Foto
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          if (videoRef.current) {
+                            videoRef.current.play().catch(console.error);
+                          }
+                        }} 
+                        variant="secondary" 
+                        size="sm"
+                      >
+                        ▶ Play
                       </Button>
                       <Button onClick={stopCamera} variant="outline">
                         Parar
