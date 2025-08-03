@@ -18,7 +18,18 @@ import {
   BarChart3,
   Plus,
   Search,
-  Filter
+  Filter,
+  Eye,
+  ArrowRight,
+  ArrowLeft,
+  X,
+  Check,
+  Printer,
+  Paperclip,
+  Download,
+  Settings,
+  Clock,
+  CheckCircle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -52,6 +63,10 @@ export default function Maintenance() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [showNewRequestModal, setShowNewRequestModal] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<MaintenanceRequest | null>(null);
+  const [showAdvanceModal, setShowAdvanceModal] = useState(false);
+  const [showFinishModal, setShowFinishModal] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
   const { toast } = useToast();
 
   // Buscar requisições de manutenção
@@ -151,6 +166,43 @@ export default function Maintenance() {
     }
 
     createMaintenanceRequestMutation.mutate(data);
+  };
+
+  // Funções para manipular o fluxo do Kanban
+  const handleAdvanceRequest = (request: MaintenanceRequest) => {
+    setSelectedRequest(request);
+    setShowAdvanceModal(true);
+  };
+
+  const handleFinishMaintenance = (request: MaintenanceRequest) => {
+    setSelectedRequest(request);
+    setShowFinishModal(true);
+  };
+
+  const handleCloseMaintenance = (request: MaintenanceRequest) => {
+    setSelectedRequest(request);
+    setShowCloseModal(true);
+  };
+
+  const handleDeleteRequest = async (requestId: string) => {
+    if (confirm("Tem certeza que deseja excluir esta solicitação?")) {
+      try {
+        await apiRequest(`/api/maintenance/requests/${requestId}`, {
+          method: "DELETE",
+        });
+        toast({
+          title: "Sucesso!",
+          description: "Solicitação excluída com sucesso.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/maintenance/requests"] });
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir solicitação.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   // Estatísticas
@@ -277,138 +329,353 @@ export default function Maintenance() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Conteúdo da aba de Ordens de Serviço */}
-        <TabsContent value="requests" className="space-y-4">
-          {/* Filtros */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Filtros</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Buscar</label>
-                  <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="OS, veículo..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-8"
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Status</label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="open">Aberta</SelectItem>
-                      <SelectItem value="scheduled">Agendada</SelectItem>
-                      <SelectItem value="in_progress">Em Andamento</SelectItem>
-                      <SelectItem value="completed">Concluída</SelectItem>
-                      <SelectItem value="closed">Fechada</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Tipo</label>
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="preventive">Preventiva</SelectItem>
-                      <SelectItem value="corrective">Corretiva</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-end">
-                  <Button variant="outline" className="w-full">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Limpar Filtros
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Conteúdo da aba de Ordens de Serviço - Layout Kanban */}
+        <TabsContent value="requests" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-[#0C29AB]">Fluxo de Manutenção - Kanban</h2>
+            <Button 
+              onClick={() => setShowNewRequestModal(true)}
+              className="bg-[#0C29AB] hover:bg-[#0C29AB]/90"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Solicitação
+            </Button>
+          </div>
 
-          {/* Lista de Ordens de Serviço */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Ordens de Serviço</CardTitle>
-              <CardDescription>
-                {filteredRequests.length} {filteredRequests.length === 1 ? 'ordem' : 'ordens'} encontrada{filteredRequests.length !== 1 ? 's' : ''}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoadingRequests ? (
-                <div className="text-center py-8 text-muted-foreground">Carregando...</div>
-              ) : filteredRequests.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhuma ordem de serviço encontrada
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredRequests.map((request) => (
-                    <div key={request.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-3">
-                            <span className="font-mono font-semibold text-[#0C29AB]">
-                              {request.orderNumber}
-                            </span>
-                            {getStatusBadge(request.status)}
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              {getTypeIcon(request.requestType)}
-                              <span>
-                                {request.requestType === 'preventive' ? 'Preventiva' : 'Corretiva'}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-4 text-sm">
-                            <div className="flex items-center gap-1">
-                              <Truck className="h-4 w-4 text-muted-foreground" />
-                              <span>{request.vehicleId}</span>
-                            </div>
-                            {request.mechanic && (
-                              <div className="flex items-center gap-1">
-                                <Wrench className="h-4 w-4 text-muted-foreground" />
-                                <span>{request.mechanic}</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {request.description && (
-                            <p className="text-sm text-muted-foreground">{request.description}</p>
-                          )}
-                        </div>
-                        
-                        <div className="text-right space-y-1">
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(request.createdAt || new Date()), "dd/MM/yyyy", { locale: ptBR })}
-                          </p>
-                          {(request.daysStoped || 0) > 0 && (
-                            <p className="text-xs text-orange-600">
-                              {request.daysStoped} dias parado
-                            </p>
-                          )}
+          {/* Layout Kanban com 4 colunas */}
+          <div className="grid grid-cols-4 gap-4 min-h-[600px]">
+            
+            {/* Coluna 1: Solicitações */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-800">Solicitações</h3>
+                <Badge className="bg-blue-100 text-blue-800">
+                  {maintenanceRequests.filter(r => r.status === 'open').length}
+                </Badge>
+              </div>
+              
+              <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                {maintenanceRequests.filter(r => r.status === 'open').map((request) => (
+                  <div key={request.id} className="bg-white rounded-lg p-3 shadow-sm border-l-4 border-blue-500">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Badge className="text-xs bg-blue-100 text-blue-800">
+                          {request.orderNumber}
+                        </Badge>
+                        <div className="flex space-x-1">
+                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" title="Visualizar">
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0" 
+                            title="Avançar para manutenção"
+                            onClick={() => handleAdvanceRequest(request)}
+                          >
+                            <ArrowRight className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0 text-red-600 hover:text-red-700" 
+                            title="Excluir"
+                            onClick={() => handleDeleteRequest(request.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
                       </div>
+                      
+                      <div className="text-xs text-gray-600">
+                        📅 {format(new Date(request.createdAt || new Date()), "dd/MM/yyyy", { locale: ptBR })}
+                      </div>
+                      
+                      <div className="text-xs text-gray-800">
+                        🚛 {request.vehicleId}
+                      </div>
+                      
+                      <div className="text-xs text-gray-600">
+                        👤 {request.reportedBy}
+                      </div>
+                      
+                      <div className="flex items-center space-x-1 text-xs">
+                        {getTypeIcon(request.requestType)}
+                        <span className="text-gray-600">
+                          {request.requestType === 'preventive' ? 'Preventiva' : 'Corretiva'}
+                        </span>
+                      </div>
+                      
+                      {request.description && (
+                        <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                          📝 {request.description.length > 50 ? 
+                            `${request.description.substring(0, 50)}...` : 
+                            request.description}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  </div>
+                ))}
+                
+                {maintenanceRequests.filter(r => r.status === 'open').length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Wrench className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Nenhuma solicitação</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Coluna 2: Veículos em Manutenção */}
+            <div className="bg-red-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-800">Em Manutenção</h3>
+                <Badge className="bg-red-100 text-red-800">
+                  {maintenanceRequests.filter(r => r.status === 'in_progress').length}
+                </Badge>
+              </div>
+              
+              <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                {maintenanceRequests.filter(r => r.status === 'in_progress').map((request) => (
+                  <div key={request.id} className="bg-white rounded-lg p-3 shadow-sm border-l-4 border-red-500">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Badge className="text-xs bg-red-100 text-red-800">
+                          {request.orderNumber}
+                        </Badge>
+                        <div className="flex space-x-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0" 
+                            title="Voltar para solicitações"
+                          >
+                            <ArrowLeft className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0" 
+                            title="Imprimir O.S."
+                          >
+                            <Printer className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0 text-green-600 hover:text-green-700" 
+                            title="Finalizar manutenção"
+                            onClick={() => handleFinishMaintenance(request)}
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="text-xs text-gray-600">
+                        📅 {format(new Date(request.startDate || new Date()), "dd/MM/yyyy", { locale: ptBR })}
+                      </div>
+                      
+                      <div className="text-xs text-gray-800">
+                        🚛 {request.vehicleId}
+                      </div>
+                      
+                      {request.mechanic && (
+                        <div className="text-xs text-gray-600">
+                          🔧 {request.mechanic}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center space-x-1 text-xs">
+                        {getTypeIcon(request.requestType)}
+                        <span className="text-gray-600">
+                          {request.requestType === 'preventive' ? 'Preventiva' : 'Corretiva'}
+                        </span>
+                      </div>
+                      
+                      {(request.daysStoped || 0) > 0 && (
+                        <div className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                          ⏱️ {request.daysStoped} dias parado
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {maintenanceRequests.filter(r => r.status === 'in_progress').length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Nenhum veículo em manutenção</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Coluna 3: Finalizado - Aguardando Fechamento */}
+            <div className="bg-yellow-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-800">Aguardando Fechamento</h3>
+                <Badge className="bg-yellow-100 text-yellow-800">
+                  {maintenanceRequests.filter(r => r.status === 'completed').length}
+                </Badge>
+              </div>
+              
+              <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                {maintenanceRequests.filter(r => r.status === 'completed').map((request) => (
+                  <div key={request.id} className="bg-white rounded-lg p-3 shadow-sm border-l-4 border-yellow-500">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Badge className="text-xs bg-yellow-100 text-yellow-800">
+                          {request.orderNumber}
+                        </Badge>
+                        <div className="flex space-x-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0" 
+                            title="Visualizar detalhes"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0" 
+                            title="Anexar documentos"
+                          >
+                            <Paperclip className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700" 
+                            title="Encerrar definitivamente"
+                            onClick={() => handleCloseMaintenance(request)}
+                          >
+                            <CheckCircle className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="text-xs text-gray-600">
+                        📅 {format(new Date(request.endDate || new Date()), "dd/MM/yyyy", { locale: ptBR })}
+                      </div>
+                      
+                      <div className="text-xs text-gray-800">
+                        🚛 {request.vehicleId}
+                      </div>
+                      
+                      {request.mechanic && (
+                        <div className="text-xs text-gray-600">
+                          🔧 {request.mechanic}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center space-x-1 text-xs">
+                        {getTypeIcon(request.requestType)}
+                        <span className="text-gray-600">
+                          {request.requestType === 'preventive' ? 'Preventiva' : 'Corretiva'}
+                        </span>
+                      </div>
+                      
+                      {request.actualCost && (
+                        <div className="text-xs text-green-600">
+                          💰 R$ {request.actualCost.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {maintenanceRequests.filter(r => r.status === 'completed').length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Nenhuma manutenção finalizada</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Coluna 4: Concluído */}
+            <div className="bg-green-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-800">Concluído</h3>
+                <Badge className="bg-green-100 text-green-800">
+                  {maintenanceRequests.filter(r => r.status === 'closed').length}
+                </Badge>
+              </div>
+              
+              <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                {maintenanceRequests.filter(r => r.status === 'closed').map((request) => (
+                  <div key={request.id} className="bg-white rounded-lg p-3 shadow-sm border-l-4 border-green-500">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Badge className="text-xs bg-green-100 text-green-800">
+                          {request.orderNumber}
+                        </Badge>
+                        <div className="flex space-x-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0" 
+                            title="Visualizar histórico completo"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 w-6 p-0" 
+                            title="Download de documentos"
+                          >
+                            <Download className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="text-xs text-gray-600">
+                        📅 {format(new Date(request.endDate || new Date()), "dd/MM/yyyy", { locale: ptBR })}
+                      </div>
+                      
+                      <div className="text-xs text-gray-800">
+                        🚛 {request.vehicleId}
+                      </div>
+                      
+                      {request.mechanic && (
+                        <div className="text-xs text-gray-600">
+                          🔧 {request.mechanic}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center space-x-1 text-xs">
+                        {getTypeIcon(request.requestType)}
+                        <span className="text-gray-600">
+                          {request.requestType === 'preventive' ? 'Preventiva' : 'Corretiva'}
+                        </span>
+                      </div>
+                      
+                      {request.actualCost && (
+                        <div className="text-xs text-green-600">
+                          💰 R$ {request.actualCost.toFixed(2)}
+                        </div>
+                      )}
+
+                      <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded text-center">
+                        ✅ Concluído
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {maintenanceRequests.filter(r => r.status === 'closed').length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Nenhuma manutenção concluída</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Outras abas - Implementar posteriormente */}

@@ -1,0 +1,69 @@
+📌 1. FLUXO DE MANUTENÇÃO (Kanban de Processos)
+▶️ Abertura de Solicitação
+Acesso:
+•	Pelo motorista via app na opção “Solicitação de Manutenção”
+•	Pelo setor de manutenção via botão "Nova Solicitação" na página de fluxo
+Campos obrigatórios:
+•	Placa
+•	Nome do motorista
+•	Tipo: Corretiva ou Preventiva
+o	Corretiva: campo livre de descrição
+o	Preventiva: seleção da ordem (1 a 12) e nível (M1 a M5)
+Resultado:
+Geração automática de número sequencial da O.S.
+________________________________________
+📋 Etapas do Kanban
+1.	Solicitações Abertas
+o	Dados: Placa, solicitante, tipo, descrição, nº da O.S., data da solicitação
+o	Ações: Excluir, Editar, Avançar
+2.	Programação e Execução da Manutenção
+o	Campos adicionais:
+	Classificação da manutenção (Mecânica, Elétrica, Estrutural, Acessórios etc.)
+	Previsão de liberação
+	Tipo: Interna (informa mecânico) ou Externa (informa fornecedor)
+o	Geração de PDF da O.S. para entrega ao mecânico
+o	Ação: Confirmar execução → move o card para etapa 3
+3.	Veículo em Manutenção
+o	Dados: Data de entrada em manutenção, previsão, placa, tipo, responsável
+o	Registro de data de parada e início do contador de dias parados
+o	Finalização:
+	Para manutenção interna: informar serviço executado, peças usadas, observações
+	Para manutenção externa: confirmar retorno e anexar documentos
+o	Ação: Finalizar manutenção → envia para etapa 4
+4.	Finalizado – Aguardando Fechamento
+o	Ações:
+	Anexar fichas de preventiva (interna) ou notas fiscais (externa)
+	Preencher dados pendentes
+	Classificar tipo de manutenção (acessórios, elétrica, etc.)
+	Voltar, editar ou excluir
+________________________________________
+🚧 2. TELA DE VEÍCULOS PARADOS (Logística)
+•	Exibição automática de veículos da etapa "Em Manutenção"
+•	Campos:
+o	Placa, classificação, tipo de manutenção, data de parada, previsão de liberação
+o	Contador de dias parados
+•	Sai da lista assim que o card avança para "Finalizado"
+________________________________________
+🔁 3. CONTROLE DE MANUTENÇÕES PREVENTIVAS
+•	Lista com todos os veículos (placa, tipo, classificação)
+•	Campos:
+o	Data da última preventiva
+o	KM da última preventiva
+o	KM/h restante para próxima preventiva
+o	Status visual (Ex.):
+	✅ Programar revisão (de 2.000 a 3.000 km)
+	⚠️ Em revisão (até 1.000 km)
+	❌ Vencido (KM negativo)
+•	Baseado em:
+o	Dados da última manutenção registrada
+o	KM informado no checklist
+o	Intervalo de manutenção cadastrado por veículo
+________________________________________
+📂 4. HISTÓRICO DE MANUTENÇÕES
+•	Lista com dados principais: Placa, tipo, data, fornecedor/mecânico, tipo de manutenção
+•	Botão “Ver detalhes” → abre modal com:
+o	Informações completas
+o	Download de fichas técnicas e notas fiscais
+o	Edição se autorizado
+•	Serviços lançados pelo motorista em viagem (via app) também entram neste histórico
+________________________________________
