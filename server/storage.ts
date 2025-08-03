@@ -869,7 +869,115 @@ export class MemStorage implements IStorage {
 
   // Employee methods
   async getEmployees(): Promise<Employee[]> {
+    // Popular dados de teste se não houver funcionários
+    if (this.employees.size === 0) {
+      await this.populateTestEmployees();
+    }
     return Array.from(this.employees.values());
+  }
+
+  private async populateTestEmployees(): Promise<void> {
+    const testEmployees = [
+      {
+        id: randomUUID(),
+        fullName: "João Silva Santos",
+        cpf: "12345678901",
+        phone: "(11) 99999-1111",
+        employeeNumber: "001",
+        position: "Motorista Sênior",
+        department: "Operações",
+        email: "joao.silva@felka.com.br",
+        status: "active",
+        accessLevel: "employee",
+        profilePhoto: "",
+        admissionDate: "2020-03-15",
+        manager: "Carlos Pereira",
+        workLocation: "Matriz São Paulo",
+        allowedModules: ["vehicles", "routes", "checklists"],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        fullName: "Maria Oliveira Costa",
+        cpf: "98765432109",
+        phone: "(11) 99999-2222",
+        employeeNumber: "002", 
+        position: "Coordenadora de Frota",
+        department: "Gestão de Frota",
+        email: "maria.oliveira@felka.com.br",
+        status: "active",
+        accessLevel: "supervisor",
+        profilePhoto: "",
+        admissionDate: "2019-08-20",
+        manager: "Roberto Lima",
+        workLocation: "Matriz São Paulo",
+        allowedModules: ["vehicles", "drivers", "maintenance", "reports"],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        fullName: "Carlos Eduardo Pereira",
+        cpf: "11122233344",
+        phone: "(11) 99999-3333",
+        employeeNumber: "003",
+        position: "Gerente de Operações",
+        department: "Gerência",
+        email: "carlos.pereira@felka.com.br", 
+        status: "active",
+        accessLevel: "manager",
+        profilePhoto: "",
+        admissionDate: "2018-01-10",
+        manager: "Diretor Executivo",
+        workLocation: "Matriz São Paulo",
+        allowedModules: ["all"],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        fullName: "Ana Paula Ferreira",
+        cpf: "55566677788",
+        phone: "(11) 99999-4444",
+        employeeNumber: "004",
+        position: "Analista de RH",
+        department: "Recursos Humanos",
+        email: "ana.ferreira@felka.com.br",
+        status: "active", 
+        accessLevel: "supervisor",
+        profilePhoto: "",
+        admissionDate: "2021-05-12",
+        manager: "Mariana Santos",
+        workLocation: "Matriz São Paulo",
+        allowedModules: ["employees", "hr", "reports"],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        fullName: "Roberto Lima da Silva", 
+        cpf: "77788899900",
+        phone: "(11) 99999-5555",
+        employeeNumber: "005",
+        position: "Porteiro",
+        department: "Segurança",
+        email: "roberto.lima@felka.com.br",
+        status: "active",
+        accessLevel: "employee", 
+        profilePhoto: "",
+        admissionDate: "2022-02-28",
+        manager: "Carlos Pereira",
+        workLocation: "Portaria Principal",
+        allowedModules: ["access-control", "visitors"],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    ];
+
+    for (const employee of testEmployees) {
+      this.employees.set(employee.id, employee as Employee);
+    }
   }
 
   async getEmployee(id: string): Promise<Employee | undefined> {

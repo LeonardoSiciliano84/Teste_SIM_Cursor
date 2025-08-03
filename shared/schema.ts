@@ -999,19 +999,10 @@ export const insertFacialEncodingSchema = createInsertSchema(facialEncodings).om
   updatedAt: true,
 });
 
-export const insertVisitorSchema = createInsertSchema(visitors).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  lastVisit: true,
-  totalVisits: true,
-  isActive: true,
-}).extend({
+export const insertVisitorSchema = z.object({
   cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(14, "CPF inválido"),
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  company: z.string().optional(),
-  purpose: z.string().optional(),
-  vehiclePlate: z.string().optional(),
+  // Removendo campos opcionais para simplificar o cadastro
 });
 
 export const insertAccessLogSchema = createInsertSchema(accessLogs).omit({

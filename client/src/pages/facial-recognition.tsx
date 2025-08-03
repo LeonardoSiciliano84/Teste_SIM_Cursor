@@ -445,13 +445,10 @@ export default function FacialRecognition() {
     loadModels();
   }, [loadModels]);
 
-  // Form states
+  // Form states - apenas campos obrigatórios
   const [visitorForm, setVisitorForm] = useState({
     name: "",
     cpf: "",
-    company: "",
-    purpose: "",
-    vehiclePlate: "",
   });
 
   const [employeeForm, setEmployeeForm] = useState({
@@ -483,9 +480,6 @@ export default function FacialRecognition() {
       setVisitorForm({
         name: "",
         cpf: "",
-        company: "",
-        purpose: "",
-        vehiclePlate: "",
       });
     },
     onError: () => {
@@ -1187,35 +1181,7 @@ export default function FacialRecognition() {
                       </div>
                     </div>
                     
-                    <div>
-                      <Label htmlFor="company">Empresa (opcional)</Label>
-                      <Input
-                        id="company"
-                        value={visitorForm.company}
-                        onChange={(e) => setVisitorForm({ ...visitorForm, company: e.target.value })}
-                        placeholder="Nome da empresa"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="purpose">Motivo da Visita (opcional)</Label>
-                      <Input
-                        id="purpose"
-                        value={visitorForm.purpose}
-                        onChange={(e) => setVisitorForm({ ...visitorForm, purpose: e.target.value })}
-                        placeholder="Reunião, entrega, etc."
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="vehiclePlate">Placa do Veículo (opcional)</Label>
-                      <Input
-                        id="vehiclePlate"
-                        value={visitorForm.vehiclePlate}
-                        onChange={(e) => setVisitorForm({ ...visitorForm, vehiclePlate: e.target.value })}
-                        placeholder="ABC-1234"
-                      />
-                    </div>
+
                     
                     <div className="space-y-3">
                       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
