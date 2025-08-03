@@ -50,6 +50,7 @@ export default function FacialRecognition() {
   const [activeTab, setActiveTab] = useState("registration");
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -194,32 +195,28 @@ export default function FacialRecognition() {
         streamRef.current = stream;
         
         // Aguardar o vídeo carregar e reproduzir
-        videoRef.current.onloadedmetadata = async () => {
-          console.log("Video metadata loaded");
-          if (videoRef.current) {
-            try {
-              await videoRef.current.play();
-              console.log("Video playing successfully");
-              setIsCapturing(true);
-            } catch (playError) {
-              console.error("Play error:", playError);
-              // Tentar novamente
-              setTimeout(async () => {
-                if (videoRef.current) {
-                  try {
-                    await videoRef.current.play();
-                    setIsCapturing(true);
-                  } catch (e) {
-                    console.error("Retry play failed:", e);
-                  }
-                }
-              }, 500);
-            }
+        const playVideo = async () => {
+          try {
+            await videoRef.current?.play();
+            console.log("Video playing successfully");
+            setIsCapturing(true);
+            setVideoError(null);
+          } catch (playError) {
+            console.error("Play error:", playError);
+            setVideoError("Vídeo pode não estar reproduzindo. Tente o botão Play.");
+            setIsCapturing(true); // Definir como capturing mesmo se o play falhar
           }
         };
-        
-        // Forçar carregamento
-        videoRef.current.load();
+
+        videoRef.current.onloadedmetadata = () => {
+          console.log("Video metadata loaded");
+          playVideo();
+        };
+
+        // Se já tem metadados, reproduzir imediatamente
+        if (videoRef.current.readyState >= 1) {
+          playVideo();
+        }
       }
       
     } catch (error) {
@@ -399,34 +396,57 @@ export default function FacialRecognition() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden min-h-[300px]">
                   {isCapturing ? (
-                    <div className="relative w-full h-full bg-gray-900 flex items-center justify-center">
+                    <div className="relative w-full h-full bg-black flex items-center justify-center">
                       <video
                         ref={videoRef}
-                        className="max-w-full max-h-full object-contain"
-                        autoPlay
-                        playsInline
-                        muted
-                        style={{ transform: 'scaleX(-1)' }}
+                        width="640"
+                        height="480"
+                        className="w-full h-full object-cover"
+                        autoPlay={true}
+                        playsInline={true}
+                        muted={true}
+                        controls={false}
+                        style={{ 
+                          transform: 'scaleX(-1)',
+                          display: 'block'
+                        }}
                         onLoadedMetadata={() => {
                           console.log("Video loaded metadata");
                           if (videoRef.current) {
                             console.log("Video dimensions:", videoRef.current.videoWidth, "x", videoRef.current.videoHeight);
                             console.log("Video ready state:", videoRef.current.readyState);
+                            console.log("Video paused:", videoRef.current.paused);
                           }
                         }}
                         onCanPlay={() => {
                           console.log("Video can play");
+                          if (videoRef.current) {
+                            videoRef.current.play().catch(console.error);
+                          }
                         }}
                         onPlay={() => {
                           console.log("Video started playing");
+                        }}
+                        onPause={() => {
+                          console.log("Video paused");
                         }}
                         onError={(e) => {
                           console.error("Video error:", e);
                           console.error("Video error target:", e.target);
                         }}
                       />
+                      {/* Indicador de status */}
+                      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs">
+                        LIVE
+                      </div>
+                      {/* Aviso de erro de vídeo */}
+                      {videoError && (
+                        <div className="absolute bottom-2 left-2 right-2 bg-yellow-500 text-black px-2 py-1 rounded text-xs">
+                          {videoError}
+                        </div>
+                      )}
                     </div>
                   ) : capturedImage ? (
                     <img
