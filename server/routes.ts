@@ -276,6 +276,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Perfil do motorista - agora acessível por admins também
+  app.get("/api/driver/profile", async (req, res) => {
+    try {
+      // Para demonstração, vamos usar dados simulados que representariam um funcionário-motorista
+      // Em produção, isso seria baseado no usuário logado ou selecionado
+      const mockDriverProfile = {
+        id: "37de4856-dc50-4828-bcc5-1472c84e6e99",
+        fullName: "João Silva Santos",
+        email: "joao.silva@felkatransportes.com.br",
+        employeeNumber: "F2025001", 
+        profilePhoto: null,
+        position: "Motorista Sênior",
+        department: "Operacional",
+        driverLicense: "12345678901",
+        driverLicenseCategory: "D",
+        driverLicenseExpiry: "2026-12-31",
+        phone: "(11) 98765-4321"
+      };
+      
+      res.json(mockDriverProfile);
+    } catch (error) {
+      console.error("Erro ao buscar perfil do motorista:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Buscar serviço ativo do motorista
+  app.get("/api/driver/:id/active-service", async (req, res) => {
+    try {
+      const driverId = req.params.id;
+      
+      // Buscar serviço ativo para o motorista
+      // Por enquanto retornamos null (sem serviço ativo)
+      res.json(null);
+    } catch (error) {
+      console.error("Erro ao buscar serviço ativo:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   // Analytics - revenue
   app.get("/api/analytics/revenue", async (req, res) => {
     try {

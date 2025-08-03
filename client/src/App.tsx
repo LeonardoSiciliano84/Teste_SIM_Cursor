@@ -101,6 +101,7 @@ function App() {
   }
 
   // Se o usuário é motorista, redirecionar apenas para o portal
+  // Renderizar portal do motorista para drivers OU admins
   if (authState.user?.role === 'driver') {
     return (
       <QueryClientProvider client={queryClient}>

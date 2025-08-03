@@ -24,7 +24,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Search, User, Mail, Shield, Car, FileText, Download, AlertTriangle, CheckSquare, Wrench, Phone, Camera, MapPin, Clock, Truck, Fuel, Settings, Package, MessageSquare, Calendar, LogOut, Lock, UserCircle, ChevronDown } from "lucide-react";
-import { authManager } from "@/lib/auth";
+import { authManager, useAuth } from "@/lib/auth"; 
 import { useToast } from "@/hooks/use-toast";
 import { SinistroForm } from "@/components/sinistros/sinistro-form";
 
@@ -73,6 +73,8 @@ export default function DriverPortal() {
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [currentKm, setCurrentKm] = useState<string>("");
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isAdminView = user?.role === 'admin';
 
   // Dados mock para Ordens de Coleta
   const ordensColeta = [
@@ -253,6 +255,21 @@ export default function DriverPortal() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4">
+      {/* Banner para modo admin */}
+      {isAdminView && (
+        <div className="max-w-md mx-auto mb-4">
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg">
+            <div className="flex items-center">
+              <Shield className="h-5 w-5 mr-2" />
+              <div>
+                <strong className="text-sm">Modo Supervisão Admin</strong>
+                <p className="text-xs">Você está visualizando o portal do motorista como administrador</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-md mx-auto space-y-6">
         
         {/* Header com informações do motorista */}
