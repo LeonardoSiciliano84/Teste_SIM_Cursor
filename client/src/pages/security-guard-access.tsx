@@ -575,7 +575,7 @@ export default function SecurityGuardAccess() {
                         CPF: {selectedVisitor.cpf} • {selectedVisitor.totalVisits} visitas
                       </p>
                       <p className="text-xs text-gray-500">
-                        Empresa: {selectedVisitor.company || "Não informado"}
+                        Empresa: {(selectedVisitor as any).company || "Não informado"}
                       </p>
                     </div>
                   </div>
@@ -641,7 +641,7 @@ export default function SecurityGuardAccess() {
                         <div>
                           <p className="font-medium text-sm">{log.personName}</p>
                           <p className="text-xs text-gray-500">
-                            {log.notes || "Visitante"}
+                            {(log as any).notes || "Visitante"}
                           </p>
                         </div>
                       </div>
@@ -663,102 +663,118 @@ export default function SecurityGuardAccess() {
 
         {/* Vehicle Control Tab */}
         <TabsContent value="vehicle-control" className="space-y-4">
-          {/* Vehicles Ready for Exit */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-600">
-                <ArrowRight className="h-5 w-5" />
-                Veículos Prontos para Saída
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {vehiclesReadyForExit.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">Nenhum veículo pronto para saída</p>
-              ) : (
-                <div className="space-y-3">
-                  {vehiclesReadyForExit.map((status) => {
-                    const vehicle = vehicles.find(v => v.id === status.vehicleId);
-                    const driver = drivers.find(d => d.id === status.driverId);
-                    return (
-                      <div key={status.vehicleId} className="p-4 border rounded-lg bg-green-50">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="font-medium">{vehicle?.plate} - {vehicle?.model}</p>
-                            <p className="text-sm text-gray-600">
-                              Motorista: {driver?.name}
-                            </p>
-                            <Badge className="mt-1 bg-green-100 text-green-800">
-                              Checklist Aprovado
-                            </Badge>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Coluna de Saída */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-600">
+                  <ArrowRight className="h-5 w-5" />
+                  Veículos Prontos para Saída
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {vehiclesReadyForExit.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">Nenhum veículo pronto para saída</p>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {vehiclesReadyForExit.map((status: any) => {
+                      const vehicle = vehicles.find(v => v.id === status.vehicleId);
+                      const driver = drivers.find(d => d.id === status.driverId);
+                      
+                      return (
+                        <div key={status.vehicleId} className="p-3 border rounded-lg bg-green-50">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Truck className="h-4 w-4 text-green-600" />
+                                <span className="font-medium text-sm">{vehicle?.plate}</span>
+                              </div>
+                              <p className="text-xs text-gray-600">
+                                Motorista: {driver?.name || 'N/A'}
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                Classificação: {vehicle?.classification || vehicle?.vehicleType || 'N/A'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {new Date().toLocaleDateString('pt-BR')} - {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => vehicleExitMutation.mutate({ 
+                                vehicleId: status.vehicleId, 
+                                driverId: status.driverId 
+                              })}
+                              className="bg-green-600 hover:bg-green-700 text-xs"
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Confirmar Saída
+                            </Button>
                           </div>
-                          <Button
-                            onClick={() => vehicleExitMutation.mutate({ 
-                              vehicleId: status.vehicleId, 
-                              driverId: status.driverId 
-                            })}
-                            className="bg-green-600 hover:bg-green-700"
-                            size="sm"
-                          >
-                            <ArrowRight className="h-4 w-4 mr-1" />
-                            Autorizar Saída
-                          </Button>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Vehicles in Transit */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-600">
-                <ArrowLeft className="h-5 w-5" />
-                Veículos em Trânsito
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {vehiclesInTransit.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">Nenhum veículo em trânsito</p>
-              ) : (
-                <div className="space-y-3">
-                  {vehiclesInTransit.map((status) => {
-                    const vehicle = vehicles.find(v => v.id === status.vehicleId);
-                    const driver = drivers.find(d => d.id === status.driverId);
-                    return (
-                      <div key={status.vehicleId} className="p-4 border rounded-lg bg-blue-50">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="font-medium">{vehicle?.plate} - {vehicle?.model}</p>
-                            <p className="text-sm text-gray-600">
-                              Motorista: {driver?.name}
-                            </p>
-                            <Badge className="mt-1 bg-blue-100 text-blue-800">
-                              Em Trânsito
-                            </Badge>
+            {/* Coluna de Entrada */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-blue-600">
+                  <ArrowLeft className="h-5 w-5" />
+                  Veículos em Trânsito
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {vehiclesInTransit.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">Nenhum veículo em trânsito</p>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {vehiclesInTransit.map((status: any) => {
+                      const vehicle = vehicles.find(v => v.id === status.vehicleId);
+                      const driver = drivers.find(d => d.id === status.driverId);
+                      
+                      return (
+                        <div key={status.vehicleId} className="p-3 border rounded-lg bg-blue-50">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Truck className="h-4 w-4 text-blue-600" />
+                                <span className="font-medium text-sm">{vehicle?.plate}</span>
+                              </div>
+                              <p className="text-xs text-gray-600">
+                                Motorista: {driver?.name || 'N/A'}
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                Classificação: {vehicle?.classification || vehicle?.vehicleType || 'N/A'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Saída: {status.exitTime ? new Date(status.exitTime).toLocaleDateString('pt-BR') : 'N/A'} - {status.exitTime ? new Date(status.exitTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => vehicleReturnMutation.mutate({ 
+                                vehicleId: status.vehicleId, 
+                                driverId: status.driverId,
+                                originBase: "Base Principal"
+                              })}
+                              className="bg-blue-600 hover:bg-blue-700 text-xs"
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Confirmar Entrada
+                            </Button>
                           </div>
-                          <Button
-                            onClick={() => vehicleReturnMutation.mutate({ 
-                              vehicleId: status.vehicleId, 
-                              driverId: status.driverId,
-                              originBase: "Base Principal"
-                            })}
-                            className="bg-blue-600 hover:bg-blue-700"
-                            size="sm"
-                          >
-                            <ArrowLeft className="h-4 w-4 mr-1" />
-                            Registrar Retorno
-                          </Button>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Recent Logs Tab */}
