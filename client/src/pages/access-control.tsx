@@ -23,6 +23,8 @@ import QrScanner from "qr-scanner";
 export default function AccessControl() {
   const [activeTab, setActiveTab] = useState("visitors");
   const [visitorCpf, setVisitorCpf] = useState("");
+  const [filteredVisitors, setFilteredVisitors] = useState<Visitor[]>([]);
+  const [showAllVisitors, setShowAllVisitors] = useState(true);
   const [visitorForm, setVisitorForm] = useState({
     name: "",
     cpf: "",
@@ -228,6 +230,9 @@ export default function AccessControl() {
           cpf: data.visitor.cpf,
           photo: data.visitor.photo || ""
         });
+        // Filtrar lista para mostrar apenas o visitante encontrado
+        setFilteredVisitors([data.visitor]);
+        setShowAllVisitors(false);
         toast({
           title: "Visitante encontrado",
           description: `${data.visitor.name} - ${data.visitor.totalVisits} visitas`,
@@ -238,6 +243,9 @@ export default function AccessControl() {
           cpf: visitorCpf,
           photo: ""
         });
+        // Mostrar todos os visitantes se não encontrou nenhum  
+        setShowAllVisitors(true);
+        setFilteredVisitors([]);
         toast({
           title: "Visitante não encontrado",
           description: "Preencha os dados para novo cadastro",
@@ -264,6 +272,10 @@ export default function AccessControl() {
         setVisitorForm({ name: "", cpf: "", photo: "" });
         setVisitorCpf("");
       }
+      
+      // Voltar a mostrar todos os visitantes após cadastro
+      setShowAllVisitors(true);
+      setFilteredVisitors([]);
     },
   });
 
@@ -526,13 +538,32 @@ export default function AccessControl() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {visitors.length === 0 ? (
+              {(showAllVisitors ? visitors : filteredVisitors).length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  Nenhum visitante cadastrado
+                  {showAllVisitors ? "Nenhum visitante cadastrado" : "Nenhum visitante encontrado"}
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {visitors.map((visitor) => (
+                  {!showAllVisitors && (
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-sm text-gray-600">
+                        Mostrando resultado da busca
+                      </span>
+                      <Button 
+                        onClick={() => {
+                          setShowAllVisitors(true);
+                          setFilteredVisitors([]);
+                          setVisitorCpf("");
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="border-[#0C29AB] text-[#0C29AB] hover:bg-[#0C29AB]/10"
+                      >
+                        Mostrar Todos
+                      </Button>
+                    </div>
+                  )}
+                  {(showAllVisitors ? visitors : filteredVisitors).map((visitor) => (
                     <div key={visitor.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center gap-3">
                         {visitor.photo && (
