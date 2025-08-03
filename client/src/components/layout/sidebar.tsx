@@ -28,6 +28,7 @@ const navigation = [
   { name: "Sinistros", href: "/sinistros", icon: AlertTriangle },
   { name: "Checklists", href: "/checklists", icon: CheckSquare },
   { name: "Controle de Acesso", href: "/access-control", icon: Shield },
+  { name: "Admin - Logs de Acesso", href: "/access-control-admin", icon: BarChart3 },
   { name: "Portaria", href: "/security-guard", icon: ShieldCheck },
   { name: "Portal Motorista", href: "/driver-portal", icon: Smartphone },
   { name: "Gestão de Prancha", href: "/prancha-management", icon: Package },

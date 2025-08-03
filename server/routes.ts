@@ -599,6 +599,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API para logs administrativos com filtros
+  app.get("/api/access-control/logs", async (req, res) => {
+    try {
+      const { startDate, endDate, personType, direction, search } = req.query;
+      
+      let logs = await storage.getAccessLogs();
+      
+      // Aplicar filtros
+      if (startDate) {
+        const start = new Date(startDate as string);
+        logs = logs.filter(log => new Date(log.timestamp) >= start);
+      }
+      
+      if (endDate) {
+        const end = new Date(endDate as string);
+        end.setHours(23, 59, 59, 999); // Final do dia
+        logs = logs.filter(log => new Date(log.timestamp) <= end);
+      }
+      
+      if (personType && personType !== 'todos') {
+        logs = logs.filter(log => log.personType === personType);
+      }
+      
+      if (direction && direction !== 'todos') {
+        logs = logs.filter(log => log.direction === direction);
+      }
+      
+      if (search) {
+        const searchLower = (search as string).toLowerCase();
+        logs = logs.filter(log => 
+          log.personName.toLowerCase().includes(searchLower) ||
+          (log.personCpf && log.personCpf.includes(searchLower))
+        );
+      }
+      
+      // Ordenar por data mais recente
+      logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      
+      res.json(logs);
+    } catch (error) {
+      console.error("Erro ao buscar logs de acesso:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // API para estatísticas de acesso
+  app.get("/api/access-control/stats", async (req, res) => {
+    try {
+      const { date } = req.query;
+      const targetDate = date ? new Date(date as string) : new Date();
+      
+      // Definir início e fim do dia
+      const startOfDay = new Date(targetDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      const logs = await storage.getAccessLogs();
+      const dayLogs = logs.filter(log => {
+        const logDate = new Date(log.timestamp);
+        return logDate >= startOfDay && logDate <= endOfDay;
+      });
+      
+      // Calcular estatísticas
+      const totalEntriesToday = dayLogs.filter(log => log.direction === 'entry').length;
+      const totalExitsToday = dayLogs.filter(log => log.direction === 'exit').length;
+      
+      // Pessoas atualmente dentro (entradas - saídas)
+      const employeeEntries = dayLogs.filter(log => log.personType === 'employee' && log.direction === 'entry').length;
+      const employeeExits = dayLogs.filter(log => log.personType === 'employee' && log.direction === 'exit').length;
+      const employeesInside = Math.max(0, employeeEntries - employeeExits);
+      
+      const visitorEntries = dayLogs.filter(log => log.personType === 'visitor' && log.direction === 'entry').length;
+      const visitorExits = dayLogs.filter(log => log.personType === 'visitor' && log.direction === 'exit').length;
+      const visitorsInside = Math.max(0, visitorEntries - visitorExits);
+      
+      const vehicleEntries = dayLogs.filter(log => log.personType === 'vehicle' && log.direction === 'entry').length;
+      const vehicleExits = dayLogs.filter(log => log.personType === 'vehicle' && log.direction === 'exit').length;
+      const vehiclesInside = Math.max(0, vehicleEntries - vehicleExits);
+      
+      // Horário de pico (simplificado)
+      const peakHour = "08:00 - 09:00";
+      const averageStayTime = 4.5; // horas (simplificado)
+      
+      const stats = {
+        totalEntriesToday,
+        totalExitsToday,
+        employeesInside,
+        visitorsInside,
+        vehiclesInside,
+        averageStayTime,
+        peakHour
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Erro ao calcular estatísticas:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
