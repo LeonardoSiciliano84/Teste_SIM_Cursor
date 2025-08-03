@@ -59,17 +59,19 @@ export default function AccessControl() {
         (result) => {
           setQrCodeValue(result.data);
           
+          console.log("QR Code detectado pelo scanner:", result.data);
+          
           toast({
             title: "QR Code detectado",
-            description: "Processando acesso...",
+            description: `Código: ${result.data.substring(0, 20)}...`,
           });
           
-          // Delay para dar tempo de ver o QR Code detectado
+          // Delay maior para dar tempo de ver o QR Code detectado
           setTimeout(() => {
             processQrCode(result.data);
             stopQrScanner();
             setIsQrScannerOpen(false);
-          }, 1000);
+          }, 3000);
         },
         {
           highlightScanRegion: true,
@@ -524,7 +526,7 @@ export default function AccessControl() {
                               <strong>QR Code detectado:</strong> {qrCodeValue.substring(0, 30)}...
                             </p>
                             <p className="text-xs text-green-600 mt-1">
-                              Processando em 1 segundo...
+                              Processando em 3 segundos...
                             </p>
                           </div>
                         )}

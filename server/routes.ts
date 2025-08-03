@@ -71,10 +71,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "QR Code e tipo de acesso são obrigatórios" });
       }
 
+      console.log("Processando QR Code:", qrCodeData);
+      
       // Buscar funcionário pelo QR Code
       const employeeQrCode = await storage.getEmployeeByQrCode(qrCodeData);
       
+      console.log("QR Code encontrado:", employeeQrCode);
+      
       if (!employeeQrCode) {
+        console.log("QR Code não encontrado no sistema");
         return res.status(404).json({ message: "QR Code inválido ou funcionário não encontrado" });
       }
 
@@ -164,6 +169,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Obter QR Code do funcionário
+  // DEBUG: Listar todos os QR Codes (temporário)
+  app.get("/api/debug/qrcodes", async (req, res) => {
+    try {
+      const allQrCodes = await storage.getAllEmployeeQrCodes();
+      console.log("Todos os QR Codes:", allQrCodes);
+      res.json(allQrCodes);
+    } catch (error) {
+      console.error("Erro ao listar QR Codes:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   app.get("/api/employees/:id/qrcode", async (req, res) => {
     try {
       const employee = await storage.getEmployee(req.params.id);

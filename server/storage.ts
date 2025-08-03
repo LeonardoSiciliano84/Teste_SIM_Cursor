@@ -530,8 +530,8 @@ export class MemStorage implements IStorage {
     employees.forEach(employee => {
       this.employees.set(employee.id, employee);
       
-      // Gerar QR Code para cada funcionário baseado no CPF
-      const qrCodeData = `FELKA_EMP_${employee.cpf}_${Date.now()}`;
+      // Gerar QR Code para cada funcionário baseado no CPF (formato simples e consistente)
+      const qrCodeData = `FELKA_EMP_${employee.cpf}`;
       const employeeQrCode = {
         id: randomUUID(),
         employeeId: employee.id,
@@ -540,6 +540,7 @@ export class MemStorage implements IStorage {
         createdAt: new Date(),
         expiresAt: null,
       };
+      console.log(`QR Code criado para ${employee.fullName}: ${qrCodeData}`);
       this.employeeQrCodes.set(employeeQrCode.id, employeeQrCode);
     });
 
@@ -2109,6 +2110,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.employeeQrCodes.values()).find(
       qrCode => qrCode.employeeId === employeeId && qrCode.isActive
     );
+  }
+
+  async getAllEmployeeQrCodes(): Promise<EmployeeQrCode[]> {
+    return Array.from(this.employeeQrCodes.values()).filter(qrCode => qrCode.isActive);
   }
 
   // Métodos para Logs de Acesso
