@@ -193,6 +193,7 @@ export interface IStorage {
   getVisitors(): Promise<Visitor[]>;
   getVisitor(id: string): Promise<Visitor | undefined>;
   getVisitorByCpf(cpf: string): Promise<Visitor | undefined>;
+  incrementVisitorVisits(id: string): Promise<Visitor>;
   upsertVisitor(visitor: InsertVisitor): Promise<Visitor>;
   
   // Employee QR Code methods
@@ -2067,6 +2068,22 @@ export class MemStorage implements IStorage {
   }
 
   // Método para upsert de visitante (criar ou atualizar)
+  async incrementVisitorVisits(id: string): Promise<Visitor> {
+    const existing = this.visitors.get(id);
+    if (!existing) {
+      throw new Error("Visitante não encontrado");
+    }
+    
+    const updated: Visitor = {
+      ...existing,
+      totalVisits: existing.totalVisits + 1,
+      lastVisit: new Date(),
+      updatedAt: new Date(),
+    };
+    this.visitors.set(id, updated);
+    return updated;
+  }
+
   async upsertVisitor(visitor: InsertVisitor): Promise<Visitor> {
     const existing = await this.getVisitorByCpf(visitor.cpf);
     

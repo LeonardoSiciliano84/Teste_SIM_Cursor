@@ -250,14 +250,20 @@ export default function AccessControl() {
     mutationFn: async (data: any) => {
       return await apiRequest("/api/access-control/visitors", "POST", data);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Exibir toast específico baseado no retorno do servidor
       toast({
-        title: "Visitante cadastrado",
-        description: "Visitante registrado com sucesso",
+        title: data.isExisting ? "⚠️ CPF já cadastrado!" : "✅ Visitante cadastrado",
+        description: data.message,
+        variant: data.isExisting ? "destructive" : "default",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/access-control/visitors"] });
-      setVisitorForm({ name: "", cpf: "", photo: "" });
-      setVisitorCpf("");
+      
+      // Só limpar campos se for novo cadastro (não duplicado)
+      if (!data.isExisting) {
+        setVisitorForm({ name: "", cpf: "", photo: "" });
+        setVisitorCpf("");
+      }
     },
   });
 

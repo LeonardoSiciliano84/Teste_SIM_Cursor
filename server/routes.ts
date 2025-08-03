@@ -59,17 +59,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar se já existe visitante com este CPF
       const existingVisitor = await storage.getVisitorByCpf(cleanCpf);
       
+      if (existingVisitor) {
+        // Incrementar número de visitas ao invés de sobrescrever
+        const updatedVisitor = await storage.incrementVisitorVisits(existingVisitor.id);
+        return res.status(200).json({ 
+          visitor: updatedVisitor, 
+          message: `Visitante ${existingVisitor.name} já cadastrado. Total de visitas: ${updatedVisitor.totalVisits}`,
+          isExisting: true
+        });
+      }
+      
       const visitor = await storage.upsertVisitor({
         name,
         cpf: cleanCpf,
         photo: photo || ""
       });
 
-      const message = existingVisitor ? 
-        "Dados do visitante atualizados com sucesso" : 
-        "Visitante cadastrado com sucesso";
+      const message = "Visitante cadastrado com sucesso";
 
-      res.status(201).json({ visitor, message });
+      res.status(201).json({ visitor, message, isExisting: false });
     } catch (error) {
       console.error("Erro ao registrar visitante:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
