@@ -53,30 +53,21 @@ export default function DriverPortal() {
   const [showChecklist, setShowChecklist] = useState(false);
   const [showMaintenanceRequest, setShowMaintenanceRequest] = useState(false);
   
-  // Form para solicitação de manutenção
+  // Form para solicitação de manutenção (simplificado para motorista)
   const maintenanceForm = useForm<{
     vehicleId: string;
     driverName: string;
-    requestType: string;
-    description?: string;
-    preventiveOrder?: string;
-    preventiveLevel?: string;
+    description: string;
   }>({
     resolver: zodResolver(z.object({
       vehicleId: z.string().min(1, "Placa é obrigatória"),
       driverName: z.string().min(1, "Nome do motorista é obrigatório"),
-      requestType: z.enum(["corrective", "preventive"], { required_error: "Tipo é obrigatório" }),
-      description: z.string().optional(),
-      preventiveOrder: z.string().optional(),
-      preventiveLevel: z.string().optional(),
+      description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
     })),
     defaultValues: {
       vehicleId: "",
       driverName: driverInfo?.fullName || "",
-      requestType: "corrective",
       description: "",
-      preventiveOrder: "",
-      preventiveLevel: "",
     }
   });
 
