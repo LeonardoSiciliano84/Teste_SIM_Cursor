@@ -4,14 +4,14 @@
 FELKA Transportes is a comprehensive transport management system designed to manage vehicles, drivers, routes, bookings, and analytics for a transport company. Built with a React frontend and Express.js backend, it features a modern UI using shadcn/ui and Drizzle ORM for full CRUD functionality. The system also includes a robust prancha service management system, ensuring persistent services tied to drivers with automatic state restoration and trip tracking.
 
 ## Recent Changes (Janeiro 2025)
-- **Facial Recognition System:** Implemented comprehensive visitor registration with facial recognition capabilities
-- **Camera Integration:** Fixed camera functionality issues and added robust camera testing and diagnostic tools
-- **Cross-browser Compatibility:** Added complete camera diagnostic tool testing MediaDevices API, device enumeration, video playback, and resolution support
-- **Visitor Management:** Simplified visitor registration form with mandatory fields only (photo, full name, CPF) to fix registration errors
-- **Access Control Module:** Complete access control system with visitor registration, facial recognition, access logs, and diagnostic tools
-- **UI Enhancements:** Modern interface with real-time camera preview, detailed error handling, and comprehensive feedback
-- **Aro Implementation:** Fixed facial positioning guide (aro) using SVG with animated circular guide, background overlay, and color changes
-- **Test Data:** Populated employee database with test data for search and registration functionality testing
+- **Access Control System Redesign:** Complete removal of facial recognition functionality
+- **Visitor Management:** CPF-based visitor system with photo, name, and CPF fields only
+- **Employee Access Control:** QR Code-based system instead of facial recognition
+- **QR Code Generation:** Individual QR codes for each employee containing CPF-based key
+- **Simplified Registration:** Streamlined visitor registration focusing on essential data only
+- **Access Logging:** QR Code-based entry/exit tracking with name, CPF, date/time, and direction
+- **HR Module Integration:** QR Code generation and management within employee profiles
+- **Test Data:** Populated employee database with 5 test employees for system testing
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

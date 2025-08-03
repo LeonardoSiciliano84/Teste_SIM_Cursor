@@ -851,29 +851,14 @@ export type ChecklistItem = typeof checklistItems.$inferSelect;
 export type InsertChecklistHistory = typeof checklistHistory.$inferInsert;
 export type ChecklistHistory = typeof checklistHistory.$inferSelect;
 
-// ============= MÓDULO DE CONTROLE DE ACESSO - RECONHECIMENTO FACIAL =============
+// ============= MÓDULO DE CONTROLE DE ACESSO - CPF E QR CODE =============
 
-// Tabela para encodings faciais
-export const facialEncodings = pgTable("facial_encodings", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  personType: text("person_type").notNull(), // 'employee' ou 'visitor'
-  personId: uuid("person_id").notNull(),
-  encodingData: json("encoding_data").notNull(), // Array de 128 ou 512 dimensões
-  confidence: decimal("confidence", { precision: 4, scale: 2 }),
-  captureQuality: text("capture_quality"), // 'excellent', 'good', 'acceptable'
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
-});
-
-// Tabela para visitantes
+// Tabela para visitantes (simplificada - apenas CPF)
 export const visitors = pgTable("visitors", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  cpf: text("cpf").notNull().unique(),
   name: text("name").notNull(),
-  company: text("company"), // Campo opcional
-  purpose: text("purpose"), // Motivo da visita - campo opcional
-  vehiclePlate: text("vehicle_plate"), // Placa do veículo - campo opcional
+  cpf: text("cpf").notNull().unique(),
+  photo: text("photo"), // Base64 ou URL da foto tipo documento
   totalVisits: integer("total_visits").notNull().default(0),
   lastVisit: timestamp("last_visit"),
   isActive: boolean("is_active").notNull().default(true),
@@ -881,92 +866,43 @@ export const visitors = pgTable("visitors", {
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
-// Tabela para controle de acesso/logs
+// Tabela para QR Codes dos funcionários
+export const employeeQrCodes = pgTable("employee_qr_codes", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: uuid("employee_id").references(() => employees.id).notNull(),
+  cpf: text("cpf").notNull(),
+  qrCodeData: text("qr_code_data").notNull().unique(), // Chave baseada em CPF
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  expiresAt: timestamp("expires_at"), // Opcional - data de expiração
+});
+
+// Tabela para controle de acesso/logs (atualizada para QR Code)
 export const accessLogs = pgTable("access_logs", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   personType: text("person_type").notNull(), // 'employee' ou 'visitor'
   personId: uuid("person_id").notNull(),
   personName: text("person_name").notNull(),
+  personCpf: text("person_cpf").notNull(),
   direction: text("direction").notNull(), // 'entry' ou 'exit'
-  accessMethod: text("access_method").notNull(), // 'facial', 'manual', 'card'
-  recognitionConfidence: decimal("recognition_confidence", { precision: 4, scale: 2 }),
-  gatekeeperId: uuid("gatekeeper_id").references(() => users.id),
-  gatekeeperName: text("gatekeeper_name"),
-  visitPurpose: text("visit_purpose"), // Para visitantes
-  responsiblePerson: text("responsible_person"), // Para visitantes
-  vehiclePlate: text("vehicle_plate"),
-  badgeNumber: text("badge_number"),
-  observations: text("observations"),
+  accessMethod: text("access_method").notNull(), // 'qrcode', 'manual'
   location: text("location").default("Portaria Principal"),
   timestamp: timestamp("timestamp").notNull().default(sql`now()`),
 });
 
-// Tabela para configurações do sistema de portaria
-export const gateSystemConfig = pgTable("gate_system_config", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  key: text("key").notNull().unique(),
-  value: text("value").notNull(),
-  description: text("description"),
-  category: text("category"), // 'facial', 'security', 'general'
-  updatedBy: uuid("updated_by").references(() => users.id),
-  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
-});
-
-// Tabela para crachás temporários
-export const temporaryBadges = pgTable("temporary_badges", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  badgeNumber: text("badge_number").notNull().unique(),
-  visitorId: uuid("visitor_id").references(() => visitors.id),
-  visitorName: text("visitor_name").notNull(),
-  company: text("company"),
-  visitPurpose: text("visit_purpose").notNull(),
-  responsiblePerson: text("responsible_person").notNull(),
-  vehiclePlate: text("vehicle_plate"),
-  issueTime: timestamp("issue_time").notNull().default(sql`now()`),
-  expectedReturn: timestamp("expected_return"),
-  actualReturn: timestamp("actual_return"),
-  status: text("status").notNull().default("active"), // 'active', 'returned', 'expired'
-  issuedBy: uuid("issued_by").references(() => users.id),
-  returnedBy: uuid("returned_by").references(() => users.id),
-});
-
-// Histórico de tentativas de reconhecimento facial
-export const recognitionAttempts = pgTable("recognition_attempts", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  attemptType: text("attempt_type").notNull(), // 'recognition', 'enrollment'
-  success: boolean("success").notNull(),
-  personType: text("person_type"), // 'employee', 'visitor', 'unknown'
-  personId: uuid("person_id"),
-  confidence: decimal("confidence", { precision: 4, scale: 2 }),
-  errorReason: text("error_reason"),
-  processingTime: integer("processing_time"), // em millisegundos
-  deviceInfo: json("device_info"),
-  timestamp: timestamp("timestamp").notNull().default(sql`now()`),
-});
-
 // Relations para controle de acesso
-export const facialEncodingsRelations = relations(facialEncodings, ({ one }) => ({
-  visitor: one(visitors, {
-    fields: [facialEncodings.personId],
-    references: [visitors.id],
-  }),
-  employee: one(employees, {
-    fields: [facialEncodings.personId],
-    references: [employees.id],
-  }),
+export const visitorsRelations = relations(visitors, ({ many }) => ({
+  accessLogs: many(accessLogs),
 }));
 
-export const visitorsRelations = relations(visitors, ({ many }) => ({
-  facialEncodings: many(facialEncodings),
-  accessLogs: many(accessLogs),
-  badges: many(temporaryBadges),
+export const employeeQrCodesRelations = relations(employeeQrCodes, ({ one }) => ({
+  employee: one(employees, {
+    fields: [employeeQrCodes.employeeId],
+    references: [employees.id],
+  }),
 }));
 
 export const accessLogsRelations = relations(accessLogs, ({ one }) => ({
-  gatekeeper: one(users, {
-    fields: [accessLogs.gatekeeperId],
-    references: [users.id],
-  }),
   visitor: one(visitors, {
     fields: [accessLogs.personId],
     references: [visitors.id],
@@ -974,35 +910,22 @@ export const accessLogsRelations = relations(accessLogs, ({ one }) => ({
   employee: one(employees, {
     fields: [accessLogs.personId],
     references: [employees.id],
-  }),
-}));
-
-export const temporaryBadgesRelations = relations(temporaryBadges, ({ one }) => ({
-  visitor: one(visitors, {
-    fields: [temporaryBadges.visitorId],
-    references: [visitors.id],
-  }),
-  issuedByUser: one(users, {
-    fields: [temporaryBadges.issuedBy],
-    references: [users.id],
-  }),
-  returnedByUser: one(users, {
-    fields: [temporaryBadges.returnedBy],
-    references: [users.id],
   }),
 }));
 
 // Schemas para validação - Controle de Acesso
-export const insertFacialEncodingSchema = createInsertSchema(facialEncodings).omit({
+export const insertVisitorSchema = createInsertSchema(visitors).omit({
   id: true,
+  totalVisits: true,
+  lastVisit: true,
+  isActive: true,
   createdAt: true,
   updatedAt: true,
 });
 
-export const insertVisitorSchema = z.object({
-  cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(14, "CPF inválido"),
-  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  // Removendo campos opcionais para simplificar o cadastro
+export const insertEmployeeQrCodeSchema = createInsertSchema(employeeQrCodes).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertAccessLogSchema = createInsertSchema(accessLogs).omit({
@@ -1010,33 +933,12 @@ export const insertAccessLogSchema = createInsertSchema(accessLogs).omit({
   timestamp: true,
 });
 
-export const insertTemporaryBadgeSchema = createInsertSchema(temporaryBadges).omit({
-  id: true,
-  issueTime: true,
-  actualReturn: true,
-  status: true,
-});
-
-export const insertRecognitionAttemptSchema = createInsertSchema(recognitionAttempts).omit({
-  id: true,
-  timestamp: true,
-});
-
 // Types para controle de acesso
-export type InsertFacialEncoding = z.infer<typeof insertFacialEncodingSchema>;
-export type FacialEncoding = typeof facialEncodings.$inferSelect;
-
 export type InsertVisitor = z.infer<typeof insertVisitorSchema>;
 export type Visitor = typeof visitors.$inferSelect;
 
+export type InsertEmployeeQrCode = z.infer<typeof insertEmployeeQrCodeSchema>;
+export type EmployeeQrCode = typeof employeeQrCodes.$inferSelect;
+
 export type InsertAccessLog = z.infer<typeof insertAccessLogSchema>;
 export type AccessLog = typeof accessLogs.$inferSelect;
-
-export type InsertTemporaryBadge = z.infer<typeof insertTemporaryBadgeSchema>;
-export type TemporaryBadge = typeof temporaryBadges.$inferSelect;
-
-export type InsertRecognitionAttempt = z.infer<typeof insertRecognitionAttemptSchema>;
-export type RecognitionAttempt = typeof recognitionAttempts.$inferSelect;
-
-export type GateSystemConfig = typeof gateSystemConfig.$inferSelect;
-export type InsertGateSystemConfig = typeof gateSystemConfig.$inferInsert;

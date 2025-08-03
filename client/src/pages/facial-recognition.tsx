@@ -1419,8 +1419,63 @@ export default function FacialRecognition() {
                       size="lg"
                     >
                       <Eye className="h-4 w-4 mr-2" />
-                      Reconhecer Pessoa
+                      {recognizeFaceMutation.isPending ? "Analisando..." : "Reconhecer Pessoa"}
                     </Button>
+                  )}
+
+                  {/* Resultado do Reconhecimento */}
+                  {recognizeFaceMutation.data && (
+                    <div className="mt-4 p-4 border rounded-lg">
+                      {recognizeFaceMutation.data.recognized ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle className="h-5 w-5" />
+                            <span className="font-semibold">Pessoa Reconhecida!</span>
+                          </div>
+                          {recognizeFaceMutation.data.person && (
+                            <div className="bg-green-50 p-3 rounded-lg">
+                              <h4 className="font-medium text-green-800">
+                                {recognizeFaceMutation.data.person.fullName || recognizeFaceMutation.data.person.name}
+                              </h4>
+                              <p className="text-sm text-green-700">
+                                {recognizeFaceMutation.data.person.employeeNumber && `ID: ${recognizeFaceMutation.data.person.employeeNumber} • `}
+                                {recognizeFaceMutation.data.person.department || recognizeFaceMutation.data.person.company}
+                                {recognizeFaceMutation.data.person.position && ` • ${recognizeFaceMutation.data.person.position}`}
+                              </p>
+                              {recognizeFaceMutation.data.confidence && (
+                                <p className="text-xs text-green-600 mt-1">
+                                  Confiança: {(recognizeFaceMutation.data.confidence * 100).toFixed(1)}%
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-red-600">
+                            <XCircle className="h-5 w-5" />
+                            <span className="font-semibold">Pessoa Não Reconhecida</span>
+                          </div>
+                          <div className="bg-red-50 p-3 rounded-lg">
+                            <p className="text-sm text-red-700">
+                              {recognizeFaceMutation.data.message || "Esta pessoa não está cadastrada no sistema"}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {recognizeFaceMutation.error && (
+                    <div className="mt-4 p-4 border border-red-200 rounded-lg bg-red-50">
+                      <div className="flex items-center gap-2 text-red-600">
+                        <AlertTriangle className="h-5 w-5" />
+                        <span className="font-semibold">Erro no Reconhecimento</span>
+                      </div>
+                      <p className="text-sm text-red-700 mt-1">
+                        Erro ao processar o reconhecimento facial. Tente novamente.
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
