@@ -70,6 +70,8 @@ export default function DriverPortal() {
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [showSecuritySettings, setShowSecuritySettings] = useState(false);
   const [selectedBase, setSelectedBase] = useState<string>("");
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [currentKm, setCurrentKm] = useState<string>("");
   const { toast } = useToast();
 
   // Dados mock para Ordens de Coleta
@@ -1199,8 +1201,13 @@ export default function DriverPortal() {
 
               {/* KM atual */}
               <div>
-                <Label>KM Atual</Label>
-                <Input type="number" placeholder="Ex: 125000" />
+                <Label>KM Atual *</Label>
+                <Input 
+                  type="number" 
+                  placeholder="Digite o KM atual" 
+                  value={currentKm}
+                  onChange={(e) => setCurrentKm(e.target.value)}
+                />
               </div>
 
               {/* Lista de verificação */}
@@ -1243,6 +1250,7 @@ export default function DriverPortal() {
                   id="checklist-photo"
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
+                      setSelectedPhoto(e.target.files[0]);
                       toast({
                         title: "Foto capturada!",
                         description: `Arquivo: ${e.target.files[0].name}`,
@@ -1252,10 +1260,16 @@ export default function DriverPortal() {
                 />
                 <label
                   htmlFor="checklist-photo"
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center block cursor-pointer hover:border-gray-400 transition-colors"
+                  className={`border-2 border-dashed rounded-lg p-4 text-center block cursor-pointer transition-colors ${
+                    selectedPhoto 
+                      ? 'border-green-400 bg-green-50' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
                 >
-                  <Camera className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600">Toque para adicionar foto</p>
+                  <Camera className={`h-8 w-8 mx-auto mb-2 ${selectedPhoto ? 'text-green-600' : 'text-gray-400'}`} />
+                  <p className={`text-sm ${selectedPhoto ? 'text-green-700' : 'text-gray-600'}`}>
+                    {selectedPhoto ? `Foto: ${selectedPhoto.name}` : 'Toque para adicionar foto'}
+                  </p>
                 </label>
               </div>
 
@@ -1272,12 +1286,6 @@ export default function DriverPortal() {
                   }
 
                   try {
-                    // Coletar dados do formulário
-                    const formData = new FormData();
-                    const photoInput = document.getElementById('checklist-photo') as HTMLInputElement;
-                    const kmInput = document.querySelector('input[type="number"]') as HTMLInputElement;
-                    const observationsTextarea = document.querySelector('textarea') as HTMLTextAreaElement;
-                    
                     // Verificar campos obrigatórios
                     if (!selectedBase) {
                       toast({
@@ -1288,7 +1296,16 @@ export default function DriverPortal() {
                       return;
                     }
 
-                    if (!photoInput?.files?.[0]) {
+                    if (!currentKm) {
+                      toast({
+                        title: "Campo obrigatório",
+                        description: "Digite o KM atual do veículo",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+
+                    if (!selectedPhoto) {
                       toast({
                         title: "Foto obrigatória",
                         description: "Adicione uma foto antes de enviar",
@@ -1313,24 +1330,27 @@ export default function DriverPortal() {
                       checklistItems[labels[index]] = (checkbox as HTMLInputElement).checked;
                     });
 
+                    // Coletar observações
+                    const observationsTextarea = document.querySelector('textarea') as HTMLTextAreaElement;
+
                     // Criar dados do checklist
                     const checklistData = {
                       vehicleId: selectedVehicleData.id,
                       vehiclePlate: selectedVehicleData.plate,
                       vehicleName: selectedVehicleData.name,
-                      implementId: selectedImplementData?.id,
-                      implementPlate: selectedImplementData?.plate,
-                      implementName: selectedImplementData?.name,
+                      implementId: selectedImplementData?.id || "",
+                      implementPlate: selectedImplementData?.plate || "",
+                      implementName: selectedImplementData?.name || "",
                       driverId: driverInfo.id,
                       driverName: driverInfo.fullName,
-                      driverRegistration: driverInfo.employeeNumber,
+                      driverEmployeeNumber: driverInfo.employeeNumber,
                       exitDate: new Date().toISOString().split('T')[0],
                       exitTime: new Date().toTimeString().slice(0,5),
                       baseOrigin: selectedBase,
-                      currentKm: parseInt(kmInput?.value || '0'),
+                      exitKm: parseInt(currentKm),
                       exitChecklist: checklistItems,
                       exitObservations: observationsTextarea?.value || '',
-                      attachmentPath: photoInput.files[0].name
+                      exitPhotos: [selectedPhoto.name]
                     };
 
                     const response = await fetch('/api/checklists', {
@@ -1343,12 +1363,17 @@ export default function DriverPortal() {
 
                     if (response.ok) {
                       setShowChecklist(false);
+                      setSelectedBase("");
+                      setCurrentKm("");
+                      setSelectedPhoto(null);
                       toast({
                         title: "Checklist enviado!",
                         description: "Checklist de saída registrado com sucesso",
                       });
                     } else {
-                      throw new Error('Falha ao enviar checklist');
+                      const errorData = await response.json();
+                      console.error('Error response:', errorData);
+                      throw new Error(errorData.message || 'Falha ao enviar checklist');
                     }
                   } catch (error) {
                     console.error('Erro ao enviar checklist:', error);
