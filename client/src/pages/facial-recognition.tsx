@@ -70,19 +70,34 @@ export default function FacialRecognition() {
   const loadModels = useCallback(async () => {
     try {
       console.log('[FACE-API] Carregando modelos...');
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-        faceapi.nets.ssdMobilenetv1.loadFromUri('/models')
-      ]);
-      console.log('[FACE-API] Modelos carregados com sucesso');
+      console.log('[FACE-API] Tentando carregar do diretório /models');
+      
+      // Carregar apenas os modelos essenciais primeiro
+      await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+      console.log('[FACE-API] TinyFaceDetector carregado');
+      
+      await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+      console.log('[FACE-API] FaceLandmark68Net carregado');
+      
+      console.log('[FACE-API] Modelos essenciais carregados com sucesso');
       setModelsLoaded(true);
+      
+      toast({
+        title: "Sucesso",
+        description: "Sistema de detecção facial ativado!",
+        variant: "default",
+      });
     } catch (error) {
       console.error('[FACE-API] Erro ao carregar modelos:', error);
+      console.error('[FACE-API] Detalhes do erro:', error instanceof Error ? error.message : 'Erro desconhecido');
+      
+      // Tentar alternativa sem face-api.js
+      console.log('[FACE-API] Tentando modo fallback sem face-api.js');
+      setModelsLoaded(false);
+      
       toast({
         title: "Aviso",
-        description: "Modelos de reconhecimento facial não carregados. Usando modo básico.",
+        description: "Detectores de face não disponíveis. Use modo manual para captura.",
         variant: "default",
       });
     }
@@ -185,35 +200,102 @@ export default function FacialRecognition() {
     }
   }, [modelsLoaded, isFaceDetectionActive, autoCapture, capturedImage, captureCountdown]);
 
-  // Draw face guide overlay
+  // Draw face guide overlay (sempre desenhar quando no modo auto)
   const drawFaceGuide = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    if (!autoCapture) return; // Só desenhar no modo automático
+    
     const centerX = width / 2;
     const centerY = height / 2;
     const radius = Math.min(width, height) * 0.25;
 
+    // Limpar área
+    ctx.clearRect(0, 0, width, height);
+
     // Draw guide circle
     ctx.strokeStyle = faceDetected ? '#22c55e' : '#3b82f6';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.setLineDash([10, 5]);
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
     ctx.stroke();
     ctx.setLineDash([]);
 
+    // Draw crosshairs
+    ctx.strokeStyle = faceDetected ? '#22c55e' : '#3b82f6';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    // Horizontal line
+    ctx.moveTo(centerX - 20, centerY);
+    ctx.lineTo(centerX + 20, centerY);
+    // Vertical line
+    ctx.moveTo(centerX, centerY - 20);
+    ctx.lineTo(centerX, centerY + 20);
+    ctx.stroke();
+
     // Draw instruction text
     ctx.fillStyle = '#ffffff';
-    ctx.font = '16px Arial';
+    ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'center';
     ctx.shadowColor = '#000000';
     ctx.shadowBlur = 4;
     
-    const message = faceDetected 
-      ? 'Rosto detectado! Mantenha a posição' 
-      : 'Posicione seu rosto no círculo';
+    const message = modelsLoaded 
+      ? (faceDetected ? 'Rosto detectado! Mantenha a posição' : 'Posicione seu rosto no círculo')
+      : 'Posicione seu rosto no círculo (modo básico)';
     
-    ctx.fillText(message, centerX, centerY + radius + 30);
+    ctx.fillText(message, centerX, centerY + radius + 40);
     ctx.shadowBlur = 0;
-  }, [faceDetected]);
+
+    // Draw countdown if active
+    if (captureCountdown > 0) {
+      ctx.fillStyle = '#3b82f6';
+      ctx.font = 'bold 48px Arial';
+      ctx.fillText(captureCountdown.toString(), centerX, centerY - 30);
+    }
+  }, [faceDetected, autoCapture, modelsLoaded, captureCountdown]);
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    
+    // Parar detecção facial
+    setIsFaceDetectionActive(false);
+    setFaceDetected(false);
+    setFacePosition(null);
+    setCaptureCountdown(0);
+    
+    // Limpar canvas overlay
+    if (overlayCanvasRef.current) {
+      const ctx = overlayCanvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
+      }
+    }
+    
+    setIsCapturing(false);
+  }, []);
+
+  const captureImage = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) return null;
+
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    
+    ctx.drawImage(video, 0, 0);
+    const imageData = canvas.toDataURL("image/jpeg", 0.8);
+    setCapturedImage(imageData);
+    stopCamera();
+    
+    return imageData;
+  }, [stopCamera]);
 
   // Auto capture countdown effect
   useEffect(() => {
@@ -231,19 +313,51 @@ export default function FacialRecognition() {
       
       return () => clearTimeout(timer);
     }
-  }, [captureCountdown]);
+  }, [captureCountdown, captureImage]);
 
-  // Face detection interval
+  // Simple auto-capture system quando face-api.js não está disponível
   useEffect(() => {
-    if (isFaceDetectionActive && modelsLoaded) {
-      detectionIntervalRef.current = setInterval(detectFaces, 100); // Run detection every 100ms
+    if (autoCapture && !modelsLoaded && isCapturing && !capturedImage && captureCountdown === 0) {
+      // No modo básico, esperar 2 segundos depois que usuário ativar auto
+      const timer = setTimeout(() => {
+        console.log('[AUTO-CAPTURE] Iniciando captura automática (modo básico)');
+        setCaptureCountdown(3);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [autoCapture, modelsLoaded, isCapturing, capturedImage, captureCountdown]);
+
+  // Face detection interval e desenho do overlay
+  useEffect(() => {
+    if (isCapturing && overlayCanvasRef.current) {
+      detectionIntervalRef.current = setInterval(() => {
+        if (overlayCanvasRef.current) {
+          const ctx = overlayCanvasRef.current.getContext('2d');
+          if (ctx) {
+            // Sempre desenhar o guia quando no modo auto
+            if (autoCapture) {
+              drawFaceGuide(ctx, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
+            } else {
+              // Limpar canvas no modo manual
+              ctx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
+            }
+            
+            // Executar detecção facial se modelos estão carregados
+            if (modelsLoaded && isFaceDetectionActive) {
+              detectFaces();
+            }
+          }
+        }
+      }, 200); // Run every 200ms
+      
       return () => {
         if (detectionIntervalRef.current) {
           clearInterval(detectionIntervalRef.current);
         }
       };
     }
-  }, [isFaceDetectionActive, modelsLoaded, detectFaces]);
+  }, [isCapturing, autoCapture, modelsLoaded, isFaceDetectionActive, detectFaces, drawFaceGuide]);
 
   // Load models on component mount
   useEffect(() => {
@@ -609,48 +723,7 @@ export default function FacialRecognition() {
     }
   }, [toast]);
 
-  const stopCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    
-    // Parar detecção facial
-    setIsFaceDetectionActive(false);
-    setFaceDetected(false);
-    setFacePosition(null);
-    setCaptureCountdown(0);
-    
-    // Limpar canvas overlay
-    if (overlayCanvasRef.current) {
-      const ctx = overlayCanvasRef.current.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
-      }
-    }
-    
-    setIsCapturing(false);
-  }, []);
 
-  const captureImage = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return null;
-
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-    
-    ctx.drawImage(video, 0, 0);
-    const imageData = canvas.toDataURL("image/jpeg", 0.8);
-    setCapturedImage(imageData);
-    stopCamera();
-    
-    return imageData;
-  }, [stopCamera]);
 
   const handleVisitorSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -854,7 +927,21 @@ export default function FacialRecognition() {
                         {autoCapture ? (faceDetected ? 'Capturando...' : 'Posicione o rosto') : 'Capturar Foto'}
                       </Button>
                       <Button 
-                        onClick={() => setAutoCapture(!autoCapture)}
+                        onClick={() => {
+                          const newAutoCapture = !autoCapture;
+                          setAutoCapture(newAutoCapture);
+                          if (newAutoCapture) {
+                            console.log('[AUTO-CAPTURE] Modo automático ativado');
+                            // Ativar detecção facial se disponível
+                            if (modelsLoaded) {
+                              setIsFaceDetectionActive(true);
+                            }
+                          } else {
+                            console.log('[AUTO-CAPTURE] Modo manual ativado');
+                            setIsFaceDetectionActive(false);
+                            setCaptureCountdown(0);
+                          }
+                        }}
                         variant={autoCapture ? "default" : "outline"}
                         size="sm"
                       >
