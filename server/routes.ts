@@ -851,10 +851,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Criar nova requisição de manutenção
+  // Criar nova requisição de manutenção (rota Kanban - Nova Solicitação)
   app.post("/api/maintenance/requests", async (req, res) => {
     try {
-      const newRequest = await storage.createMaintenanceRequest(req.body);
+      const { vehicleId, driverName, requestType, description, preventiveOrder, preventiveLevel } = req.body;
+      
+      // Validação dos campos obrigatórios
+      if (!vehicleId || !driverName || !requestType) {
+        return res.status(400).json({ 
+          message: "Campos obrigatórios: placa, nome do motorista e tipo de manutenção" 
+        });
+      }
+
+      // Validações específicas por tipo
+      if (requestType === "corrective" && !description) {
+        return res.status(400).json({ 
+          message: "Descrição é obrigatória para manutenção corretiva" 
+        });
+      }
+
+      if (requestType === "preventive") {
+        if (!preventiveOrder || !preventiveLevel) {
+          return res.status(400).json({ 
+            message: "Ordem e nível são obrigatórios para manutenção preventiva" 
+          });
+        }
+      }
+
+      // Gerar número sequencial de O.S. automático
+      const existingRequests = await storage.getMaintenanceRequests();
+      const currentYear = new Date().getFullYear();
+      const currentRequests = existingRequests.filter(r => 
+        r.orderNumber.includes(`OS-${currentYear}`)
+      );
+      const nextNumber = currentRequests.length + 1;
+      const orderNumber = `OS-${currentYear}-${String(nextNumber).padStart(5, '0')}`;
+
+      // Criar descrição para manutenção preventiva
+      let finalDescription = description;
+      if (requestType === "preventive") {
+        finalDescription = `Manutenção preventiva - Ordem ${preventiveOrder}, Nível ${preventiveLevel}`;
+      }
+
+      const maintenanceData = {
+        orderNumber,
+        vehicleId,
+        requestType,
+        status: "open" as const,
+        priority: requestType === "corrective" ? "high" as const : "medium" as const,
+        description: finalDescription || "",
+        reportedBy: driverName,
+        mechanic: null,
+        startDate: null,
+        endDate: null,
+        daysStoped: 0,
+        estimatedCost: 0,
+        actualCost: null,
+      };
+
+      const newRequest = await storage.createMaintenanceRequest(maintenanceData);
       res.json(newRequest);
     } catch (error) {
       console.error("Error creating maintenance request:", error);

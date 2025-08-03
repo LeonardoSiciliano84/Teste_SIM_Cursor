@@ -3,6 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Wrench, 
   FileText, 
@@ -19,16 +22,37 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useQuery } from "@tanstack/react-query";
-import type { MaintenanceRequest, Vehicle } from "@shared/schema";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import type { MaintenanceRequest, Vehicle, Driver } from "@shared/schema";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+// Schema de validação para nova solicitação de manutenção
+const newMaintenanceRequestSchema = z.object({
+  vehicleId: z.string().min(1, "Placa é obrigatória"),
+  driverName: z.string().min(1, "Nome do motorista é obrigatório"),
+  requestType: z.enum(["corrective", "preventive"], {
+    required_error: "Tipo de manutenção é obrigatório"
+  }),
+  description: z.string().optional(),
+  preventiveOrder: z.string().optional(),
+  preventiveLevel: z.string().optional(),
+});
+
+type NewMaintenanceRequestForm = z.infer<typeof newMaintenanceRequestSchema>;
 
 export default function Maintenance() {
   const [activeTab, setActiveTab] = useState("requests");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [showNewRequestModal, setShowNewRequestModal] = useState(false);
+  const { toast } = useToast();
 
   // Buscar requisições de manutenção
   const { data: maintenanceRequests = [], isLoading: isLoadingRequests } = useQuery<MaintenanceRequest[]>({
@@ -39,6 +63,95 @@ export default function Maintenance() {
   const { data: vehiclesInMaintenance = [], isLoading: isLoadingVehicles } = useQuery<MaintenanceRequest[]>({
     queryKey: ["/api/maintenance/vehicles-in-maintenance"],
   });
+
+  // Buscar veículos disponíveis
+  const { data: vehicles = [] } = useQuery<Vehicle[]>({
+    queryKey: ["/api/vehicles"],
+  });
+
+  // Buscar motoristas
+  const { data: drivers = [] } = useQuery<Driver[]>({
+    queryKey: ["/api/drivers"],
+  });
+
+  // Formulário para nova solicitação
+  const form = useForm<NewMaintenanceRequestForm>({
+    resolver: zodResolver(newMaintenanceRequestSchema),
+    defaultValues: {
+      vehicleId: "",
+      driverName: "",
+      requestType: "corrective",
+      description: "",
+      preventiveOrder: "",
+      preventiveLevel: "",
+    },
+  });
+
+  // Mutation para criar nova solicitação
+  const createMaintenanceRequestMutation = useMutation({
+    mutationFn: async (data: NewMaintenanceRequestForm) => {
+      const response = await fetch("/api/maintenance/requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao criar solicitação de manutenção");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sucesso",
+        description: "Solicitação de manutenção criada com sucesso!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/maintenance/requests"] });
+      form.reset();
+      setShowNewRequestModal(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar solicitação de manutenção",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Função para submeter nova solicitação
+  const onSubmitNewRequest = (data: NewMaintenanceRequestForm) => {
+    // Validações específicas baseadas no tipo
+    if (data.requestType === "corrective" && !data.description) {
+      form.setError("description", {
+        type: "manual",
+        message: "Descrição é obrigatória para manutenção corretiva"
+      });
+      return;
+    }
+
+    if (data.requestType === "preventive") {
+      if (!data.preventiveOrder) {
+        form.setError("preventiveOrder", {
+          type: "manual",
+          message: "Ordem é obrigatória para manutenção preventiva"
+        });
+        return;
+      }
+      if (!data.preventiveLevel) {
+        form.setError("preventiveLevel", {
+          type: "manual",
+          message: "Nível é obrigatório para manutenção preventiva"
+        });
+        return;
+      }
+    }
+
+    createMaintenanceRequestMutation.mutate(data);
+  };
 
   // Estatísticas
   const stats = {
@@ -82,10 +195,14 @@ export default function Maintenance() {
           <h1 className="text-3xl font-bold text-[#0C29AB]">Manutenção</h1>
           <p className="text-muted-foreground">Sistema integrado de manutenção e controle</p>
         </div>
-        <Button className="bg-[#0C29AB] hover:bg-[#0C29AB]/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Ordem de Serviço
-        </Button>
+        <Dialog open={showNewRequestModal} onOpenChange={setShowNewRequestModal}>
+          <DialogTrigger asChild>
+            <Button className="bg-[#0C29AB] hover:bg-[#0C29AB]/90">
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Solicitação
+            </Button>
+          </DialogTrigger>
+        </Dialog>
       </div>
 
       {/* Estatísticas */}
@@ -277,9 +394,9 @@ export default function Maintenance() {
                         
                         <div className="text-right space-y-1">
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(request.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                            {format(new Date(request.createdAt || new Date()), "dd/MM/yyyy", { locale: ptBR })}
                           </p>
-                          {request.daysStoped > 0 && (
+                          {(request.daysStoped || 0) > 0 && (
                             <p className="text-xs text-orange-600">
                               {request.daysStoped} dias parado
                             </p>
@@ -335,6 +452,189 @@ export default function Maintenance() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modal Nova Solicitação */}
+      <Dialog open={showNewRequestModal} onOpenChange={setShowNewRequestModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-[#0C29AB]">Nova Solicitação de Manutenção</DialogTitle>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmitNewRequest)} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Campo Placa/Veículo */}
+                <FormField
+                  control={form.control}
+                  name="vehicleId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Placa do Veículo *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a placa" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {vehicles.map((vehicle) => (
+                            <SelectItem key={vehicle.id} value={vehicle.plate}>
+                              {vehicle.plate} - {vehicle.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Campo Nome do Motorista */}
+                <FormField
+                  control={form.control}
+                  name="driverName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Motorista *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o motorista" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {drivers.map((driver) => (
+                            <SelectItem key={driver.id} value={driver.name}>
+                              {driver.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Campo Tipo de Manutenção */}
+              <FormField
+                control={form.control}
+                name="requestType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Manutenção *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="corrective">Corretiva</SelectItem>
+                        <SelectItem value="preventive">Preventiva</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Campos específicos para Manutenção Corretiva */}
+              {form.watch("requestType") === "corrective" && (
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição do Problema *</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Descreva detalhadamente o problema encontrado..."
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* Campos específicos para Manutenção Preventiva */}
+              {form.watch("requestType") === "preventive" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="preventiveOrder"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ordem (1 a 12) *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a ordem" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Array.from({ length: 12 }, (_, i) => (
+                              <SelectItem key={i + 1} value={String(i + 1)}>
+                                {i + 1}º
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="preventiveLevel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nível (M1 a M5) *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o nível" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="M1">M1</SelectItem>
+                            <SelectItem value="M2">M2</SelectItem>
+                            <SelectItem value="M3">M3</SelectItem>
+                            <SelectItem value="M4">M4</SelectItem>
+                            <SelectItem value="M5">M5</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-4 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowNewRequestModal(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="bg-[#0C29AB] hover:bg-[#0C29AB]/90"
+                  disabled={createMaintenanceRequestMutation.isPending}
+                >
+                  {createMaintenanceRequestMutation.isPending ? "Criando..." : "Criar Solicitação"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

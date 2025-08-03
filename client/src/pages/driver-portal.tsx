@@ -52,6 +52,66 @@ export default function DriverPortal() {
   const [showPreChecklistWarning, setShowPreChecklistWarning] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   const [showMaintenanceRequest, setShowMaintenanceRequest] = useState(false);
+  
+  // Form para solicitação de manutenção
+  const maintenanceForm = useForm<{
+    vehicleId: string;
+    driverName: string;
+    requestType: string;
+    description?: string;
+    preventiveOrder?: string;
+    preventiveLevel?: string;
+  }>({
+    resolver: zodResolver(z.object({
+      vehicleId: z.string().min(1, "Placa é obrigatória"),
+      driverName: z.string().min(1, "Nome do motorista é obrigatório"),
+      requestType: z.enum(["corrective", "preventive"], { required_error: "Tipo é obrigatório" }),
+      description: z.string().optional(),
+      preventiveOrder: z.string().optional(),
+      preventiveLevel: z.string().optional(),
+    })),
+    defaultValues: {
+      vehicleId: "",
+      driverName: driverInfo?.fullName || "",
+      requestType: "corrective",
+      description: "",
+      preventiveOrder: "",
+      preventiveLevel: "",
+    }
+  });
+
+  // Mutation para criar solicitação de manutenção
+  const createMaintenanceRequestMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest(`/api/maintenance/requests`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      return response;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sucesso",
+        description: "Solicitação de manutenção criada com sucesso!",
+      });
+      setShowMaintenanceRequest(false);
+      maintenanceForm.reset();
+      // Invalidar cache para atualizar listas
+      queryClient.invalidateQueries({ queryKey: ["/api/maintenance/requests"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar solicitação",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Submissão do formulário de manutenção
+  const onSubmitMaintenanceRequest = async (data: any) => {
+    await createMaintenanceRequestMutation.mutateAsync(data);
+  };
   const [showMaintenanceCommunication, setShowMaintenanceCommunication] = useState(false);
   const [showTravelMaintenance, setShowTravelMaintenance] = useState(false);
   const [activeTab, setActiveTab] = useState("dados-iniciais");
@@ -1410,50 +1470,197 @@ export default function DriverPortal() {
 
         {/* Modal de Solicitação de Manutenção */}
         <Dialog open={showMaintenanceRequest} onOpenChange={setShowMaintenanceRequest}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle className="flex items-center space-x-2">
-                <Wrench className="h-5 w-5 text-blue-600" />
-                <span>Solicitação de Manutenção</span>
+              <DialogTitle className="flex items-center space-x-2 text-[#0C29AB]">
+                <Wrench className="h-5 w-5" />
+                <span>Nova Solicitação de Manutenção</span>
               </DialogTitle>
-              <DialogDescription>
-                Solicite manutenção para veículo ou implemento
-              </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
-              {/* Placa do Veículo */}
-              <div>
-                <Label>Placa do Veículo</Label>
-                <select className="w-full p-2 border rounded-md">
-                  {selectedVehicleData && (
-                    <option value={selectedVehicleData.plate}>
-                      {selectedVehicleData.plate} - Tração
-                    </option>
-                  )}
-                  {selectedImplementData && (
-                    <option value={selectedImplementData.plate}>
-                      {selectedImplementData.plate} - Implemento
-                    </option>
-                  )}
-                </select>
-              </div>
+            <Form {...maintenanceForm}>
+              <form onSubmit={maintenanceForm.handleSubmit(onSubmitMaintenanceRequest)} className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Campo Placa/Veículo */}
+                  <FormField
+                    control={maintenanceForm.control}
+                    name="vehicleId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Placa do Veículo *</FormLabel>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // Auto-selecionar o primeiro veículo/implemento se disponível
+                            if (selectedVehicleData && value === selectedVehicleData.plate) {
+                              maintenanceForm.setValue("vehicleId", selectedVehicleData.plate);
+                            } else if (selectedImplementData && value === selectedImplementData.plate) {
+                              maintenanceForm.setValue("vehicleId", selectedImplementData.plate);
+                            }
+                          }} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a placa" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {selectedVehicleData && (
+                              <SelectItem value={selectedVehicleData.plate}>
+                                {selectedVehicleData.plate} - {selectedVehicleData.name} (Tração)
+                              </SelectItem>
+                            )}
+                            {selectedImplementData && (
+                              <SelectItem value={selectedImplementData.plate}>
+                                {selectedImplementData.plate} - {selectedImplementData.name} (Implemento)
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              {/* Descrição da solicitação */}
-              <div>
-                <Label>Descrição da Solicitação *</Label>
-                <textarea 
-                  className="w-full p-2 border rounded-md resize-none" 
-                  rows={4}
-                  placeholder="Descreva o que precisa de manutenção..."
-                  required
+                  {/* Campo Nome do Motorista (pré-preenchido) */}
+                  <FormField
+                    control={maintenanceForm.control}
+                    name="driverName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Motorista *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            value={driverInfo?.fullName || ""} 
+                            disabled 
+                            className="bg-gray-100"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Campo Tipo de Manutenção */}
+                <FormField
+                  control={maintenanceForm.control}
+                  name="requestType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Manutenção *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="corrective">Corretiva</SelectItem>
+                          <SelectItem value="preventive">Preventiva</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
 
-              <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                Enviar Solicitação
-              </Button>
-            </div>
+                {/* Campos específicos para Manutenção Corretiva */}
+                {maintenanceForm.watch("requestType") === "corrective" && (
+                  <FormField
+                    control={maintenanceForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição do Problema *</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Descreva detalhadamente o problema encontrado..."
+                            className="min-h-[100px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* Campos específicos para Manutenção Preventiva */}
+                {maintenanceForm.watch("requestType") === "preventive" && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={maintenanceForm.control}
+                      name="preventiveOrder"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ordem (1 a 12) *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a ordem" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Array.from({ length: 12 }, (_, i) => (
+                                <SelectItem key={i + 1} value={String(i + 1)}>
+                                  {i + 1}º
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={maintenanceForm.control}
+                      name="preventiveLevel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nível (M1 a M5) *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o nível" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="M1">M1</SelectItem>
+                              <SelectItem value="M2">M2</SelectItem>
+                              <SelectItem value="M3">M3</SelectItem>
+                              <SelectItem value="M4">M4</SelectItem>
+                              <SelectItem value="M5">M5</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-4 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowMaintenanceRequest(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    className="bg-[#0C29AB] hover:bg-[#0C29AB]/90"
+                    disabled={createMaintenanceRequestMutation.isPending}
+                  >
+                    {createMaintenanceRequestMutation.isPending ? "Enviando..." : "Enviar Solicitação"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
 
