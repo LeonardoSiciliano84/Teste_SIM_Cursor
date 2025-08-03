@@ -333,8 +333,8 @@ export default function AccessControl() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="visitors">Visitantes</TabsTrigger>
-          <TabsTrigger value="employees">Funcionários</TabsTrigger>
-          <TabsTrigger value="logs">Logs de Acesso</TabsTrigger>
+          <TabsTrigger value="employee-logs">Logs de Funcionários</TabsTrigger>
+          <TabsTrigger value="visitor-logs">Logs de Visitantes</TabsTrigger>
           <TabsTrigger 
             value="qrcode" 
             className="data-[state=active]:border-4 data-[state=active]:border-[#0C29AB] data-[state=active]:bg-[#0C29AB]/10"
@@ -596,50 +596,51 @@ export default function AccessControl() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="employees" className="space-y-6">
+        <TabsContent value="employee-logs" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Funcionários Cadastrados
+                Logs de Acesso - Funcionários
               </CardTitle>
               <CardDescription>
-                Lista de funcionários com acesso por QR Code
+                Histórico de entradas e saídas dos funcionários
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {employees.length === 0 ? (
+              {accessLogs.filter(log => log.personType === "employee").length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  Nenhum funcionário cadastrado
+                  Nenhum log de funcionário encontrado
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {employees.map((employee) => (
-                    <div key={employee.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  {accessLogs.filter(log => log.personType === "employee").slice(0, 20).map((log) => (
+                    <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center gap-3">
-                        {employee.profilePhoto && (
-                          <img
-                            src={employee.profilePhoto}
-                            alt={employee.fullName}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                        )}
+                        <div className={`p-2 rounded-full ${
+                          log.direction === "entry" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+                        }`}>
+                          {log.direction === "entry" ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                        </div>
                         <div>
-                          <p className="font-medium">{employee.fullName}</p>
+                          <p className="font-medium">{log.personName}</p>
                           <p className="text-sm text-gray-500">
-                            {employee.employeeNumber} • {employee.department} • {employee.position}
+                            Funcionário • CPF: {log.personCpf}
                           </p>
-                          <p className="text-xs text-gray-400">CPF: {employee.cpf}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">
-                          {employee.accessLevel}
-                        </Badge>
-                        <Button size="sm" variant="outline">
-                          <QrCode className="h-4 w-4 mr-1" />
-                          QR Code
-                        </Button>
+                      <div className="text-right">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={log.accessMethod === "qrcode" ? "default" : "outline"}>
+                            {log.accessMethod === "qrcode" ? "QR Code" : "Manual"}
+                          </Badge>
+                          <Badge variant={log.direction === "entry" ? "default" : "secondary"}>
+                            {log.direction === "entry" ? "Entrada" : "Saída"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {new Date(log.timestamp).toLocaleString("pt-BR")}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -800,57 +801,54 @@ export default function AccessControl() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="logs" className="space-y-6">
+        <TabsContent value="visitor-logs" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                Logs de Acesso
+                Logs de Acesso - Visitantes
               </CardTitle>
               <CardDescription>
-                Histórico de acessos registrados no sistema
+                Histórico de acessos registrados de visitantes
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {accessLogs.length === 0 ? (
+              {accessLogs.filter(log => log.personType === "visitor").length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  Nenhum log de acesso encontrado
+                  Nenhum log de visitante encontrado
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {accessLogs.slice(0, 20).map((log) => {
-                    console.log("Log direction:", log.direction, "Type:", typeof log.direction);
-                    return (
-                      <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-full ${
-                            log.direction === "entry" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
-                          }`}>
-                            {log.direction === "entry" ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                          </div>
-                          <div>
-                            <p className="font-medium">{log.personName}</p>
-                            <p className="text-sm text-gray-500">
-                              {log.personType === "visitor" ? "Visitante" : "Funcionário"} • CPF: {log.personCpf}
-                            </p>
-                          </div>
+                  {accessLogs.filter(log => log.personType === "visitor").slice(0, 20).map((log) => (
+                    <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-full ${
+                          log.direction === "entry" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+                        }`}>
+                          {log.direction === "entry" ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                         </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-2">
-                            <Badge variant={log.accessMethod === "qrcode" ? "default" : "outline"}>
-                              {log.accessMethod === "qrcode" ? "QR Code" : "Manual"}
-                            </Badge>
-                            <Badge variant={log.direction === "entry" ? "default" : "secondary"}>
-                              {log.direction === "entry" ? "Entrada" : "Saída"}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {new Date(log.timestamp).toLocaleString("pt-BR")}
+                        <div>
+                          <p className="font-medium">{log.personName}</p>
+                          <p className="text-sm text-gray-500">
+                            Visitante • CPF: {log.personCpf}
                           </p>
                         </div>
                       </div>
-                    );
-                  })}
+                      <div className="text-right">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={log.accessMethod === "qrcode" ? "default" : "outline"}>
+                            {log.accessMethod === "qrcode" ? "QR Code" : "Manual"}
+                          </Badge>
+                          <Badge variant={log.direction === "entry" ? "default" : "secondary"}>
+                            {log.direction === "entry" ? "Entrada" : "Saída"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {new Date(log.timestamp).toLocaleString("pt-BR")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
