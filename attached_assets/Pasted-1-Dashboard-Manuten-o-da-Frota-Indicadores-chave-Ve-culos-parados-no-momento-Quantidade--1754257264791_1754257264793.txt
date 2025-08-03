@@ -1,0 +1,127 @@
+1. Dashboard – Manutenção da Frota
+Indicadores-chave:
+•	Veículos parados no momento
+•	Quantidade de manutenções corretivas x preventivas (por mês ou por tipo de veículo)
+•	Custo total de manutenção no mês
+•	Custo médio por km rodado (CPK)
+•	Top 5 veículos com maior custo de manutenção
+•	Tempo médio de parada por manutenção
+•	Checklist não realizados
+🎯 Objetivo: Controle de disponibilidade, eficiência da preventiva e orçamento de manutenção.
+________________________________________
+🛠️ 2. Dashboard – Almoxarifado (Estoque)
+Indicadores-chave:
+•	Valor total em estoque (por setor e total geral)
+•	Itens com estoque abaixo do mínimo
+•	Top 10 itens mais consumidos no mês
+•	Entradas e saídas por período
+•	Consumo por centro de custo
+•	Rupturas ou indisponibilidade crítica
+•	Itens com vencimento próximo (no caso de validade/lotes)
+🎯 Objetivo: Controle de abastecimento, prevenção de faltas e otimização de compras.
+________________________________________
+🚨 3. Dashboard – Sinistros e Ocorrências
+Indicadores:
+•	Número total de sinistros por mês
+•	Classificação dos sinistros (leve, médio, grave, roubo, etc.)
+•	Custo médio por sinistro
+•	Tempo médio de resolução
+•	Responsáveis recorrentes (motorista, base, trecho, etc.)
+•	Veículos com reincidência
+🎯 Objetivo: Gestão de riscos, responsabilização e melhoria contínua da segurança.
+________________________________________
+🧾 4. Dashboard – Financeiro da Frota
+Indicadores:
+•	Custo mensal total por veículo
+•	CPK (custo por km rodado) médio geral
+•	Combustível x manutenção x pedágios (gráfico comparativo)
+•	Projeção de despesas vs. orçado
+•	Veículos com maior desvio de custo
+•	Percentual de veículos fora do orçamento previsto
+🎯 Objetivo: Controle financeiro detalhado da operação logística.
+________________________________________
+🔍 5. Dashboard – Rastreabilidade e Pontualidade
+(Se integrado com rastreamento e jornada)
+Indicadores:
+•	Viagens realizadas por período
+•	Atrasos na chegada por destino
+•	Desvios de rota
+•	Motoristas com maior número de alertas
+•	Tempo médio de trajeto (por destino fixo)
+🎯 Objetivo: Avaliação de produtividade e comprometimento com prazos.
+________________________________________
+🧑‍💼 6. Dashboard – Indicadores de Gestão de Pessoas (RH)
+Além do básico, pode-se incluir:
+•	Absenteísmo por setor
+•	Horas extras pagas por mês
+•	Afastamentos por motivo (doença, acidente, outros)
+•	Clima organizacional (se houver pesquisas internas)
+•	Treinamentos realizados e pendentes
+🎯 Objetivo: Avaliação de saúde organizacional, produtividade e clima.
+🚛 DASHBOARD – VEÍCULOS
+🔹 Local: Módulo Veículos
+🔧 Indicadores e Visualizações:
+1.	Total da Frota Ativa
+o	Tipo: Card numérico
+o	Fonte: Banco de veículos com status "ativo"
+o	Ícone sugerido: 🚚
+2.	Quantidade por Classificação
+o	Tipo: Gráfico de barras horizontais ou gráfico de pizza
+o	Classificações: Cavalo, Carreta, Truck, Munck, Leve, etc.
+o	Agrupado por: campo "classificação"
+o	Tooltip: mostrar número absoluto e percentual
+3.	Valor Total Atualizado da Frota (Tabela Fipe)
+o	Tipo: Card numérico
+o	Fonte: campo "valor_fipe" por veículo ativo
+o	Totalizador com somatória de todos os veículos
+o	Pode haver tooltip indicando a última data de atualização
+4.	Idade Média da Frota
+o	Tipo: Card numérico (anos com uma casa decimal)
+o	Fonte: campo "ano de fabricação"
+o	Fórmula: (Ano Atual - Média dos anos de fabricação)
+5.	Distribuição da Idade da Frota
+o	Tipo: Gráfico de colunas ou faixas (ex: até 3 anos, 4–6, 7–9, acima de 10)
+o	Pode ser expandido para análise de renovação e obsolescência
+6.	Frota por Base/Unidade (Opcional)
+o	Tipo: Mapa de calor ou gráfico por localidade
+o	Útil se houver mais de uma filial
+________________________________________
+👥 DASHBOARD – RH / DEPARTAMENTO PESSOAL
+🔹 Local: Módulo RH
+🔧 Indicadores e Visualizações:
+1.	Total de Colaboradores Ativos
+o	Tipo: Card numérico
+o	Fonte: banco de usuários com status "ativo"
+o	Tooltip: pode incluir data da última atualização
+2.	Distribuição por Classificação de Cargo
+o	Tipo: Gráfico de pizza ou barras
+o	Classificações: Administrativo, Motorista, Mecânico, Ajudante, RH, TI, etc.
+3.	Colaboradores Afastados
+o	Tipo: Card com número total
+o	Fonte: campo "status = afastado" ou similar
+o	Pode incluir botão/link para listar afastamentos com data de início, previsão de retorno e motivo
+4.	Fluxo de Contratações e Desligamentos
+o	Tipo: Gráfico de colunas com dois eixos
+	Contratados por mês (coluna azul)
+	Desligados por mês (coluna vermelha)
+o	Fonte: data de admissão e data de desligamento
+o	Filtro por ano e/ou mês
+5.	Turnover (%)
+o	Tipo: Card com fórmula [(Desligamentos no período ÷ média de funcionários no período) × 100]
+o	Período selecionável (mensal, anual)
+6.	Tempo Médio de Casa
+o	Tipo: Card numérico
+o	Fórmula: diferença entre data atual e data de admissão, em média, dos ativos
+7.	Total de Cargos/Vagas em Aberto (Opcional)
+o	Requer que o sistema registre abertura de vagas
+o	Tipo: Card + lista com cargos e datas
+________________________________________
+🎨 Recomendações Visuais:
+•	Design responsivo: dashboards adaptáveis para desktop e tablet
+•	Cores:
+o	Verde para indicadores positivos (ativos, contratados)
+o	Vermelho/laranja para alertas (afastados, desligamentos)
+o	Neutros para dados informativos
+•	Filtros Globais:
+o	Por ano, mês ou base (no caso dos veículos)
+o	Por centro de custo ou departamento (no caso do RH)

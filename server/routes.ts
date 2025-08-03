@@ -976,6 +976,270 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============= DASHBOARD ROUTES =============
+  
+  // Dashboard de Manutenção da Frota
+  app.get("/api/dashboard/maintenance", async (req, res) => {
+    try {
+      const period = req.query.period as string || "mes";
+      const year = req.query.year as string || "2025";
+      
+      const vehicles = await storage.getVehicles();
+      const maintenanceRequests = await storage.getMaintenanceRequests();
+      const costs = await storage.getMaintenanceCosts();
+      
+      // Veículos parados no momento
+      const vehiclesStopped = maintenanceRequests.filter(req => req.status === "em_andamento").length;
+      
+      // Custo total no mês
+      const currentMonth = new Date().getMonth();
+      const totalCost = costs
+        .filter(cost => new Date(cost.createdAt).getMonth() === currentMonth)
+        .reduce((sum, cost) => sum + parseFloat(cost.totalValue), 0);
+      
+      // Manutenções por tipo (dados simulados para demonstração)
+      const maintenanceTypes = [
+        { month: 'Jan', corretiva: 45, preventiva: 65 },
+        { month: 'Fev', corretiva: 38, preventiva: 72 },
+        { month: 'Mar', corretiva: 52, preventiva: 58 }
+      ];
+      
+      // Top 5 veículos com maior custo
+      const topCostVehicles = [
+        { plate: 'ABC-1234', cost: 8500, vehicle: 'Scania R450' },
+        { plate: 'DEF-5678', cost: 7200, vehicle: 'Volvo FH460' },
+        { plate: 'GHI-9012', cost: 6800, vehicle: 'Mercedes Actros' },
+        { plate: 'JKL-3456', cost: 5900, vehicle: 'Iveco Stralis' },
+        { plate: 'MNO-7890', cost: 5200, vehicle: 'DAF XF' }
+      ];
+      
+      res.json({
+        vehiclesStopped,
+        totalVehicles: vehicles.length,
+        totalCost,
+        averageCPK: "0,45",
+        averageDowntime: "2,3",
+        pendingChecklists: 23,
+        maintenanceTypes,
+        topCostVehicles
+      });
+    } catch (error) {
+      console.error("Error fetching maintenance dashboard:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Dashboard de Almoxarifado
+  app.get("/api/dashboard/warehouse", async (req, res) => {
+    try {
+      const period = req.query.period as string || "mes";
+      const year = req.query.year as string || "2025";
+      
+      const centralWarehouseItems = await storage.getCentralWarehouseItems();
+      
+      // Calcular valor total em estoque
+      const totalStockValue = centralWarehouseItems.reduce((sum, item) => {
+        const quantity = parseFloat(item.currentQuantity);
+        const unitValue = parseFloat(item.unitValue || "0");
+        return sum + (quantity * unitValue);
+      }, 0);
+      
+      // Itens com estoque baixo
+      const lowStockItems = centralWarehouseItems.filter(item => 
+        parseFloat(item.currentQuantity) <= parseFloat(item.minimumQuantity)
+      ).length;
+      
+      // Top 10 itens mais consumidos
+      const topConsumedItems = [
+        { item: 'Óleo Motor 15W40', quantity: 85, unit: 'L' },
+        { item: 'Filtro de Ar', quantity: 42, unit: 'UN' },
+        { item: 'Pastilha de Freio', quantity: 38, unit: 'JG' },
+        { item: 'Filtro de Óleo', quantity: 35, unit: 'UN' },
+        { item: 'Lâmpada H7', quantity: 28, unit: 'UN' }
+      ];
+      
+      // Dados de movimento (simulados)
+      const movementData = [
+        { month: 'Jan', entradas: 125, saidas: 118 },
+        { month: 'Fev', entradas: 135, saidas: 128 },
+        { month: 'Mar', entradas: 142, saidas: 135 }
+      ];
+      
+      // Valor por setor
+      const stockBySector = [
+        { name: 'Manutenção', value: 180500, color: '#0C29AB' },
+        { name: 'Peças Gerais', value: 125300, color: '#1E40AF' },
+        { name: 'Consumíveis', value: 89200, color: '#3B82F6' },
+        { name: 'Emergência', value: 30680, color: '#60A5FA' }
+      ];
+      
+      res.json({
+        totalStockValue,
+        lowStockItems,
+        criticalShortages: 3,
+        expiringItems: 7,
+        topConsumedItems,
+        movementData,
+        stockBySector
+      });
+    } catch (error) {
+      console.error("Error fetching warehouse dashboard:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Dashboard de Sinistros e Ocorrências
+  app.get("/api/dashboard/accidents", async (req, res) => {
+    try {
+      const period = req.query.period as string || "mes";
+      const year = req.query.year as string || "2025";
+      
+      // Dados simulados para demonstração
+      res.json({
+        totalAccidents: 12,
+        averageCost: 8500,
+        averageResolutionTime: "5,2",
+        classification: [
+          { type: 'Leve', count: 7 },
+          { type: 'Médio', count: 3 },
+          { type: 'Grave', count: 2 }
+        ]
+      });
+    } catch (error) {
+      console.error("Error fetching accidents dashboard:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Dashboard Financeiro da Frota
+  app.get("/api/dashboard/financial", async (req, res) => {
+    try {
+      const period = req.query.period as string || "mes";
+      const year = req.query.year as string || "2025";
+      
+      // Dados simulados para demonstração
+      res.json({
+        totalMonthlyCost: 285000,
+        averageCPK: "0,45",
+        budgetVariance: 12.5,
+        costBreakdown: [
+          { category: 'Combustível', value: 125000 },
+          { category: 'Manutenção', value: 85000 },
+          { category: 'Pedágios', value: 45000 },
+          { category: 'Outros', value: 30000 }
+        ]
+      });
+    } catch (error) {
+      console.error("Error fetching financial dashboard:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Dashboard de Veículos
+  app.get("/api/dashboard/vehicles", async (req, res) => {
+    try {
+      const vehicles = await storage.getVehicles();
+      
+      // Total da frota ativa
+      const activeVehicles = vehicles.filter(v => v.status === "ativo");
+      
+      // Quantidade por classificação
+      const byClassification = vehicles.reduce((acc, vehicle) => {
+        const classification = vehicle.classificacao || "Não informado";
+        acc[classification] = (acc[classification] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const classificationData = Object.entries(byClassification).map(([name, value]) => ({
+        name,
+        value
+      }));
+      
+      // Valor total da frota (simulado)
+      const totalFleetValue = activeVehicles.length * 280000; // Valor médio por veículo
+      
+      // Idade média da frota
+      const currentYear = new Date().getFullYear();
+      const averageAge = activeVehicles.reduce((sum, vehicle) => {
+        const age = currentYear - (vehicle.anoFabricacao || currentYear);
+        return sum + age;
+      }, 0) / activeVehicles.length;
+      
+      // Distribuição por idade
+      const ageDistribution = [
+        { range: '0-3 anos', count: 12 },
+        { range: '4-6 anos', count: 18 },
+        { range: '7-9 anos', count: 15 },
+        { range: '10+ anos', count: 8 }
+      ];
+      
+      res.json({
+        totalActiveVehicles: activeVehicles.length,
+        classificationData,
+        totalFleetValue,
+        averageAge: Math.round(averageAge * 10) / 10,
+        ageDistribution
+      });
+    } catch (error) {
+      console.error("Error fetching vehicles dashboard:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Dashboard de RH
+  app.get("/api/dashboard/hr", async (req, res) => {
+    try {
+      const period = req.query.period as string || "mes";
+      const year = req.query.year as string || "2025";
+      
+      const employees = await storage.getEmployees();
+      
+      // Total de colaboradores ativos
+      const activeEmployees = employees.filter(emp => emp.status === "ativo");
+      
+      // Distribuição por cargo
+      const byPosition = employees.reduce((acc, employee) => {
+        const position = employee.cargo || "Não informado";
+        acc[position] = (acc[position] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const positionData = Object.entries(byPosition).map(([name, value]) => ({
+        name,
+        value
+      }));
+      
+      // Colaboradores afastados
+      const onLeave = employees.filter(emp => emp.status === "afastado").length;
+      
+      // Dados de contratação/desligamento (simulados)
+      const hiringData = [
+        { month: 'Jan', contratados: 8, desligados: 3 },
+        { month: 'Fev', contratados: 5, desligados: 7 },
+        { month: 'Mar', contratados: 12, desligados: 2 }
+      ];
+      
+      // Turnover (simulado)
+      const turnover = 8.5;
+      
+      // Tempo médio de casa (simulado)
+      const averageTenure = "3,2";
+      
+      res.json({
+        totalActiveEmployees: activeEmployees.length,
+        positionData,
+        onLeave,
+        hiringData,
+        turnover,
+        averageTenure,
+        openPositions: 5
+      });
+    } catch (error) {
+      console.error("Error fetching HR dashboard:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
