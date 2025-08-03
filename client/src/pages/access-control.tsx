@@ -32,6 +32,7 @@ export default function AccessControl() {
   const [accessDirection, setAccessDirection] = useState<"entry" | "exit">("entry");
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const qrScannerRef = useRef<QrScanner | null>(null);
 
@@ -57,21 +58,30 @@ export default function AccessControl() {
       const qrScanner = new QrScanner(
         videoRef.current,
         (result) => {
+          // Evitar processamento múltiplo
+          if (isProcessing) return;
+          
+          setIsProcessing(true);
           setQrCodeValue(result.data);
           
           console.log("QR Code detectado pelo scanner:", result.data);
           
           toast({
             title: "QR Code detectado",
-            description: `Código: ${result.data.substring(0, 20)}...`,
+            description: `Processando acesso para ${accessDirection === "entry" ? "Entrada" : "Saída"}...`,
           });
           
-          // Delay maior para dar tempo de ver o QR Code detectado
+          // Parar scanner imediatamente após detecção
+          qrScanner.stop();
+          setIsScanning(false);
+          
+          // Processar QR Code após breve delay
           setTimeout(() => {
             processQrCode(result.data);
-            stopQrScanner();
             setIsQrScannerOpen(false);
-          }, 3000);
+            setIsProcessing(false);
+            setQrCodeValue("");
+          }, 1500);
         },
         {
           highlightScanRegion: true,
@@ -113,6 +123,8 @@ export default function AccessControl() {
   const handleScannerClose = () => {
     stopQrScanner();
     setIsQrScannerOpen(false);
+    setIsProcessing(false);
+    setQrCodeValue("");
   };
 
   // Process QR Code (existing logic)
@@ -188,18 +200,19 @@ export default function AccessControl() {
     },
     onSuccess: (data) => {
       toast({
-        title: "Acesso registrado",
-        description: `${data.employee.fullName} - ${accessDirection === "entry" ? "Entrada" : "Saída"}`,
+        title: "✅ Acesso Liberado",
+        description: `${data.employee.fullName} - ${accessDirection === "entry" ? "Entrada" : "Saída"} registrada com sucesso`,
+        variant: "default",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/access-control/logs"] });
-      setQrCodeValue("");
     },
     onError: () => {
       toast({
-        title: "Erro",
+        title: "❌ Acesso Negado",
         description: "QR Code inválido ou funcionário não encontrado",
         variant: "destructive",
       });
+      setIsProcessing(false);
     },
   });
 
@@ -493,13 +506,21 @@ export default function AccessControl() {
                         </div>
                         
                         <div className="flex gap-2">
-                          {!isScanning ? (
+                          {!isScanning && !isProcessing ? (
                             <Button 
                               onClick={startQrScanner}
                               className="flex-1 bg-green-600 hover:bg-green-700"
                             >
                               <Camera className="h-4 w-4 mr-2" />
                               Iniciar Scanner
+                            </Button>
+                          ) : isProcessing ? (
+                            <Button 
+                              disabled
+                              className="flex-1 bg-blue-600"
+                            >
+                              <Clock className="h-4 w-4 mr-2 animate-spin" />
+                              Processando...
                             </Button>
                           ) : (
                             <Button 
@@ -515,18 +536,27 @@ export default function AccessControl() {
                           <Button 
                             onClick={handleScannerClose}
                             variant="outline"
+                            disabled={isProcessing}
                           >
                             Fechar
                           </Button>
                         </div>
                         
-                        {qrCodeValue && (
+                        {qrCodeValue && !isProcessing && (
                           <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                             <p className="text-sm text-green-700">
                               <strong>QR Code detectado:</strong> {qrCodeValue.substring(0, 30)}...
                             </p>
-                            <p className="text-xs text-green-600 mt-1">
-                              Processando em 3 segundos...
+                          </div>
+                        )}
+                        
+                        {isProcessing && (
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-sm text-blue-700">
+                              <strong>Processando acesso...</strong>
+                            </p>
+                            <p className="text-xs text-blue-600 mt-1">
+                              Aguarde a confirmação
                             </p>
                           </div>
                         )}
