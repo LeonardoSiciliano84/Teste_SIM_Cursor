@@ -49,6 +49,7 @@ export default function AccessControl() {
   useEffect(() => {
     return () => {
       if (qrScannerRef.current) {
+        qrScannerRef.current.stop();
         qrScannerRef.current.destroy();
       }
       if (visitorStreamRef.current) {
@@ -64,42 +65,32 @@ export default function AccessControl() {
     try {
       setIsScanning(true);
       
-      const qrScanner = new QrScanner(
-        videoRef.current,
-        (result) => {
-          // Evitar processamento múltiplo
-          if (isProcessing) return;
-          
-          setIsProcessing(true);
-          setQrCodeValue(result.data);
-          
-          console.log("QR Code detectado pelo scanner:", result.data);
-          
-          toast({
-            title: "QR Code detectado",
-            description: `Processando acesso para ${accessDirection === "entry" ? "Entrada" : "Saída"}...`,
-          });
-          
-          // Parar scanner imediatamente após detecção
-          qrScanner.stop();
-          setIsScanning(false);
-          
-          // Processar QR Code após breve delay
-          setTimeout(() => {
-            processQrCode(result.data);
-            setIsQrScannerOpen(false);
-            setIsProcessing(false);
-            setQrCodeValue("");
-          }, 1500);
-        },
-        {
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          preferredCamera: 'environment',
-          returnDetailedScanResult: false,
-          maxScansPerSecond: 5
-        }
-      );
+      const qrScanner = new QrScanner(videoRef.current, (result) => {
+        // Evitar processamento múltiplo
+        if (isProcessing) return;
+        
+        setIsProcessing(true);
+        setQrCodeValue(result);
+        
+        console.log("QR Code detectado pelo scanner:", result);
+        
+        toast({
+          title: "QR Code detectado",
+          description: `Processando acesso para ${accessDirection === "entry" ? "Entrada" : "Saída"}...`,
+        });
+        
+        // Parar scanner imediatamente após detecção
+        qrScanner.stop();
+        setIsScanning(false);
+        
+        // Processar QR Code após breve delay
+        setTimeout(() => {
+          processQrCode(result);
+          setIsQrScannerOpen(false);
+          setIsProcessing(false);
+          setQrCodeValue("");
+        }, 1500);
+      });
 
       qrScannerRef.current = qrScanner;
       await qrScanner.start();
@@ -310,10 +301,7 @@ export default function AccessControl() {
 
   const handleQrCodeProcess = () => {
     if (qrCodeValue) {
-      processQrCodeMutation.mutate({
-        qrCode: qrCodeValue,
-        direction: accessDirection,
-      });
+      processQrCode(qrCodeValue);
     }
   };
 
@@ -603,7 +591,7 @@ export default function AccessControl() {
         </TabsContent>
 
         <TabsContent value="qrcode" className="space-y-6">
-          <Card className="border-2 border-blue-200">
+          <Card className="border-4 border-blue-500 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <QrCode className="h-5 w-5" />
