@@ -471,22 +471,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Vehicle Status Route
+  // Vehicle Status Route - Busca veículos com checklist criado e prontos para saída
   app.get("/api/vehicles/status", async (req, res) => {
     try {
-      // Por enquanto retornamos dados simulados para teste
-      // Em produção, isso seria integrado com o sistema de checklists
-      const vehicleStatus = [
-        {
-          vehicleId: "aceabe60-ee08-4201-b825-13c9b5edfd68",
-          driverId: "edf9145c-5c7f-4dd9-8910-0dceebfca270",
-          status: "available",
-          checklistStatus: "approved",
-          checklistDate: new Date(),
-          exitTime: null,
-          destination: null
-        }
-      ];
+      // Buscar todos os checklists ativos (recém-criados)
+      const checklists = await storage.getVehicleChecklists();
+      
+      // Filtrar checklists que estão prontos para liberação (status: saida_registrada)
+      const readyChecklists = checklists.filter(checklist => 
+        checklist.status === "saida_registrada" && 
+        checklist.verificationStatus === "nao_verificado"
+      );
+      
+      // Criar dados de status dos veículos baseado nos checklists
+      const vehicleStatus = readyChecklists.map(checklist => ({
+        vehicleId: checklist.vehicleId,
+        driverId: checklist.driverId,
+        status: "available",
+        checklistStatus: "approved", // Checklist criado = aprovado para saída
+        checklistDate: checklist.createdAt,
+        checklistId: checklist.id,
+        exitTime: null,
+        destination: null,
+        vehiclePlate: checklist.vehiclePlate,
+        driverName: checklist.driverName
+      }));
       
       res.json(vehicleStatus);
     } catch (error) {
@@ -498,7 +507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Vehicle Exit Route
   app.post("/api/vehicles/exit", async (req, res) => {
     try {
-      const { vehicleId, driverId, destination } = req.body;
+      const { vehicleId, driverId, destination, checklistId } = req.body;
       
       if (!vehicleId || !driverId || !destination) {
         return res.status(400).json({ message: "Dados obrigatórios: vehicleId, driverId, destination" });
@@ -510,6 +519,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!vehicle || !driver) {
         return res.status(404).json({ message: "Veículo ou motorista não encontrado" });
+      }
+
+      // Se tem checklistId, marcar como usado/liberado
+      if (checklistId) {
+        await storage.updateVehicleChecklist(checklistId, {
+          status: "veiculo_liberado",
+          exitTime: new Date()
+        });
       }
 
       // Registrar log de saída de veículo

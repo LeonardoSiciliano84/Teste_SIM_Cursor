@@ -1673,6 +1673,10 @@ export class MemStorage implements IStorage {
     return this.vehicleChecklists.get(id);
   }
 
+  async getVehicleChecklists(): Promise<VehicleChecklist[]> {
+    return Array.from(this.vehicleChecklists.values());
+  }
+
   async createVehicleChecklist(checklistData: InsertVehicleChecklist): Promise<VehicleChecklist> {
     const id = randomUUID();
     const checklist: VehicleChecklist = {

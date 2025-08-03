@@ -553,7 +553,7 @@ export default function SecurityGuardAccess() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-sm text-gray-600 mb-3">
-                  Veículos com checklist aprovado
+                  Veículos com checklist criado pelo motorista
                 </div>
                 
                 <div className="space-y-2 max-h-80 overflow-y-auto">
@@ -590,7 +590,8 @@ export default function SecurityGuardAccess() {
                                   vehicleExitMutation.mutate({
                                     vehicleId: vehicle.id,
                                     driverId: driver.id,
-                                    destination
+                                    destination,
+                                    checklistId: vehicleStatus.checklistId
                                   });
                                 }
                               }}
