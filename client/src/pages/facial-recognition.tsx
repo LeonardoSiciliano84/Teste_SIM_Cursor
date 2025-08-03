@@ -164,82 +164,177 @@ export default function FacialRecognition() {
     },
   });
 
-  // Camera functions - usando mesma lógica do diagnóstico que funciona
+  // Camera functions - implementação robusta com fallbacks
   const startCamera = useCallback(async () => {
     try {
-      console.log("Starting camera with diagnostic approach...");
+      console.log("[CAMERA] Iniciando câmera...");
       
+      // Verificar se já existe um stream ativo
+      if (streamRef.current) {
+        console.log("[CAMERA] Parando stream anterior");
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+
+      // Verificar elemento de vídeo
+      if (!videoRef.current) {
+        throw new Error("Elemento de vídeo não encontrado");
+      }
+
+      console.log("[CAMERA] Solicitando acesso à câmera...");
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 640, height: 480 },
+        video: { 
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 30 }
+        },
         audio: false
       });
       
-      console.log("Camera stream obtained:", stream);
-      
-      if (!videoRef.current) {
-        throw new Error("Elemento de vídeo não disponível");
+      console.log("[CAMERA] Stream obtido:", stream);
+      console.log("[CAMERA] Tracks do stream:", stream.getTracks().map(t => ({ 
+        kind: t.kind, 
+        enabled: t.enabled, 
+        readyState: t.readyState 
+      })));
+
+      const videoTrack = stream.getVideoTracks()[0];
+      if (!videoTrack) {
+        throw new Error("Nenhuma track de vídeo encontrada");
       }
 
-      // Parar stream anterior se existir
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
+      console.log("[CAMERA] Settings da track:", videoTrack.getSettings());
 
+      // Definir srcObject
       videoRef.current.srcObject = stream;
       streamRef.current = stream;
-      
-      // Usar mesma Promise do diagnóstico que funciona
-      await new Promise((resolve, reject) => {
+      console.log("[CAMERA] Stream definido no elemento de vídeo");
+
+      // Aguardar carregamento e reprodução
+      console.log("[CAMERA] Aguardando carregamento do vídeo...");
+      await new Promise<void>((resolve, reject) => {
         if (!videoRef.current) {
           reject(new Error("Elemento de vídeo perdido"));
           return;
         }
 
-        const timeout = setTimeout(() => {
-          reject(new Error("Timeout na reprodução"));
-        }, 5000);
+        const video = videoRef.current;
+        let resolved = false;
 
-        videoRef.current.onloadedmetadata = () => {
-          clearTimeout(timeout);
-          if (videoRef.current) {
-            videoRef.current.play().then(resolve).catch(reject);
+        const timeout = setTimeout(() => {
+          if (!resolved) {
+            console.log("[CAMERA] Timeout - forçando resolução");
+            resolved = true;
+            resolve(); // Resolver mesmo assim
+          }
+        }, 3000);
+
+        const onLoadedMetadata = () => {
+          if (!resolved) {
+            console.log("[CAMERA] Metadata carregada");
+            clearTimeout(timeout);
+            resolved = true;
+            
+            video.play()
+              .then(() => {
+                console.log("[CAMERA] Vídeo reproduzindo");
+                resolve();
+              })
+              .catch((playError) => {
+                console.warn("[CAMERA] Erro no play:", playError);
+                // Resolver mesmo assim - o usuário pode clicar em play
+                resolve();
+              });
           }
         };
 
-        videoRef.current.onerror = (e) => {
-          clearTimeout(timeout);
-          reject(new Error("Erro no elemento de vídeo"));
+        const onError = (e: Event) => {
+          if (!resolved) {
+            console.error("[CAMERA] Erro no vídeo:", e);
+            clearTimeout(timeout);
+            resolved = true;
+            reject(new Error("Erro no elemento de vídeo"));
+          }
         };
+
+        video.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
+        video.addEventListener('error', onError, { once: true });
+
+        // Se já tem metadados, chamar imediatamente
+        if (video.readyState >= 1) {
+          console.log("[CAMERA] Metadados já disponíveis");
+          onLoadedMetadata();
+        }
       });
 
-      console.log("Video playing successfully");
+      console.log("[CAMERA] Câmera iniciada com sucesso!");
       setIsCapturing(true);
       setVideoError(null);
       
     } catch (error) {
-      console.error("Error accessing camera:", error);
+      console.error("[CAMERA] Erro completo:", error);
       let errorMessage = "Erro ao acessar a câmera";
       
       if (error instanceof Error) {
-        if (error.name === "NotAllowedError") {
-          errorMessage = "Acesso à câmera negado. Permita o acesso nas configurações do navegador.";
-        } else if (error.name === "NotFoundError") {
-          errorMessage = "Nenhuma câmera encontrada no dispositivo.";
-        } else if (error.name === "NotReadableError") {
-          errorMessage = "Câmera já está sendo usada por outro aplicativo.";
-        } else if (error.message === "Timeout na reprodução") {
-          errorMessage = "Timeout na reprodução do vídeo. Tente novamente.";
+        console.error("[CAMERA] Tipo do erro:", error.name);
+        console.error("[CAMERA] Mensagem:", error.message);
+        
+        switch (error.name) {
+          case "NotAllowedError":
+            errorMessage = "Acesso negado. Clique no ícone da câmera na barra do navegador e permita o acesso.";
+            break;
+          case "NotFoundError":
+            errorMessage = "Nenhuma câmera encontrada. Verifique se há uma câmera conectada.";
+            break;
+          case "NotReadableError":
+            errorMessage = "Câmera ocupada. Feche outros aplicativos que podem estar usando a câmera.";
+            break;
+          case "OverconstrainedError":
+            errorMessage = "Configurações não suportadas. Tentando configuração mais simples...";
+            // Tentar novamente com configurações mais simples
+            setTimeout(() => startCameraSimple(), 1000);
+            return;
+          default:
+            if (error.message.includes("não encontrado") || error.message.includes("perdido")) {
+              errorMessage = "Erro interno do sistema. Recarregue a página.";
+            } else {
+              errorMessage = `Erro: ${error.message}`;
+            }
         }
       }
       
       setVideoError(errorMessage);
+      setIsCapturing(false);
       toast({
-        title: "Erro",
+        title: "Erro na Câmera",
         description: errorMessage,
         variant: "destructive",
       });
     }
   }, [toast]);
+
+  // Função de fallback com configurações mínimas
+  const startCameraSimple = useCallback(async () => {
+    try {
+      console.log("[CAMERA] Tentativa com configurações simples...");
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: true,
+        audio: false
+      });
+      
+      if (videoRef.current && stream) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        setIsCapturing(true);
+        setVideoError(null);
+        console.log("[CAMERA] Configuração simples funcionou!");
+      }
+    } catch (error) {
+      console.error("[CAMERA] Erro na configuração simples:", error);
+      setVideoError("Não foi possível iniciar a câmera com nenhuma configuração");
+    }
+  }, []);
 
   const testCamera = useCallback(async () => {
     console.log("Testing camera capabilities...");
@@ -409,8 +504,8 @@ export default function FacialRecognition() {
                       </div>
                       {/* Aviso de erro */}
                       {videoError && (
-                        <div className="absolute bottom-2 left-2 right-2 bg-yellow-500/90 text-black px-2 py-1 rounded text-xs">
-                          {videoError}
+                        <div className="absolute bottom-2 left-2 right-2 bg-red-500/90 text-white px-3 py-2 rounded text-sm font-medium">
+                          ⚠️ {videoError}
                         </div>
                       )}
                     </>
@@ -435,6 +530,9 @@ export default function FacialRecognition() {
                       <Button onClick={startCamera} className="flex-1">
                         <Camera className="h-4 w-4 mr-2" />
                         Iniciar Câmera
+                      </Button>
+                      <Button onClick={startCameraSimple} variant="outline" size="sm">
+                        Modo Simples
                       </Button>
                       <Button onClick={testCamera} variant="outline" size="sm">
                         Teste
