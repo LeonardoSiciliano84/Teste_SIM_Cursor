@@ -1,7 +1,14 @@
-# Transport Management System
+# FELKA Transportes - Sistema de Gestão
 
 ## Overview
 FELKA Transportes is a comprehensive transport management system designed to manage vehicles, drivers, routes, bookings, and analytics for a transport company. Built with a React frontend and Express.js backend, it features a modern UI using shadcn/ui and Drizzle ORM for full CRUD functionality. The system also includes a robust prancha service management system, ensuring persistent services tied to drivers with automatic state restoration and trip tracking.
+
+## Recent Changes (Janeiro 2025)
+- **Sinistro Form Fixed:** Corrected vehicle plate selection functionality that was preventing proper form submission
+- **Drivers Management Streamlined:** Removed "Veículo Atual" and "Status" columns as requested, keeping only essential data
+- **Driver Details Modal:** Implemented comprehensive modal showing complete CNH information (número, categoria, validade, UF emissor, data de emissão, CPF)
+- **Driver Portal Checklist:** Fixed checklist submission with proper validation, automatic plate filling, and photo fixation
+- **UI Improvements:** Enhanced visual feedback and form validation across the system
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
