@@ -204,6 +204,8 @@ export default function FacialRecognition() {
   const drawFaceGuide = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     if (!autoCapture) return; // Só desenhar no modo automático
     
+    console.log('[OVERLAY] Desenhando aro:', { width, height, autoCapture });
+    
     const centerX = width / 2;
     const centerY = height / 2;
     const radius = Math.min(width, height) * 0.25;
@@ -211,46 +213,70 @@ export default function FacialRecognition() {
     // Limpar área
     ctx.clearRect(0, 0, width, height);
 
-    // Draw guide circle
-    ctx.strokeStyle = faceDetected ? '#22c55e' : '#3b82f6';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([10, 5]);
+    // Fundo semi-transparente para destacar o aro
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillRect(0, 0, width, height);
+    
+    // Cortar círculo no meio (área transparente)
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius + 5, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Voltar ao modo normal
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Draw guide circle principal
+    ctx.strokeStyle = faceDetected ? '#22c55e' : '#0C29AB'; // Azul FELKA quando não detectado
+    ctx.lineWidth = 4;
+    ctx.setLineDash([15, 8]);
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Draw crosshairs
-    ctx.strokeStyle = faceDetected ? '#22c55e' : '#3b82f6';
-    ctx.lineWidth = 1;
+    // Draw inner circle
+    ctx.strokeStyle = faceDetected ? '#16a34a' : '#1d4ed8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius - 10, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Draw crosshairs no centro
+    ctx.strokeStyle = faceDetected ? '#22c55e' : '#0C29AB';
+    ctx.lineWidth = 2;
     ctx.beginPath();
     // Horizontal line
-    ctx.moveTo(centerX - 20, centerY);
-    ctx.lineTo(centerX + 20, centerY);
+    ctx.moveTo(centerX - 30, centerY);
+    ctx.lineTo(centerX + 30, centerY);
     // Vertical line
-    ctx.moveTo(centerX, centerY - 20);
-    ctx.lineTo(centerX, centerY + 20);
+    ctx.moveTo(centerX, centerY - 30);
+    ctx.lineTo(centerX, centerY + 30);
     ctx.stroke();
 
     // Draw instruction text
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 14px Arial';
+    ctx.font = 'bold 16px Arial';
     ctx.textAlign = 'center';
-    ctx.shadowColor = '#000000';
-    ctx.shadowBlur = 4;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
     
     const message = modelsLoaded 
       ? (faceDetected ? 'Rosto detectado! Mantenha a posição' : 'Posicione seu rosto no círculo')
-      : 'Posicione seu rosto no círculo (modo básico)';
+      : 'Posicione seu rosto no círculo';
     
-    ctx.fillText(message, centerX, centerY + radius + 40);
-    ctx.shadowBlur = 0;
+    // Outline do texto
+    ctx.strokeText(message, centerX, centerY + radius + 50);
+    ctx.fillText(message, centerX, centerY + radius + 50);
 
     // Draw countdown if active
     if (captureCountdown > 0) {
-      ctx.fillStyle = '#3b82f6';
-      ctx.font = 'bold 48px Arial';
-      ctx.fillText(captureCountdown.toString(), centerX, centerY - 30);
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#000000';
+      ctx.font = 'bold 64px Arial';
+      ctx.lineWidth = 4;
+      ctx.strokeText(captureCountdown.toString(), centerX, centerY - 40);
+      ctx.fillText(captureCountdown.toString(), centerX, centerY - 40);
     }
   }, [faceDetected, autoCapture, modelsLoaded, captureCountdown]);
 
@@ -328,19 +354,59 @@ export default function FacialRecognition() {
     }
   }, [autoCapture, modelsLoaded, isCapturing, capturedImage, captureCountdown]);
 
+  // Ajustar tamanho do canvas overlay quando vídeo carregar
+  useEffect(() => {
+    const adjustOverlaySize = () => {
+      if (overlayCanvasRef.current && videoRef.current) {
+        const video = videoRef.current;
+        const overlay = overlayCanvasRef.current;
+        
+        // Aguardar o vídeo carregar
+        if (video.videoWidth > 0 && video.videoHeight > 0) {
+          overlay.width = video.clientWidth;
+          overlay.height = video.clientHeight;
+          console.log('[OVERLAY] Canvas ajustado:', { width: overlay.width, height: overlay.height });
+        }
+      }
+    };
+
+    if (isCapturing && videoRef.current) {
+      videoRef.current.addEventListener('loadedmetadata', adjustOverlaySize);
+      videoRef.current.addEventListener('resize', adjustOverlaySize);
+      
+      // Tentar ajustar imediatamente
+      adjustOverlaySize();
+      
+      return () => {
+        if (videoRef.current) {
+          videoRef.current.removeEventListener('loadedmetadata', adjustOverlaySize);
+          videoRef.current.removeEventListener('resize', adjustOverlaySize);
+        }
+      };
+    }
+  }, [isCapturing]);
+
   // Face detection interval e desenho do overlay
   useEffect(() => {
     if (isCapturing && overlayCanvasRef.current) {
       detectionIntervalRef.current = setInterval(() => {
-        if (overlayCanvasRef.current) {
+        if (overlayCanvasRef.current && videoRef.current) {
           const ctx = overlayCanvasRef.current.getContext('2d');
+          const overlay = overlayCanvasRef.current;
+          
           if (ctx) {
+            // Ajustar tamanho se necessário
+            if (videoRef.current.clientWidth !== overlay.width || videoRef.current.clientHeight !== overlay.height) {
+              overlay.width = videoRef.current.clientWidth;
+              overlay.height = videoRef.current.clientHeight;
+            }
+            
             // Sempre desenhar o guia quando no modo auto
             if (autoCapture) {
-              drawFaceGuide(ctx, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
+              drawFaceGuide(ctx, overlay.width, overlay.height);
             } else {
               // Limpar canvas no modo manual
-              ctx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
+              ctx.clearRect(0, 0, overlay.width, overlay.height);
             }
             
             // Executar detecção facial se modelos estão carregados
@@ -840,8 +906,11 @@ export default function FacialRecognition() {
                   {isCapturing && (
                     <canvas
                       ref={overlayCanvasRef}
-                      className="absolute inset-0 w-full h-full pointer-events-none"
-                      style={{ transform: 'scaleX(-1)' }}
+                      className="absolute inset-0 w-full h-full pointer-events-none z-10"
+                      style={{ 
+                        transform: 'scaleX(-1)',
+                        background: 'transparent'
+                      }}
                       width="640"
                       height="480"
                     />
@@ -936,10 +1005,27 @@ export default function FacialRecognition() {
                             if (modelsLoaded) {
                               setIsFaceDetectionActive(true);
                             }
+                            
+                            // Forçar desenho imediato do overlay
+                            if (overlayCanvasRef.current) {
+                              const ctx = overlayCanvasRef.current.getContext('2d');
+                              if (ctx) {
+                                console.log('[AUTO-CAPTURE] Forçando desenho inicial do aro');
+                                drawFaceGuide(ctx, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
+                              }
+                            }
                           } else {
                             console.log('[AUTO-CAPTURE] Modo manual ativado');
                             setIsFaceDetectionActive(false);
                             setCaptureCountdown(0);
+                            
+                            // Limpar overlay
+                            if (overlayCanvasRef.current) {
+                              const ctx = overlayCanvasRef.current.getContext('2d');
+                              if (ctx) {
+                                ctx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
+                              }
+                            }
                           }
                         }}
                         variant={autoCapture ? "default" : "outline"}
