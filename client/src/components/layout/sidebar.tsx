@@ -13,7 +13,8 @@ import {
   Smartphone,
   AlertTriangle,
   CheckSquare,
-  Shield
+  Shield,
+  ShieldCheck
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ const navigation = [
   { name: "Sinistros", href: "/sinistros", icon: AlertTriangle },
   { name: "Checklists", href: "/checklists", icon: CheckSquare },
   { name: "Controle de Acesso", href: "/access-control", icon: Shield },
+  { name: "Portaria", href: "/security-guard", icon: ShieldCheck },
   { name: "Portal Motorista", href: "/driver-portal", icon: Smartphone },
   { name: "Gestão de Prancha", href: "/prancha-management", icon: Package },
   { name: "Rotas", href: "/routes", icon: Map },
