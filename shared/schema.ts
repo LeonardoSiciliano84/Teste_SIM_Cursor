@@ -699,6 +699,219 @@ export type SinistroDocument = typeof sinistroDocuments.$inferSelect;
 export type InsertSinistroHistory = typeof sinistroHistory.$inferInsert;
 export type SinistroHistory = typeof sinistroHistory.$inferSelect;
 
+// ============= MÓDULO DE CONTROLE DE PNEUS =============
+
+// Tabela principal de pneus
+export const tires = pgTable("tires", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Dados básicos do pneu
+  fireNumber: varchar("fire_number").notNull().unique(), // Número do fogo (código único permanente)
+  brand: varchar("brand").notNull(), // Marca
+  model: varchar("model").notNull(), // Modelo
+  size: varchar("size").notNull(), // Medida
+  type: varchar("type").notNull(), // direcional, tração, arrasto, misto
+  
+  // Dados financeiros
+  purchaseValue: decimal("purchase_value", { precision: 10, scale: 2 }), // Valor de compra
+  purchaseDate: date("purchase_date"), // Data de compra
+  
+  // Dados técnicos
+  manufacturingYear: integer("manufacturing_year"), // Ano de fabricação
+  currentLife: integer("current_life").default(1), // Vida atual (inicial: 1)
+  status: varchar("status").default("ativo"), // ativo, em_uso, recapagem, perda, vendido, descartado
+  
+  // Documentos
+  invoiceDocument: varchar("invoice_document"), // Upload de nota fiscal
+  
+  // Controle
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Tabela de movimentações de pneus
+export const tireMovements = pgTable("tire_movements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Pneu e veículo
+  tireId: varchar("tire_id").notNull().references(() => tires.id, { onDelete: "cascade" }),
+  fireNumber: varchar("fire_number").notNull(),
+  vehicleId: varchar("vehicle_id"),
+  vehiclePlate: varchar("vehicle_plate"),
+  
+  // Tipo de movimentação
+  movementType: varchar("movement_type").notNull(), // entrada, instalacao, rodizio, recapagem, descarte, venda, perda
+  
+  // Posição no veículo
+  axle: varchar("axle"), // Eixo
+  axleNumber: integer("axle_number"), // Número do eixo
+  side: varchar("side"), // interno/externo, direito/esquerdo/central
+  
+  // Dados técnicos
+  currentKm: integer("current_km"), // KM no momento
+  twi: decimal("twi", { precision: 3, scale: 1 }), // TWI (opcional)
+  lifeBefore: integer("life_before"), // Vida antes
+  lifeAfter: integer("life_after"), // Vida depois
+  
+  // Recapagem
+  recapType: varchar("recap_type"), // tipo de recapagem (se aplicável)
+  recapCompany: varchar("recap_company"), // empresa recapadora
+  recapValue: decimal("recap_value", { precision: 10, scale: 2 }), // valor da recapagem
+  
+  // Observações
+  reason: text("reason"), // Motivo da movimentação
+  notes: text("notes"), // Observações gerais
+  
+  // Documentos
+  document: varchar("document"), // Upload de comprovante/documento
+  
+  // Usuário responsável
+  userId: varchar("user_id").notNull(),
+  userName: varchar("user_name").notNull(),
+  
+  // Controle
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Tabela de rodízios
+export const tireRotations = pgTable("tire_rotations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Pneu e veículo
+  tireId: varchar("tire_id").notNull().references(() => tires.id, { onDelete: "cascade" }),
+  fireNumber: varchar("fire_number").notNull(),
+  vehicleId: varchar("vehicle_id").notNull(),
+  vehiclePlate: varchar("vehicle_plate").notNull(),
+  
+  // Posições
+  axleOrigin: varchar("axle_origin").notNull(), // Eixo origem
+  axleDestination: varchar("axle_destination").notNull(), // Eixo destino
+  sideOrigin: varchar("side_origin").notNull(), // Lado origem
+  sideDestination: varchar("side_destination").notNull(), // Lado destino
+  
+  // Dados
+  vehicleKm: integer("vehicle_km").notNull(), // KM do veículo
+  twi: decimal("twi", { precision: 3, scale: 1 }), // TWI (opcional)
+  
+  // Usuário responsável
+  userId: varchar("user_id").notNull(),
+  userName: varchar("user_name").notNull(),
+  
+  // Controle
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Tabela de alertas automáticos de pneus
+export const tireAlerts = pgTable("tire_alerts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Pneu
+  tireId: varchar("tire_id").notNull().references(() => tires.id, { onDelete: "cascade" }),
+  fireNumber: varchar("fire_number").notNull(),
+  
+  // Tipo de alerta
+  alertType: varchar("alert_type").notNull(), // rodizio_km, vida_util, recapagem_necessaria
+  
+  // Dados do alerta
+  currentValue: integer("current_value"), // Valor atual (KM, vida, etc.)
+  limitValue: integer("limit_value"), // Valor limite
+  message: text("message").notNull(), // Mensagem do alerta
+  
+  // Status
+  status: varchar("status").default("ativo"), // ativo, resolvido, ignorado
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: varchar("resolved_by"),
+  
+  // Controle
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Relations para pneus
+export const tiresRelations = relations(tires, ({ many }) => ({
+  movements: many(tireMovements),
+  rotations: many(tireRotations),
+  alerts: many(tireAlerts),
+}));
+
+export const tireMovementsRelations = relations(tireMovements, ({ one }) => ({
+  tire: one(tires, {
+    fields: [tireMovements.tireId],
+    references: [tires.id],
+  }),
+}));
+
+export const tireRotationsRelations = relations(tireRotations, ({ one }) => ({
+  tire: one(tires, {
+    fields: [tireRotations.tireId],
+    references: [tires.id],
+  }),
+}));
+
+export const tireAlertsRelations = relations(tireAlerts, ({ one }) => ({
+  tire: one(tires, {
+    fields: [tireAlerts.tireId],
+    references: [tires.id],
+  }),
+}));
+
+// Schemas para validação de pneus
+export const insertTireSchema = createInsertSchema(tires).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  fireNumber: z.string().min(1, "Número do fogo é obrigatório"),
+  brand: z.string().min(1, "Marca é obrigatória"),
+  model: z.string().min(1, "Modelo é obrigatório"),
+  size: z.string().min(1, "Medida é obrigatória"),
+  type: z.enum(["direcional", "tracao", "arrasto", "misto"], {
+    required_error: "Tipo é obrigatório"
+  }),
+  purchaseValue: z.number().min(0, "Valor deve ser positivo").optional(),
+  currentLife: z.number().min(1, "Vida atual deve ser ao menos 1").optional(),
+  manufacturingYear: z.number().min(2000, "Ano inválido").max(new Date().getFullYear(), "Ano não pode ser futuro").optional(),
+});
+
+export const insertTireMovementSchema = createInsertSchema(tireMovements).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  tireId: z.string().min(1, "Pneu é obrigatório"),
+  fireNumber: z.string().min(1, "Número do fogo é obrigatório"),
+  movementType: z.enum(["entrada", "instalacao", "rodizio", "recapagem", "descarte", "venda", "perda"], {
+    required_error: "Tipo de movimentação é obrigatório"
+  }),
+  reason: z.string().min(1, "Motivo é obrigatório"),
+  userId: z.string().min(1, "Usuário é obrigatório"),
+  userName: z.string().min(1, "Nome do usuário é obrigatório"),
+});
+
+export const insertTireRotationSchema = createInsertSchema(tireRotations).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  tireId: z.string().min(1, "Pneu é obrigatório"),
+  fireNumber: z.string().min(1, "Número do fogo é obrigatório"),
+  vehicleId: z.string().min(1, "Veículo é obrigatório"),
+  vehiclePlate: z.string().min(1, "Placa é obrigatória"),
+  axleOrigin: z.string().min(1, "Eixo origem é obrigatório"),
+  axleDestination: z.string().min(1, "Eixo destino é obrigatório"),
+  sideOrigin: z.string().min(1, "Lado origem é obrigatório"),
+  sideDestination: z.string().min(1, "Lado destino é obrigatório"),
+  vehicleKm: z.number().min(0, "KM deve ser positivo"),
+  userId: z.string().min(1, "Usuário é obrigatório"),
+  userName: z.string().min(1, "Nome do usuário é obrigatório"),
+});
+
+// Tipos para pneus
+export type InsertTire = typeof tires.$inferInsert;
+export type Tire = typeof tires.$inferSelect;
+export type InsertTireMovement = typeof tireMovements.$inferInsert;
+export type TireMovement = typeof tireMovements.$inferSelect;
+export type InsertTireRotation = typeof tireRotations.$inferInsert;
+export type TireRotation = typeof tireRotations.$inferSelect;
+export type TireAlert = typeof tireAlerts.$inferSelect;
+
 // ============= MÓDULO DE CHECKLISTS =============
 
 // Tabela principal de checklists de veículos
@@ -1095,47 +1308,4 @@ export const clientMaterialMovements = pgTable("client_material_movements", {
 export type ClientMaterialMovement = typeof clientMaterialMovements.$inferSelect;
 export type InsertClientMaterialMovement = typeof clientMaterialMovements.$inferInsert;
 
-// ============= MÓDULO DE GESTÃO DE PNEUS =============
 
-// Tabela de pneus
-export const tires = pgTable("tires", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  fireNumber: varchar("fire_number").unique().notNull(),
-  brand: varchar("brand").notNull(),
-  model: varchar("model").notNull(),
-  size: varchar("size").notNull(),
-  type: varchar("type").notNull(), // 'directional' | 'traction' | 'drag' | 'mixed'
-  purchaseValue: decimal("purchase_value", { precision: 10, scale: 2 }),
-  purchaseDate: timestamp("purchase_date"),
-  manufacturingYear: integer("manufacturing_year"),
-  currentLife: integer("current_life").default(1),
-  status: varchar("status").default("active"), // 'active' | 'in_use' | 'retreading' | 'loss' | 'sold' | 'discarded'
-  invoiceAttachment: varchar("invoice_attachment"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export type Tire = typeof tires.$inferSelect;
-export type InsertTire = typeof tires.$inferInsert;
-
-// Tabela de movimentações de pneus
-export const tireMovements = pgTable("tire_movements", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tireId: varchar("tire_id").references(() => tires.id).notNull(),
-  vehicleId: varchar("vehicle_id").references(() => vehicles.id),
-  movementType: varchar("movement_type").notNull(), // 'entry' | 'installation' | 'rotation' | 'retreading' | 'disposal' | 'sale' | 'loss'
-  axle: integer("axle"),
-  side: varchar("side"), // 'internal' | 'external' | 'left' | 'right' | 'center'
-  currentKm: integer("current_km"),
-  twi: decimal("twi", { precision: 3, scale: 1 }),
-  lifeBefore: integer("life_before"),
-  lifeAfter: integer("life_after"),
-  retreadingType: varchar("retreading_type"), // 'drag' | 'traction'
-  reason: text("reason"),
-  attachment: varchar("attachment"),
-  createdBy: varchar("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export type TireMovement = typeof tireMovements.$inferSelect;
-export type InsertTireMovement = typeof tireMovements.$inferInsert;

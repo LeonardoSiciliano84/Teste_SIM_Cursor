@@ -370,7 +370,7 @@ export default function Maintenance() {
 
       {/* Tabs de navegação */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="requests">
             <FileText className="mr-2 h-4 w-4" />
             Kanban de Processos
@@ -378,6 +378,10 @@ export default function Maintenance() {
           <TabsTrigger value="costs">
             <DollarSign className="mr-2 h-4 w-4" />
             Lançamento de Custos
+          </TabsTrigger>
+          <TabsTrigger value="tires">
+            <Circle className="mr-2 h-4 w-4" />
+            Controle de Pneus
           </TabsTrigger>
           <TabsTrigger value="control">
             <BarChart3 className="mr-2 h-4 w-4" />
@@ -765,6 +769,438 @@ export default function Maintenance() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Aba de Controle de Pneus */}
+        <TabsContent value="tires" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-[#0C29AB]">🛞 Controle de Pneus</h2>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline"
+                className="border-[#0C29AB] text-[#0C29AB] hover:bg-[#0C29AB] hover:text-white"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+              <Button 
+                className="bg-[#0C29AB] hover:bg-[#0C29AB]/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Pneu
+              </Button>
+            </div>
+          </div>
+
+          {/* Dashboard de Indicadores */}
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total de Pneus</CardTitle>
+                <Circle className="h-4 w-4 text-[#0C29AB]" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">248</div>
+                <p className="text-xs text-muted-foreground">Cadastrados no sistema</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Em Uso</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">186</div>
+                <p className="text-xs text-muted-foreground">Instalados nos veículos</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Em Recapagem</CardTitle>
+                <Settings className="h-4 w-4 text-orange-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">24</div>
+                <p className="text-xs text-muted-foreground">Processo de reforma</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Alertas Ativos</CardTitle>
+                <AlertCircle className="h-4 w-4 text-red-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">12</div>
+                <p className="text-xs text-muted-foreground">Necessitam atenção</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Tabs internas do módulo de pneus */}
+          <Tabs defaultValue="dashboard" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="cadastro">Cadastro</TabsTrigger>
+              <TabsTrigger value="movimentacoes">Movimentações</TabsTrigger>
+              <TabsTrigger value="rodizios">Rodízios</TabsTrigger>
+              <TabsTrigger value="recapagens">Recapagens</TabsTrigger>
+              <TabsTrigger value="alertas">Alertas</TabsTrigger>
+            </TabsList>
+
+            {/* Dashboard */}
+            <TabsContent value="dashboard" className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Status dos Pneus</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <span className="text-sm">Ativo</span>
+                        </div>
+                        <span className="text-sm font-medium">186</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                          <span className="text-sm">Em Uso</span>
+                        </div>
+                        <span className="text-sm font-medium">38</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                          <span className="text-sm">Recapagem</span>
+                        </div>
+                        <span className="text-sm font-medium">24</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Por Tipo</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Direcional</span>
+                        <span className="text-sm font-medium">62</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Tração</span>
+                        <span className="text-sm font-medium">124</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Arrasto</span>
+                        <span className="text-sm font-medium">48</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Misto</span>
+                        <span className="text-sm font-medium">14</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Últimas Movimentações</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Circle className="h-4 w-4 text-[#0C29AB]" />
+                        <div>
+                          <p className="text-sm font-medium">Pneu #F2024001</p>
+                          <p className="text-xs text-gray-600">Instalação - DEF-1234 - Eixo 2 Direito</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm">Hoje</div>
+                        <div className="text-xs text-gray-600">14:30</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Settings className="h-4 w-4 text-orange-600" />
+                        <div>
+                          <p className="text-sm font-medium">Pneu #F2024002</p>
+                          <p className="text-xs text-gray-600">Recapagem - Officina Silva</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm">Ontem</div>
+                        <div className="text-xs text-gray-600">16:45</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <ArrowRight className="h-4 w-4 text-blue-600" />
+                        <div>
+                          <p className="text-sm font-medium">Pneu #F2024003</p>
+                          <p className="text-xs text-gray-600">Rodízio - ABC-9876 - Eixo 1→2</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm">02/01</div>
+                        <div className="text-xs text-gray-600">09:15</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Cadastro */}
+            <TabsContent value="cadastro" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lista de Pneus Cadastrados</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Filtros */}
+                    <div className="flex space-x-4">
+                      <div className="flex-1">
+                        <Input 
+                          placeholder="Buscar por número do fogo, marca, modelo..." 
+                          className="w-full"
+                        />
+                      </div>
+                      <Select defaultValue="all">
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os status</SelectItem>
+                          <SelectItem value="ativo">Ativo</SelectItem>
+                          <SelectItem value="em_uso">Em uso</SelectItem>
+                          <SelectItem value="recapagem">Recapagem</SelectItem>
+                          <SelectItem value="descartado">Descartado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select defaultValue="all">
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="Tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os tipos</SelectItem>
+                          <SelectItem value="direcional">Direcional</SelectItem>
+                          <SelectItem value="tracao">Tração</SelectItem>
+                          <SelectItem value="arrasto">Arrasto</SelectItem>
+                          <SelectItem value="misto">Misto</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Tabela */}
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="text-left p-3 text-sm font-medium">Nº Fogo</th>
+                            <th className="text-left p-3 text-sm font-medium">Marca/Modelo</th>
+                            <th className="text-left p-3 text-sm font-medium">Medida</th>
+                            <th className="text-left p-3 text-sm font-medium">Tipo</th>
+                            <th className="text-left p-3 text-sm font-medium">Vida</th>
+                            <th className="text-left p-3 text-sm font-medium">Status</th>
+                            <th className="text-left p-3 text-sm font-medium">Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-t">
+                            <td className="p-3 text-sm font-mono">F2024001</td>
+                            <td className="p-3 text-sm">Michelin XDA2</td>
+                            <td className="p-3 text-sm">295/80R22.5</td>
+                            <td className="p-3 text-sm">
+                              <Badge variant="outline">Tração</Badge>
+                            </td>
+                            <td className="p-3 text-sm">2ª</td>
+                            <td className="p-3 text-sm">
+                              <Badge className="bg-green-100 text-green-800">Em uso</Badge>
+                            </td>
+                            <td className="p-3 text-sm">
+                              <div className="flex space-x-1">
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                                  <Eye className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                                  <ArrowRight className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                          
+                          <tr className="border-t">
+                            <td className="p-3 text-sm font-mono">F2024002</td>
+                            <td className="p-3 text-sm">Bridgestone R268</td>
+                            <td className="p-3 text-sm">275/80R22.5</td>
+                            <td className="p-3 text-sm">
+                              <Badge variant="outline">Direcional</Badge>
+                            </td>
+                            <td className="p-3 text-sm">1ª</td>
+                            <td className="p-3 text-sm">
+                              <Badge className="bg-orange-100 text-orange-800">Recapagem</Badge>
+                            </td>
+                            <td className="p-3 text-sm">
+                              <div className="flex space-x-1">
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                                  <Eye className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                                  <ArrowRight className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Movimentações */}
+            <TabsContent value="movimentacoes" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Movimentações de Pneus</h3>
+                <Button className="bg-[#0C29AB] hover:bg-[#0C29AB]/90">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Movimentação
+                </Button>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Registros de Movimentação</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <ArrowRight className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhuma movimentação registrada ainda</p>
+                    <p className="text-sm">Clique em "Nova Movimentação" para registrar</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Rodízios */}
+            <TabsContent value="rodizios" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Controle de Rodízios</h3>
+                <Button className="bg-[#0C29AB] hover:bg-[#0C29AB]/90">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Rodízio
+                </Button>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Histórico de Rodízios</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhum rodízio registrado ainda</p>
+                    <p className="text-sm">Clique em "Novo Rodízio" para registrar</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Recapagens */}
+            <TabsContent value="recapagens" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Gestão de Recapagens</h3>
+                <Button className="bg-[#0C29AB] hover:bg-[#0C29AB]/90">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Recapagem
+                </Button>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pneus em Recapagem</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">Pneu #F2024002</h4>
+                          <p className="text-sm text-gray-600">Bridgestone R268 - 275/80R22.5</p>
+                          <p className="text-sm text-gray-600">Empresa: Officina Silva</p>
+                        </div>
+                        <Badge className="bg-orange-100 text-orange-800">Em andamento</Badge>
+                      </div>
+                      <div className="mt-3 flex justify-between text-sm">
+                        <span>Vida: 1ª → 2ª</span>
+                        <span>Entrada: 02/01/2025</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Alertas */}
+            <TabsContent value="alertas" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Sistema de Alertas</h3>
+                <Button variant="outline" className="border-[#0C29AB] text-[#0C29AB]">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Configurações
+                </Button>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <AlertCircle className="h-5 w-5 text-red-600" />
+                    <span>Alertas Ativos</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="border-l-4 border-red-500 bg-red-50 p-4 rounded-r-lg">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-red-800">Rodízio Necessário</h4>
+                          <p className="text-sm text-red-700">Pneu #F2024005 - ABC-1234</p>
+                          <p className="text-sm text-red-600">KM atual: 85.000 | Limite: 80.000</p>
+                        </div>
+                        <Badge variant="destructive">Alta</Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="border-l-4 border-orange-500 bg-orange-50 p-4 rounded-r-lg">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-orange-800">Recapagem Recomendada</h4>
+                          <p className="text-sm text-orange-700">Pneu #F2024007 - DEF-5678</p>
+                          <p className="text-sm text-orange-600">Vida atual: 3ª | TWI: 1.5mm</p>
+                        </div>
+                        <Badge className="bg-orange-100 text-orange-800">Média</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         {/* Aba de Controle por Veículo */}

@@ -1,0 +1,93 @@
+MÓDULO DE CONTROLE DE PNEUS – SISTEMA FELKA
+📌 Objetivo Geral
+Controlar de forma integrada todo o ciclo de vida dos pneus da frota, desde a compra, instalação e rodízio até recapagens, descarte ou venda, com rastreabilidade total. O módulo se integra diretamente com os sistemas já existentes de veículos, manutenção, abastecimento, almoxarifado e RH/motoristas do Sistema FELKA.
+________________________________________
+🔗 Integrações Nativas
+•	Veículos: uso de dados de placa, tipo e eixos para vincular movimentações e rodízios.
+•	Manutenção: vinculação com ordens de serviço envolvendo pneus e recapagens.
+•	Motorista: previsão futura de registro de movimentações via app motorista.
+•	Logs do Sistema: todas as ações críticas são registradas com rastreabilidade.
+________________________________________
+📂 1. Cadastro de Pneus
+Formulário com os seguintes campos:
+•	Número do fogo (código único e permanente)
+•	Marca e modelo
+•	Medida
+•	Tipo: direcional, tração, arrasto, misto
+•	Valor de compra
+•	Data de compra
+•	Ano de fabricação
+•	Vida atual (inicial: 1)
+•	Status: ativo, em uso, recapagem, perda, vendido, descartado
+📎 Upload de nota fiscal (opcional)
+🧾 Exportação da lista em .xlsx com filtros por status, tipo, marca, medida e ano
+________________________________________
+🔄 2. Movimentações de Pneus
+Registro completo de movimentações com rastreabilidade por pneu e veículo.
+Tipos:
+•	Entrada
+•	Instalação
+•	Rodízio
+•	Recapagem
+•	Descarte
+•	Venda
+•	Perda
+📋 Campos:
+•	Veículo (selecionado da base integrada)
+•	Eixo / número
+•	Lado (interno/externo, direito/esquerdo/central)
+•	KM no momento
+•	TWI (opcional)
+•	Vida antes / depois
+•	Tipo de recapagem (se aplicável)
+•	Motivo da movimentação
+•	Upload de comprovante/documento
+⚙️ Toda movimentação é validada via API
+📈 Histórico completo por pneu ou veículo
+________________________________________
+🔁 3. Rodízios
+Registro de trocas internas entre eixos e lados de um mesmo veículo.
+Campos:
+•	Pneu movimentado
+•	Eixo origem → eixo destino
+•	Lado origem → lado destino
+•	KM do veículo
+•	Data
+•	TWI (opcional)
+💾 Histórico exportável em .xlsx
+📊 Gráfico por pneu com número de rodízios e desempenho
+________________________________________
+🛠️ 4. Recapagens
+Gestão das recapagens com controle de:
+•	Vida anterior e posterior
+•	Tipo de recapagem (arrasto ou tração)
+•	Empresa recapadora
+•	Valor da recapagem (opcional)
+•	Upload de documentos
+🔄 Limite de recapagens pode ser configurado por política interna
+📌 Histórico por número do fogo
+________________________________________
+📈 5. Dashboard de Pneus
+Indicadores dinâmicos:
+•	Total de pneus cadastrados
+•	Quantitativo por status (ativo, recapagem, perda, vendido, etc.)
+•	Últimas movimentações registradas
+•	Gráfico de status atual da frota de pneus
+•	Gráfico por tipo de pneu
+•	Botão para exportar relatórios .xlsx
+________________________________________
+📊 6. Relatórios
+Funcionalidades:
+•	Exportação de dados por período, tipo de movimentação, status ou tipo de pneu
+•	Comparativo de desempenho por tipo de recapagem e vida útil
+•	Indicadores de custo por vida e por tipo de pneu
+🔘 Exportação em Excel (.xlsx) com filtros configuráveis
+📊 Gráficos gerenciais para apoio à tomada de decisão
+________________________________________
+🔔 7. Sistema de Alertas Automáticos
+Job diário programado para 03:00 da manhã (ajustável), que identifica:
+•	Pneus que atingiram limite de KM para rodízio
+•	Pneus que excederam a vida útil (necessitando recapagem ou descarte)
+📬 Notificações automáticas ao responsável
+📌 Logs de criação de alertas e registros associados
+

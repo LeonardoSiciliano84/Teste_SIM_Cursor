@@ -19,6 +19,14 @@ FELKA Transportes is a comprehensive transport management system designed to man
 - **Vehicle Control System:** Implemented comprehensive vehicle entry/exit tracking in security guard portal
 - **Admin Access to Driver Portal:** Enabled admin users to access driver portal with supervision banner
 - **Driver Portal API:** Created endpoints for driver profile and active service management
+- **Maintenance Module Enhancement:** Implemented complete cost tracking system following PRD specifications
+- **Cost Classification System:** Added 8 predefined cost categories (Mecânica, Elétrica, Estrutural, etc.)
+- **Automatic Cost Calculation:** Implemented quantity × unit price auto-calculation in cost entry forms
+- **Warehouse Tab Removal:** Eliminated almoxarifado functionality from maintenance module per user requirements
+- **Tire Control Module Implementation:** Added comprehensive tire management system with complete lifecycle tracking
+- **Tire Management Schema:** Created complete database schema for tires, movements, rotations, and alerts
+- **Integrated Tire Interface:** Added 5th tab to maintenance module with 6 internal sub-tabs for full tire control
+- **Dashboard with KPIs:** Implemented tire status indicators, movement tracking, and alert management system
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
