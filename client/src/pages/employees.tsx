@@ -17,7 +17,8 @@ import {
   Calendar,
   Settings,
   Eye,
-  Printer
+  Printer,
+  QrCode
 } from "lucide-react";
 import { type Employee, type EmployeeDocument } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -83,6 +84,109 @@ export function EmployeesPage() {
       }
     } catch (error) {
       console.error("Erro ao gerar PDF completo:", error);
+    }
+  };
+
+  // Função para gerar QR Code do funcionário
+  const generateEmployeeQRCode = async (employee: Employee) => {
+    try {
+      const response = await fetch(`/api/employees/${employee.id}/qrcode`, {
+        method: 'GET',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Criar uma nova janela para mostrar o QR Code
+        const newWindow = window.open('', '_blank', 'width=400,height=500');
+        if (newWindow) {
+          newWindow.document.write(`
+            <html>
+              <head>
+                <title>QR Code - ${employee.fullName}</title>
+                <style>
+                  body { 
+                    font-family: Arial, sans-serif; 
+                    text-align: center; 
+                    padding: 20px;
+                    background: #f5f5f5;
+                  }
+                  .container {
+                    background: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    margin: 20px;
+                  }
+                  .qr-code {
+                    margin: 20px 0;
+                  }
+                  .employee-info {
+                    margin-bottom: 20px;
+                    color: #333;
+                  }
+                  .print-btn {
+                    background: #0C29AB;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    margin-top: 20px;
+                  }
+                  .print-btn:hover {
+                    background: #0922A0;
+                  }
+                  @media print {
+                    body { background: white; }
+                    .container { 
+                      box-shadow: none; 
+                      margin: 0;
+                      background: white;
+                    }
+                    .print-btn { display: none; }
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="employee-info">
+                    <h2>FELKA Transportes</h2>
+                    <h3>${employee.fullName}</h3>
+                    <p><strong>Matrícula:</strong> #${employee.employeeNumber}</p>
+                    <p><strong>CPF:</strong> ${employee.cpf}</p>
+                    <p><strong>Cargo:</strong> ${employee.position}</p>
+                    <p><strong>Departamento:</strong> ${employee.department}</p>
+                  </div>
+                  <div class="qr-code">
+                    <div id="qrcode"></div>
+                  </div>
+                  <p><small>QR Code único para controle de acesso</small></p>
+                  <button class="print-btn" onclick="window.print()">Imprimir QR Code</button>
+                </div>
+                <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+                <script>
+                  QRCode.toCanvas(document.getElementById('qrcode'), '${data.qrCodeData}', {
+                    width: 200,
+                    margin: 2,
+                    color: {
+                      dark: '#000000',
+                      light: '#FFFFFF'
+                    }
+                  });
+                </script>
+              </body>
+            </html>
+          `);
+          newWindow.document.close();
+        }
+      } else {
+        console.error('Erro ao obter QR Code');
+        alert('Erro ao gerar QR Code do funcionário');
+      }
+    } catch (error) {
+      console.error('Erro ao gerar QR Code:', error);
+      alert('Erro ao gerar QR Code do funcionário');
     }
   };
 
@@ -453,6 +557,15 @@ export function EmployeesPage() {
                               <FileText className="w-4 h-4" />
                             </Button>
                             <EmployeeStatusControl employee={employee} />
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => generateEmployeeQRCode(employee)}
+                              title="Gerar QR Code para Acesso"
+                              className="text-felka-blue hover:text-felka-blue"
+                            >
+                              <QrCode className="w-4 h-4" />
+                            </Button>
                             <Link href={`/employees/edit/${employee.id}`}>
                               <Button 
                                 variant="outline" 

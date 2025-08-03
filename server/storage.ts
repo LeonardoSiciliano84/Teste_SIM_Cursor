@@ -1767,10 +1767,14 @@ export class MemStorage implements IStorage {
 
   // ============= MÉTODOS DE HISTÓRICO DE CHECKLISTS =============
 
-  async getChecklistHistory(checklistId: string): Promise<ChecklistHistory[]> {
-    return Array.from(this.checklistHistory.values())
-      .filter(hist => hist.checklistId === checklistId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  async getChecklistHistory(checklistId?: string): Promise<ChecklistHistory[]> {
+    const allHistory = Array.from(this.checklistHistory.values());
+    if (checklistId) {
+      return allHistory
+        .filter(hist => hist.checklistId === checklistId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    return allHistory.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   async createChecklistHistory(historyData: InsertChecklistHistory): Promise<ChecklistHistory> {
@@ -2098,6 +2102,12 @@ export class MemStorage implements IStorage {
   async getEmployeeByQrCode(qrCodeData: string): Promise<EmployeeQrCode | undefined> {
     return Array.from(this.employeeQrCodes.values()).find(
       qrCode => qrCode.qrCodeData === qrCodeData && qrCode.isActive
+    );
+  }
+
+  async getEmployeeQrCodeByEmployeeId(employeeId: string): Promise<EmployeeQrCode | undefined> {
+    return Array.from(this.employeeQrCodes.values()).find(
+      qrCode => qrCode.employeeId === employeeId && qrCode.isActive
     );
   }
 

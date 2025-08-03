@@ -163,6 +163,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obter QR Code do funcionário
+  app.get("/api/employees/:id/qrcode", async (req, res) => {
+    try {
+      const employee = await storage.getEmployee(req.params.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Funcionário não encontrado" });
+      }
+
+      // Buscar QR Code existente do funcionário
+      const qrCode = await storage.getEmployeeQrCodeByEmployeeId(employee.id);
+      
+      if (!qrCode) {
+        return res.status(404).json({ message: "QR Code não encontrado para este funcionário" });
+      }
+
+      res.json({
+        employeeId: employee.id,
+        employeeName: employee.fullName,
+        employeeNumber: employee.employeeNumber,
+        qrCodeData: qrCode.qrCodeData,
+        isActive: qrCode.isActive
+      });
+    } catch (error) {
+      console.error("Erro ao obter QR Code do funcionário:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   // ============= OUTRAS ROTAS BÁSICAS =============
 
   // Dashboard stats
@@ -228,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Checklists
   app.get("/api/checklists", async (req, res) => {
     try {
-      const checklists = await storage.getChecklistHistory();
+      const checklists = await storage.getChecklistHistory() || [];
       res.json(checklists);
     } catch (error) {
       console.error("Erro ao listar checklists:", error);
