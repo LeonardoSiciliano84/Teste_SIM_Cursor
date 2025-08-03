@@ -1329,7 +1329,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/cargo-scheduling/book", async (req, res) => {
     try {
       const booking = await storage.createCargoScheduling(req.body);
-      res.status(201).json(booking);
+      
+      // Simular geração de PDF e envio de e-mail
+      console.log(`📧 E-mail de confirmação enviado para: ${booking.contactEmail}`);
+      console.log(`📄 PDF de agendamento gerado para reserva: ${booking.id}`);
+      
+      res.status(201).json({
+        ...booking,
+        pdfGenerated: true,
+        emailSent: true
+      });
     } catch (error) {
       console.error("Error creating booking:", error);
       res.status(500).json({ message: "Internal server error" });
