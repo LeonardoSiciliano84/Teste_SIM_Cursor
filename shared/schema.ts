@@ -871,13 +871,11 @@ export const visitors = pgTable("visitors", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   cpf: text("cpf").notNull().unique(),
   name: text("name").notNull(),
-  phone: text("phone"),
-  email: text("email"),
-  company: text("company"),
-  isRecurring: boolean("is_recurring").notNull().default(false),
-  lastVisit: timestamp("last_visit"),
+  company: text("company"), // Campo opcional
+  purpose: text("purpose"), // Motivo da visita - campo opcional
+  vehiclePlate: text("vehicle_plate"), // Placa do veículo - campo opcional
   totalVisits: integer("total_visits").notNull().default(0),
-  observations: text("observations"),
+  lastVisit: timestamp("last_visit"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
@@ -1007,12 +1005,13 @@ export const insertVisitorSchema = createInsertSchema(visitors).omit({
   updatedAt: true,
   lastVisit: true,
   totalVisits: true,
+  isActive: true,
 }).extend({
   cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(14, "CPF inválido"),
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  phone: z.string().optional(),
-  email: z.string().email("Email inválido").optional(),
   company: z.string().optional(),
+  purpose: z.string().optional(),
+  vehiclePlate: z.string().optional(),
 });
 
 export const insertAccessLogSchema = createInsertSchema(accessLogs).omit({

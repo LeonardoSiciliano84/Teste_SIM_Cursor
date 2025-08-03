@@ -15,11 +15,9 @@ interface Visitor {
   id: string;
   name: string;
   cpf: string;
-  email?: string;
-  phone?: string;
   company?: string;
-  purpose: string;
-  hostEmployee: string;
+  purpose?: string;
+  vehiclePlate?: string;
   totalVisits: number;
   lastVisit?: string;
   isActive: boolean;
@@ -61,11 +59,9 @@ export default function FacialRecognition() {
   const [visitorForm, setVisitorForm] = useState({
     name: "",
     cpf: "",
-    email: "",
-    phone: "",
     company: "",
     purpose: "",
-    hostEmployee: "",
+    vehiclePlate: "",
   });
 
   const [employeeForm, setEmployeeForm] = useState({
@@ -97,11 +93,9 @@ export default function FacialRecognition() {
       setVisitorForm({
         name: "",
         cpf: "",
-        email: "",
-        phone: "",
         company: "",
         purpose: "",
-        hostEmployee: "",
+        vehiclePlate: "",
       });
     },
     onError: () => {
@@ -171,22 +165,57 @@ export default function FacialRecognition() {
   // Camera functions
   const startCamera = useCallback(async () => {
     try {
+      // Verificar se o navegador suporta getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Seu navegador não suporta acesso à câmera");
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 640, height: 480 } 
+        video: { 
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: "user"
+        },
+        audio: false
       });
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        
+        // Aguardar o vídeo carregar antes de reproduzir
+        videoRef.current.onloadedmetadata = () => {
+          if (videoRef.current) {
+            videoRef.current.play().catch(error => {
+              console.error("Error playing video:", error);
+              toast({
+                title: "Erro",
+                description: "Erro ao reproduzir vídeo da câmera",
+                variant: "destructive",
+              });
+            });
+          }
+        };
       }
       
       streamRef.current = stream;
       setIsCapturing(true);
     } catch (error) {
       console.error("Error accessing camera:", error);
+      let errorMessage = "Erro ao acessar a câmera";
+      
+      if (error instanceof Error) {
+        if (error.name === "NotAllowedError") {
+          errorMessage = "Acesso à câmera negado. Permita o acesso nas configurações do navegador.";
+        } else if (error.name === "NotFoundError") {
+          errorMessage = "Nenhuma câmera encontrada no dispositivo.";
+        } else if (error.name === "NotReadableError") {
+          errorMessage = "Câmera já está sendo usada por outro aplicativo.";
+        }
+      }
+      
       toast({
         title: "Erro",
-        description: "Erro ao acessar a câmera",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -363,86 +392,80 @@ export default function FacialRecognition() {
                   <form onSubmit={handleVisitorSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="name">Nome Completo</Label>
+                        <Label htmlFor="name">Nome Completo *</Label>
                         <Input
                           id="name"
                           value={visitorForm.name}
                           onChange={(e) => setVisitorForm({ ...visitorForm, name: e.target.value })}
                           required
+                          placeholder="Nome completo do visitante"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="cpf">CPF</Label>
+                        <Label htmlFor="cpf">CPF *</Label>
                         <Input
                           id="cpf"
                           value={visitorForm.cpf}
                           onChange={(e) => setVisitorForm({ ...visitorForm, cpf: e.target.value })}
                           required
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={visitorForm.email}
-                          onChange={(e) => setVisitorForm({ ...visitorForm, email: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="phone">Telefone</Label>
-                        <Input
-                          id="phone"
-                          value={visitorForm.phone}
-                          onChange={(e) => setVisitorForm({ ...visitorForm, phone: e.target.value })}
+                          placeholder="000.000.000-00"
                         />
                       </div>
                     </div>
                     
                     <div>
-                      <Label htmlFor="company">Empresa</Label>
+                      <Label htmlFor="company">Empresa (opcional)</Label>
                       <Input
                         id="company"
                         value={visitorForm.company}
                         onChange={(e) => setVisitorForm({ ...visitorForm, company: e.target.value })}
+                        placeholder="Nome da empresa"
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="purpose">Motivo da Visita</Label>
+                      <Label htmlFor="purpose">Motivo da Visita (opcional)</Label>
                       <Input
                         id="purpose"
                         value={visitorForm.purpose}
                         onChange={(e) => setVisitorForm({ ...visitorForm, purpose: e.target.value })}
-                        required
+                        placeholder="Reunião, entrega, etc."
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="hostEmployee">Funcionário a ser Visitado</Label>
+                      <Label htmlFor="vehiclePlate">Placa do Veículo (opcional)</Label>
                       <Input
-                        id="hostEmployee"
-                        value={visitorForm.hostEmployee}
-                        onChange={(e) => setVisitorForm({ ...visitorForm, hostEmployee: e.target.value })}
-                        required
+                        id="vehiclePlate"
+                        value={visitorForm.vehiclePlate}
+                        onChange={(e) => setVisitorForm({ ...visitorForm, vehiclePlate: e.target.value })}
+                        placeholder="ABC-1234"
                       />
                     </div>
                     
-                    <div className="flex gap-2">
-                      <Button type="submit" disabled={createVisitorMutation.isPending}>
-                        Cadastrar Visitante
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => handleFacialEnrollment("visitor")}
-                        disabled={!capturedImage || enrollFaceMutation.isPending}
-                      >
-                        Cadastrar Face
-                      </Button>
+                    <div className="space-y-3">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Obrigatório:</strong> Capture uma foto antes de finalizar o cadastro para habilitar o reconhecimento facial.
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          type="submit" 
+                          disabled={createVisitorMutation.isPending || !capturedImage}
+                          className="flex-1"
+                        >
+                          {!capturedImage ? "Capture uma foto primeiro" : "Cadastrar Visitante"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleFacialEnrollment("visitor")}
+                          disabled={!capturedImage || enrollFaceMutation.isPending || !visitorForm.name || !visitorForm.cpf}
+                        >
+                          Cadastrar Face
+                        </Button>
+                      </div>
                     </div>
                   </form>
                 </CardContent>
@@ -668,8 +691,12 @@ export default function FacialRecognition() {
                         {visitor.company && (
                           <p className="text-sm text-gray-600">Empresa: {visitor.company}</p>
                         )}
-                        <p className="text-sm text-gray-600">Motivo: {visitor.purpose}</p>
-                        <p className="text-sm text-gray-600">Visita: {visitor.hostEmployee}</p>
+                        {visitor.purpose && (
+                          <p className="text-sm text-gray-600">Motivo: {visitor.purpose}</p>
+                        )}
+                        {visitor.vehiclePlate && (
+                          <p className="text-sm text-gray-600">Veículo: {visitor.vehiclePlate}</p>
+                        )}
                         <div className="flex items-center gap-2 pt-2">
                           <Badge variant="outline">
                             {visitor.totalVisits} visitas
