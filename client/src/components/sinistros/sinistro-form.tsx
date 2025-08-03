@@ -29,8 +29,8 @@ function VehicleSelect({ onValueChange, value }: { onValueChange: (value: string
       </FormControl>
       <SelectContent>
         {(vehicles as any[]).map((vehicle: any) => (
-          <SelectItem key={vehicle.id} value={vehicle.licensePlate}>
-            {vehicle.licensePlate} - {vehicle.model}
+          <SelectItem key={vehicle.id} value={vehicle.plate || vehicle.licensePlate}>
+            {vehicle.plate || vehicle.licensePlate} - {vehicle.name || vehicle.model}
           </SelectItem>
         ))}
       </SelectContent>
