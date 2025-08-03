@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { storage } from "./storage";
+import { loginSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware para CORS
@@ -13,6 +14,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.sendStatus(200);
     } else {
       next();
+    }
+  });
+
+  // ============= AUTHENTICATION ROUTES =============
+  app.post("/api/auth/login", async (req, res) => {
+    console.log("=== LOGIN REQUEST ===");
+    console.log("Body:", req.body);
+    console.log("Headers:", req.headers);
+    
+    try {
+      const credentials = loginSchema.parse(req.body);
+      console.log("Parsed credentials:", credentials);
+      
+      const user = await storage.authenticateUser(credentials);
+      console.log("Authenticated user:", user ? `${user.name} (${user.role})` : "null");
+      
+      if (!user) {
+        console.log("Authentication failed");
+        return res.status(401).json({ message: "Credenciais inválidas" });
+      }
+
+      const userData = { id: user.id, email: user.email, name: user.name, role: user.role };
+      console.log("Returning user data:", userData);
+      
+      res.json({ user: userData });
+    } catch (error) {
+      console.error("Login error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
 
