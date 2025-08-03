@@ -35,15 +35,24 @@ export default function AccessControl() {
   const [isProcessing, setIsProcessing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const qrScannerRef = useRef<QrScanner | null>(null);
+  
+  // Camera states for visitor photo
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const visitorCameraRef = useRef<HTMLVideoElement>(null);
+  const visitorStreamRef = useRef<MediaStream | null>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Cleanup QR Scanner on unmount
+  // Cleanup QR Scanner and Camera on unmount
   useEffect(() => {
     return () => {
       if (qrScannerRef.current) {
         qrScannerRef.current.destroy();
+      }
+      if (visitorStreamRef.current) {
+        visitorStreamRef.current.getTracks().forEach(track => track.stop());
       }
     };
   }, []);
@@ -129,10 +138,77 @@ export default function AccessControl() {
 
   // Process QR Code (existing logic)
   const processQrCode = (qrData: string) => {
+    console.log("Processando QR Code com direção:", accessDirection);
+    console.log("QR Code data:", qrData);
     processQrCodeMutation.mutate({
       qrCodeData: qrData,
       accessType: accessDirection
     });
+  };
+
+  // Start visitor camera
+  const startVisitorCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user' } 
+      });
+      
+      if (visitorCameraRef.current) {
+        visitorCameraRef.current.srcObject = stream;
+        visitorStreamRef.current = stream;
+        setIsCameraActive(true);
+      }
+    } catch (error) {
+      console.error("Erro ao acessar câmera:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível acessar a câmera",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Stop visitor camera
+  const stopVisitorCamera = () => {
+    if (visitorStreamRef.current) {
+      visitorStreamRef.current.getTracks().forEach(track => track.stop());
+      visitorStreamRef.current = null;
+    }
+    if (visitorCameraRef.current) {
+      visitorCameraRef.current.srcObject = null;
+    }
+    setIsCameraActive(false);
+  };
+
+  // Capture visitor photo
+  const captureVisitorPhoto = () => {
+    if (!visitorCameraRef.current) return;
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = visitorCameraRef.current.videoWidth;
+    canvas.height = visitorCameraRef.current.videoHeight;
+    
+    if (context) {
+      context.drawImage(visitorCameraRef.current, 0, 0);
+      const base64Photo = canvas.toDataURL('image/jpeg', 0.8);
+      
+      setVisitorForm({ ...visitorForm, photo: base64Photo });
+      setIsCameraOpen(false);
+      stopVisitorCamera();
+      
+      toast({
+        title: "Foto capturada",
+        description: "Foto do visitante capturada com sucesso",
+      });
+    }
+  };
+
+  // Handle camera dialog close
+  const handleCameraClose = () => {
+    stopVisitorCamera();
+    setIsCameraOpen(false);
   };
 
   // Queries
@@ -196,17 +272,21 @@ export default function AccessControl() {
 
   const processQrCodeMutation = useMutation({
     mutationFn: async (data: { qrCodeData: string; accessType: "entry" | "exit" }) => {
+      console.log("Enviando dados para API:", data);
       return await apiRequest("/api/access-control/qrcode", "POST", data);
     },
     onSuccess: (data) => {
+      console.log("Resposta da API:", data);
       toast({
         title: "✅ Acesso Liberado",
         description: `${data.employee.fullName} - ${accessDirection === "entry" ? "Entrada" : "Saída"} registrada com sucesso`,
         variant: "default",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/access-control/logs"] });
+      setIsProcessing(false);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Erro na API:", error);
       toast({
         title: "❌ Acesso Negado",
         description: "QR Code inválido ou funcionário não encontrado",
@@ -320,12 +400,95 @@ export default function AccessControl() {
 
                 <div>
                   <Label htmlFor="visitorPhoto">Foto (Base64 ou URL)</Label>
-                  <Input
-                    id="visitorPhoto"
-                    value={visitorForm.photo}
-                    onChange={(e) => setVisitorForm({ ...visitorForm, photo: e.target.value })}
-                    placeholder="URL da foto ou dados base64"
-                  />
+                  <div className="space-y-2">
+                    <Input
+                      id="visitorPhoto"
+                      value={visitorForm.photo}
+                      onChange={(e) => setVisitorForm({ ...visitorForm, photo: e.target.value })}
+                      placeholder="URL da foto ou dados base64"
+                    />
+                    <div className="flex gap-2">
+                      <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
+                        <DialogTrigger asChild>
+                          <Button 
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsCameraOpen(true)}
+                            className="flex-1"
+                          >
+                            <Camera className="h-4 w-4 mr-2" />
+                            Tirar Foto
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                              <Camera className="h-5 w-5" />
+                              Capturar Foto do Visitante
+                            </DialogTitle>
+                          </DialogHeader>
+                          
+                          <div className="space-y-4">
+                            <div className="relative bg-black rounded-lg overflow-hidden">
+                              <video
+                                ref={visitorCameraRef}
+                                className="w-full h-64 object-cover"
+                                autoPlay
+                                playsInline
+                                muted
+                              />
+                              {!isCameraActive && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                  <div className="text-center text-white">
+                                    <Camera className="h-12 w-12 mx-auto mb-2" />
+                                    <p>Pressione "Iniciar Câmera" para começar</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              {!isCameraActive ? (
+                                <Button 
+                                  onClick={startVisitorCamera}
+                                  className="flex-1 bg-green-600 hover:bg-green-700"
+                                >
+                                  <Camera className="h-4 w-4 mr-2" />
+                                  Iniciar Câmera
+                                </Button>
+                              ) : (
+                                <Button 
+                                  onClick={captureVisitorPhoto}
+                                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                >
+                                  <Camera className="h-4 w-4 mr-2" />
+                                  Capturar Foto
+                                </Button>
+                              )}
+                              
+                              <Button 
+                                onClick={handleCameraClose}
+                                variant="outline"
+                              >
+                                Fechar
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                    
+                    {visitorForm.photo && (
+                      <div className="mt-2">
+                        <img 
+                          src={visitorForm.photo} 
+                          alt="Preview" 
+                          className="w-20 h-20 rounded-lg object-cover border"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Foto capturada</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <Button 
@@ -440,7 +603,7 @@ export default function AccessControl() {
         </TabsContent>
 
         <TabsContent value="qrcode" className="space-y-6">
-          <Card>
+          <Card className="border-2 border-blue-200">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <QrCode className="h-5 w-5" />
