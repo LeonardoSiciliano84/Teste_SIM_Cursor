@@ -65,14 +65,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Processar QR Code de funcionário
   app.post("/api/access-control/qrcode", async (req, res) => {
     try {
-      const { qrCode, direction } = req.body;
+      const { qrCodeData, accessType } = req.body;
       
-      if (!qrCode || !direction) {
-        return res.status(400).json({ message: "QR Code e direção são obrigatórios" });
+      if (!qrCodeData || !accessType) {
+        return res.status(400).json({ message: "QR Code e tipo de acesso são obrigatórios" });
       }
 
       // Buscar funcionário pelo QR Code
-      const employeeQrCode = await storage.getEmployeeByQrCode(qrCode);
+      const employeeQrCode = await storage.getEmployeeByQrCode(qrCodeData);
       
       if (!employeeQrCode) {
         return res.status(404).json({ message: "QR Code inválido ou funcionário não encontrado" });
@@ -91,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         personId: employee.id,
         personName: employee.fullName,
         personCpf: employee.cpf,
-        direction,
+        direction: accessType,
         accessMethod: "qrcode",
         location: "Portaria Principal"
       });

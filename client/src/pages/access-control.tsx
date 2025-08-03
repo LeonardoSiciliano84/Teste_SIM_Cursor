@@ -58,16 +58,25 @@ export default function AccessControl() {
         videoRef.current,
         (result) => {
           setQrCodeValue(result.data);
-          stopQrScanner();
-          setIsQrScannerOpen(false);
           
-          // Auto-process the scanned QR code
-          processQrCode(result.data);
+          toast({
+            title: "QR Code detectado",
+            description: "Processando acesso...",
+          });
+          
+          // Delay para dar tempo de ver o QR Code detectado
+          setTimeout(() => {
+            processQrCode(result.data);
+            stopQrScanner();
+            setIsQrScannerOpen(false);
+          }, 1000);
         },
         {
           highlightScanRegion: true,
           highlightCodeOutline: true,
-          preferredCamera: 'environment'
+          preferredCamera: 'environment',
+          returnDetailedScanResult: false,
+          maxScansPerSecond: 5
         }
       );
 
@@ -512,7 +521,10 @@ export default function AccessControl() {
                         {qrCodeValue && (
                           <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                             <p className="text-sm text-green-700">
-                              <strong>QR Code detectado:</strong> {qrCodeValue.substring(0, 50)}...
+                              <strong>QR Code detectado:</strong> {qrCodeValue.substring(0, 30)}...
+                            </p>
+                            <p className="text-xs text-green-600 mt-1">
+                              Processando em 1 segundo...
                             </p>
                           </div>
                         )}
@@ -528,9 +540,11 @@ export default function AccessControl() {
                   <br />
                   1. Selecione o tipo de acesso (Entrada ou Saída)
                   <br />
-                  2. Clique em "Abrir Câmera" e aponte para o QR Code do funcionário
+                  2. Clique em "Abrir Câmera para Scanear QR Code"
                   <br />
-                  3. Clique em "Processar" para registrar o acesso
+                  3. Posicione o QR Code na frente da câmera
+                  <br />
+                  4. O acesso será registrado automaticamente após a detecção
                 </p>
               </div>
             </CardContent>
