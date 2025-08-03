@@ -114,6 +114,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Listar visitantes
+  app.get("/api/access-control/visitors", async (req, res) => {
+    try {
+      const visitors = await storage.getVisitors();
+      res.json(visitors);
+    } catch (error) {
+      console.error("Erro ao listar visitantes:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // ============= ROTAS DE FUNCIONÁRIOS =============
+  
+  // Listar funcionários
+  app.get("/api/employees", async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      res.json(employees);
+    } catch (error) {
+      console.error("Erro ao listar funcionários:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Obter funcionário por ID
+  app.get("/api/employees/:id", async (req, res) => {
+    try {
+      const employee = await storage.getEmployee(req.params.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Funcionário não encontrado" });
+      }
+      res.json(employee);
+    } catch (error) {
+      console.error("Erro ao buscar funcionário:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Documentos vencendo (requisito da página de funcionários)
+  app.get("/api/employees/documents/expiring", async (req, res) => {
+    try {
+      // Retorna array vazio por enquanto - pode ser implementado depois
+      res.json([]);
+    } catch (error) {
+      console.error("Erro ao buscar documentos vencendo:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // ============= OUTRAS ROTAS BÁSICAS =============
+
+  // Dashboard stats
+  app.get("/api/dashboard/stats", async (req, res) => {
+    try {
+      const vehicles = await storage.getVehicles();
+      const drivers = await storage.getDrivers();
+      const employees = await storage.getEmployees();
+      
+      res.json({
+        totalVehicles: vehicles.length,
+        totalDrivers: drivers.length,
+        totalEmployees: employees.length,
+        activeTrips: vehicles.filter(v => v.status === 'active').length
+      });
+    } catch (error) {
+      console.error("Erro ao obter estatísticas:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Listar veículos
+  app.get("/api/vehicles", async (req, res) => {
+    try {
+      const vehicles = await storage.getVehicles();
+      res.json(vehicles);
+    } catch (error) {
+      console.error("Erro ao listar veículos:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Listar motoristas
+  app.get("/api/drivers", async (req, res) => {
+    try {
+      const drivers = await storage.getDrivers();
+      res.json(drivers);
+    } catch (error) {
+      console.error("Erro ao listar motoristas:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Analytics - revenue
+  app.get("/api/analytics/revenue", async (req, res) => {
+    try {
+      // Dados fictícios para dashboard
+      const mockRevenue = [
+        { month: "Jan", revenue: 45000 },
+        { month: "Fev", revenue: 52000 },
+        { month: "Mar", revenue: 48000 },
+        { month: "Abr", revenue: 61000 },
+        { month: "Mai", revenue: 55000 },
+        { month: "Jun", revenue: 67000 }
+      ];
+      res.json(mockRevenue);
+    } catch (error) {
+      console.error("Erro ao obter dados de receita:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Checklists
+  app.get("/api/checklists", async (req, res) => {
+    try {
+      const checklists = await storage.getChecklistHistory();
+      res.json(checklists);
+    } catch (error) {
+      console.error("Erro ao listar checklists:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Sinistros
+  app.get("/api/sinistros", async (req, res) => {
+    try {
+      const sinistros = await storage.getSinistros();
+      res.json(sinistros);
+    } catch (error) {
+      console.error("Erro ao listar sinistros:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
