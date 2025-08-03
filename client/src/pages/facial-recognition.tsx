@@ -388,26 +388,28 @@ export default function FacialRecognition() {
 
   // Face detection interval e desenho do overlay
   useEffect(() => {
-    if (isCapturing && overlayCanvasRef.current) {
-      detectionIntervalRef.current = setInterval(() => {
-        if (overlayCanvasRef.current && videoRef.current) {
+    if (isCapturing && overlayCanvasRef.current && autoCapture) {
+      console.log('[OVERLAY] Iniciando loop de desenho do aro');
+      
+      // Função para desenhar continuamente
+      const drawLoop = () => {
+        if (overlayCanvasRef.current && videoRef.current && autoCapture) {
           const ctx = overlayCanvasRef.current.getContext('2d');
           const overlay = overlayCanvasRef.current;
           
           if (ctx) {
-            // Ajustar tamanho se necessário
-            if (videoRef.current.clientWidth !== overlay.width || videoRef.current.clientHeight !== overlay.height) {
-              overlay.width = videoRef.current.clientWidth;
-              overlay.height = videoRef.current.clientHeight;
+            // Ajustar tamanho do canvas para corresponder ao vídeo
+            const videoRect = videoRef.current.getBoundingClientRect();
+            if (overlay.width !== videoRect.width || overlay.height !== videoRect.height) {
+              overlay.width = videoRect.width;
+              overlay.height = videoRect.height;
+              overlay.style.width = `${videoRect.width}px`;
+              overlay.style.height = `${videoRect.height}px`;
+              console.log('[OVERLAY] Canvas redimensionado:', { width: overlay.width, height: overlay.height });
             }
             
             // Sempre desenhar o guia quando no modo auto
-            if (autoCapture) {
-              drawFaceGuide(ctx, overlay.width, overlay.height);
-            } else {
-              // Limpar canvas no modo manual
-              ctx.clearRect(0, 0, overlay.width, overlay.height);
-            }
+            drawFaceGuide(ctx, overlay.width, overlay.height);
             
             // Executar detecção facial se modelos estão carregados
             if (modelsLoaded && isFaceDetectionActive) {
@@ -415,11 +417,24 @@ export default function FacialRecognition() {
             }
           }
         }
-      }, 200); // Run every 200ms
+      };
+      
+      // Desenhar imediatamente
+      drawLoop();
+      
+      // Configurar intervalo
+      detectionIntervalRef.current = setInterval(drawLoop, 100); // Atualizar a cada 100ms
       
       return () => {
         if (detectionIntervalRef.current) {
           clearInterval(detectionIntervalRef.current);
+        }
+        // Limpar canvas quando desmontar
+        if (overlayCanvasRef.current) {
+          const ctx = overlayCanvasRef.current.getContext('2d');
+          if (ctx) {
+            ctx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
+          }
         }
       };
     }
@@ -914,6 +929,88 @@ export default function FacialRecognition() {
                       width="640"
                       height="480"
                     />
+                  )}
+                  
+                  {/* Overlay com SVG para o aro */}
+                  {isCapturing && autoCapture && (
+                    <div className="absolute inset-0 w-full h-full pointer-events-none z-20 flex items-center justify-center" style={{ transform: 'scaleX(-1)' }}>
+                      {/* Fundo escurecido com corte transparente */}
+                      <svg className="absolute inset-0 w-full h-full">
+                        <defs>
+                          <mask id="circleMask">
+                            <rect width="100%" height="100%" fill="white" />
+                            <circle cx="50%" cy="50%" r="112" fill="black" />
+                          </mask>
+                        </defs>
+                        <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.4)" mask="url(#circleMask)" />
+                      </svg>
+                      
+                      {/* Aro principal */}
+                      <div className="relative">
+                        <svg width="240" height="240" className="relative">
+                          {/* Círculo externo tracejado */}
+                          <circle
+                            cx="120"
+                            cy="120"
+                            r="110"
+                            fill="none"
+                            stroke={faceDetected ? '#22c55e' : '#0C29AB'}
+                            strokeWidth="4"
+                            strokeDasharray="15,8"
+                            className="animate-spin"
+                            style={{ transformOrigin: 'center', animationDuration: '20s' }}
+                          />
+                          
+                          {/* Círculo interno */}
+                          <circle
+                            cx="120"
+                            cy="120"
+                            r="100"
+                            fill="none"
+                            stroke={faceDetected ? '#16a34a' : '#1d4ed8'}
+                            strokeWidth="2"
+                          />
+                          
+                          {/* Mira central - horizontal */}
+                          <line
+                            x1="90"
+                            y1="120"
+                            x2="150"
+                            y2="120"
+                            stroke={faceDetected ? '#22c55e' : '#0C29AB'}
+                            strokeWidth="2"
+                          />
+                          
+                          {/* Mira central - vertical */}
+                          <line
+                            x1="120"
+                            y1="90"
+                            x2="120"
+                            y2="150"
+                            stroke={faceDetected ? '#22c55e' : '#0C29AB'}
+                            strokeWidth="2"
+                          />
+                        </svg>
+                        
+                        {/* Countdown no centro */}
+                        {captureCountdown > 0 && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-6xl font-bold text-white drop-shadow-lg">
+                              {captureCountdown}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Texto de instrução */}
+                      <div className="absolute bottom-32 text-center">
+                        <p className="text-white font-bold text-lg drop-shadow-lg whitespace-nowrap px-4 py-2 bg-black/50 rounded">
+                          {modelsLoaded 
+                            ? (faceDetected ? 'Rosto detectado! Mantenha a posição' : 'Posicione seu rosto no círculo')
+                            : 'Posicione seu rosto no círculo'}
+                        </p>
+                      </div>
+                    </div>
                   )}
                   
                   {isCapturing && (
