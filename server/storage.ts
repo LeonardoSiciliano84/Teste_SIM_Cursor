@@ -402,6 +402,7 @@ export class MemStorage implements IStorage {
     this.initializeDefaultData();
     this.initializeChecklistTestData();
     this.initializeMaintenanceTestData();
+    this.initCargoSchedulingData();
   }
 
   private initializeDefaultData() {
@@ -2919,6 +2920,291 @@ export class MemStorage implements IStorage {
     return newMovement;
   }
 
+  // ============= MÓDULO DE AGENDAMENTO DE CARREAMENTO =============
+
+  // Pessoas Externas
+  private externalPersons = new Map<string, any>();
+  private scheduleSlots = new Map<string, any>();
+  private cargoSchedulings = new Map<string, any>();
+
+  // Dados de exemplo para desenvolvimento
+  private initCargoSchedulingData() {
+    // Pessoas externas de exemplo
+    const externalPersonsData = [
+      {
+        id: "ext-1",
+        fullName: "João Transportes Ltda",
+        email: "contato@joaotransportes.com",
+        phone: "(11) 99999-1111",
+        document: "12.345.678/0001-90",
+        personType: "cliente",
+        companyName: "João Transportes Ltda",
+        hasSystemAccess: true,
+        allowedModules: ["cargo-scheduling"],
+        accessLevel: "basic",
+        status: "ativo",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "ext-2",
+        fullName: "Maria Silva",
+        email: "maria@logisticaexpress.com",
+        phone: "(11) 88888-2222",
+        document: "98.765.432/0001-12",
+        personType: "terceirizado",
+        externalCompany: "Logística Express",
+        position: "Coordenadora de Cargas",
+        hasSystemAccess: true,
+        allowedModules: ["access-control", "cargo-scheduling"],
+        accessLevel: "advanced",
+        status: "ativo",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "ext-3",
+        fullName: "Carlos Prestador",
+        email: "carlos@prestadorlogistica.com",
+        phone: "(11) 77777-3333",
+        document: "11.222.333/0001-44",
+        personType: "prestador",
+        externalCompany: "Prestador Logística",
+        position: "Supervisor de Cargas",
+        hasSystemAccess: false,
+        allowedModules: [],
+        accessLevel: "basic",
+        status: "ativo",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    externalPersonsData.forEach(person => {
+      this.externalPersons.set(person.id, person);
+    });
+
+    // Horários de exemplo para hoje e próximos dias
+    const today = new Date();
+    for (let day = 0; day < 7; day++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + day);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      // Criar alguns horários por dia
+      const hours = [8, 10, 14, 16];
+      hours.forEach(hour => {
+        const slotId = `slot-${dateStr}-${hour}`;
+        this.scheduleSlots.set(slotId, {
+          id: slotId,
+          date: dateStr,
+          timeSlot: `${hour.toString().padStart(2, '0')}:00`,
+          isAvailable: true,
+          maxCapacity: 1,
+          currentBookings: 0,
+          createdBy: "system",
+          createdAt: new Date(),
+        });
+      });
+    }
+
+    // Agendamentos de exemplo
+    const bookingsData = [
+      {
+        id: "booking-1",
+        clientId: "ext-1",
+        slotId: `slot-${today.toISOString().split('T')[0]}-10`,
+        companyName: "João Transportes Ltda",
+        contactPerson: "João Silva",
+        contactEmail: "contato@joaotransportes.com",
+        contactPhone: "(11) 99999-1111",
+        status: "agendado",
+        notes: "Carga frágil - manusear com cuidado",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    bookingsData.forEach(booking => {
+      this.cargoSchedulings.set(booking.id, booking);
+    });
+  }
+
+  async getExternalPersons(): Promise<any[]> {
+    return Array.from(this.externalPersons.values());
+  }
+
+  async createExternalPerson(data: any): Promise<any> {
+    const person = {
+      id: randomUUID(),
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.externalPersons.set(person.id, person);
+    return person;
+  }
+
+  async updateExternalPerson(id: string, data: any): Promise<any> {
+    const existing = this.externalPersons.get(id);
+    if (!existing) throw new Error('Person not found');
+    
+    const updated = {
+      ...existing,
+      ...data,
+      updatedAt: new Date(),
+    };
+    this.externalPersons.set(id, updated);
+    return updated;
+  }
+
+  async deleteExternalPerson(id: string): Promise<void> {
+    this.externalPersons.delete(id);
+  }
+
+  // Horários de Agendamento
+  async getScheduleSlots(date: string): Promise<any[]> {
+    const slots = Array.from(this.scheduleSlots.values())
+      .filter(slot => slot.date === date);
+    
+    // Atualizar contagem de reservas para cada slot
+    for (const slot of slots) {
+      const bookings = Array.from(this.cargoSchedulings.values())
+        .filter(booking => 
+          booking.slotId === slot.id && 
+          ['agendado', 'confirmado', 'em_andamento'].includes(booking.status)
+        );
+      slot.currentBookings = bookings.length;
+    }
+    
+    return slots.sort((a, b) => a.timeSlot.localeCompare(b.timeSlot));
+  }
+
+  async createScheduleSlot(data: any): Promise<any> {
+    const slot = {
+      id: randomUUID(),
+      ...data,
+      createdAt: new Date(),
+    };
+    this.scheduleSlots.set(slot.id, slot);
+    return slot;
+  }
+
+  async scheduleWeekSlots(startDate: string): Promise<any[]> {
+    const slots = [];
+    const start = new Date(startDate);
+    
+    // Criar horários para 5 dias úteis (segunda a sexta)
+    for (let day = 0; day < 5; day++) {
+      const date = new Date(start);
+      date.setDate(start.getDate() + day);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      // Horários: 8h às 16h
+      for (let hour = 8; hour <= 16; hour++) {
+        const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+        
+        // Verificar se já existe
+        const existing = Array.from(this.scheduleSlots.values())
+          .find(slot => slot.date === dateStr && slot.timeSlot === timeSlot);
+        
+        if (!existing) {
+          const slot = {
+            id: randomUUID(),
+            date: dateStr,
+            timeSlot,
+            isAvailable: true,
+            maxCapacity: 1,
+            currentBookings: 0,
+            createdBy: "system",
+            createdAt: new Date(),
+          };
+          this.scheduleSlots.set(slot.id, slot);
+          slots.push(slot);
+        }
+      }
+    }
+    
+    return slots;
+  }
+
+  // Agendamentos
+  async createCargoScheduling(data: any): Promise<any> {
+    const booking = {
+      id: randomUUID(),
+      ...data,
+      status: 'agendado',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.cargoSchedulings.set(booking.id, booking);
+    return booking;
+  }
+
+  async getClientBookings(clientId: string): Promise<any[]> {
+    return Array.from(this.cargoSchedulings.values())
+      .filter(booking => booking.clientId === clientId)
+      .map(booking => {
+        const slot = this.scheduleSlots.get(booking.slotId);
+        return {
+          ...booking,
+          date: slot?.date,
+          timeSlot: slot?.timeSlot,
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async getAllBookings(): Promise<any[]> {
+    return Array.from(this.cargoSchedulings.values())
+      .map(booking => {
+        const slot = this.scheduleSlots.get(booking.slotId);
+        return {
+          ...booking,
+          date: slot?.date,
+          timeSlot: slot?.timeSlot,
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async cancelBooking(id: string, reason?: string): Promise<void> {
+    const booking = this.cargoSchedulings.get(id);
+    if (!booking) throw new Error('Booking not found');
+    
+    const updated = {
+      ...booking,
+      status: 'cancelado',
+      cancellationReason: reason,
+      canceledAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.cargoSchedulings.set(id, updated);
+  }
+
+  async managerActionBooking(id: string, action: string, notes: string): Promise<any> {
+    const booking = this.cargoSchedulings.get(id);
+    if (!booking) throw new Error('Booking not found');
+    
+    const updated = {
+      ...booking,
+      status: action === 'complete' ? 'concluido' : 'cancelado',
+      managerNotes: notes,
+      updatedAt: new Date(),
+    };
+    
+    if (action === 'complete') {
+      updated.completedAt = new Date();
+      updated.completedBy = "admin"; // Em implementação real, usar ID do usuário
+    } else {
+      updated.canceledAt = new Date();
+      updated.canceledBy = "admin";
+      updated.cancellationReason = notes;
+    }
+    
+    this.cargoSchedulings.set(id, updated);
+    return updated;
+  }
 
 }
 

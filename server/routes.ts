@@ -1240,6 +1240,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============= MÓDULO DE AGENDAMENTO DE CARREAMENTO =============
+
+  // Buscar pessoas externas
+  app.get("/api/external-persons", async (req, res) => {
+    try {
+      const externalPersons = await storage.getExternalPersons();
+      res.json(externalPersons);
+    } catch (error) {
+      console.error("Error fetching external persons:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Criar pessoa externa
+  app.post("/api/external-persons", async (req, res) => {
+    try {
+      const person = await storage.createExternalPerson(req.body);
+      res.status(201).json(person);
+    } catch (error) {
+      console.error("Error creating external person:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Atualizar pessoa externa
+  app.put("/api/external-persons/:id", async (req, res) => {
+    try {
+      const person = await storage.updateExternalPerson(req.params.id, req.body);
+      res.json(person);
+    } catch (error) {
+      console.error("Error updating external person:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Excluir pessoa externa
+  app.delete("/api/external-persons/:id", async (req, res) => {
+    try {
+      await storage.deleteExternalPerson(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting external person:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Buscar horários disponíveis para uma data
+  app.get("/api/cargo-scheduling/slots", async (req, res) => {
+    try {
+      const date = req.query.date as string;
+      if (!date) {
+        return res.status(400).json({ message: "Data é obrigatória" });
+      }
+      
+      const slots = await storage.getScheduleSlots(date);
+      res.json(slots);
+    } catch (error) {
+      console.error("Error fetching schedule slots:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Criar novo horário disponível
+  app.post("/api/cargo-scheduling/slots", async (req, res) => {
+    try {
+      const slot = await storage.createScheduleSlot(req.body);
+      res.status(201).json(slot);
+    } catch (error) {
+      console.error("Error creating schedule slot:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Programar semana de horários
+  app.post("/api/cargo-scheduling/schedule-week", async (req, res) => {
+    try {
+      const { date } = req.body;
+      const slots = await storage.scheduleWeekSlots(date);
+      res.json(slots);
+    } catch (error) {
+      console.error("Error scheduling week:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Criar agendamento
+  app.post("/api/cargo-scheduling/book", async (req, res) => {
+    try {
+      const booking = await storage.createCargoScheduling(req.body);
+      res.status(201).json(booking);
+    } catch (error) {
+      console.error("Error creating booking:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Buscar meus agendamentos (cliente)
+  app.get("/api/cargo-scheduling/my-bookings", async (req, res) => {
+    try {
+      // Em uma implementação real, pegar o ID do cliente do token/sessão
+      const clientId = req.query.clientId as string || "1";
+      const bookings = await storage.getClientBookings(clientId);
+      res.json(bookings);
+    } catch (error) {
+      console.error("Error fetching client bookings:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Buscar todos os agendamentos (gestor)
+  app.get("/api/cargo-scheduling/all-bookings", async (req, res) => {
+    try {
+      const bookings = await storage.getAllBookings();
+      res.json(bookings);
+    } catch (error) {
+      console.error("Error fetching all bookings:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Cancelar agendamento
+  app.delete("/api/cargo-scheduling/cancel/:id", async (req, res) => {
+    try {
+      const { reason } = req.body;
+      await storage.cancelBooking(req.params.id, reason);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error canceling booking:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Ações do gestor (concluir/cancelar)
+  app.patch("/api/cargo-scheduling/manager-action/:id", async (req, res) => {
+    try {
+      const { action, notes } = req.body;
+      const booking = await storage.managerActionBooking(req.params.id, action, notes);
+      res.json(booking);
+    } catch (error) {
+      console.error("Error executing manager action:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

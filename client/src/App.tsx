@@ -28,6 +28,8 @@ import SecurityGuardAccess from "@/pages/security-guard-access";
 import Maintenance from "@/pages/maintenance";
 import Warehouse from "@/pages/warehouse";
 import Dashboards from "@/pages/dashboards";
+import CargoScheduling from "@/pages/cargo-scheduling";
+import ExternalPersons from "@/pages/external-persons";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import VehicleEdit from "@/components/vehicles/vehicle-edit";
@@ -63,6 +65,8 @@ function Router() {
       <Route path="/maintenance" component={Maintenance} />
       <Route path="/warehouse" component={Warehouse} />
       <Route path="/dashboards" component={Dashboards} />
+      <Route path="/cargo-scheduling" component={CargoScheduling} />
+      <Route path="/external-persons" component={ExternalPersons} />
       <Route path="/routes" component={Routes} />
       <Route path="/bookings" component={Bookings} />
       <Route path="/analytics" component={Analytics} />

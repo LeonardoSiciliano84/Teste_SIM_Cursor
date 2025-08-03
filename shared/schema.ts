@@ -496,6 +496,118 @@ export const clientWarehouseExits = pgTable("client_warehouse_exits", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// ============= MÓDULO DE AGENDAMENTO DE CARREAMENTO =============
+
+// Tabela de horários disponíveis para agendamento
+export const scheduleSlots = pgTable("schedule_slots", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: date("date").notNull(),
+  timeSlot: text("time_slot").notNull(), // Formato: "08:00", "09:00", etc.
+  isAvailable: boolean("is_available").notNull().default(true),
+  maxCapacity: integer("max_capacity").notNull().default(1),
+  currentBookings: integer("current_bookings").notNull().default(0),
+  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+// Tabela de agendamentos
+export const cargoSchedulings = pgTable("cargo_schedulings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: uuid("client_id").references(() => externalPersons.id).notNull(),
+  slotId: uuid("slot_id").references(() => scheduleSlots.id).notNull(),
+  
+  // Dados do agendamento
+  companyName: text("company_name").notNull(),
+  contactPerson: text("contact_person").notNull(),
+  contactEmail: text("contact_email").notNull(),
+  contactPhone: text("contact_phone"),
+  
+  // Status e controle
+  status: text("status").notNull().default("agendado"), // agendado, confirmado, em_andamento, concluido, cancelado
+  notes: text("notes"),
+  
+  // Dados de conclusão/cancelamento
+  completedAt: timestamp("completed_at"),
+  completedBy: uuid("completed_by").references(() => users.id),
+  canceledAt: timestamp("canceled_at"),
+  canceledBy: uuid("canceled_by").references(() => users.id),
+  cancellationReason: text("cancellation_reason"),
+  managerNotes: text("manager_notes"),
+  
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// ============= ALTERAÇÕES NO MÓDULO DE RH - PESSOAS EXTERNAS =============
+
+// Tabela de pessoas externas (clientes, terceirizados)
+export const externalPersons = pgTable("external_persons", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Dados básicos
+  fullName: text("full_name").notNull(),
+  email: text("email").notNull().unique(),
+  phone: text("phone"),
+  document: text("document"), // CPF ou CNPJ
+  
+  // Tipo de pessoa externa
+  personType: text("person_type").notNull(), // cliente, terceirizado, prestador
+  
+  // Dados específicos por tipo
+  companyName: text("company_name"), // Para clientes
+  externalCompany: text("external_company"), // Para terceirizados/prestadores
+  position: text("position"), // Cargo/função
+  
+  // Permissões e acesso
+  hasSystemAccess: boolean("has_system_access").notNull().default(false),
+  allowedModules: text("allowed_modules").array().default([]), // Array de módulos permitidos
+  accessLevel: text("access_level").default("basic"), // basic, advanced
+  
+  // Status
+  status: text("status").notNull().default("ativo"), // ativo, inativo, bloqueado
+  inactiveReason: text("inactive_reason"),
+  
+  // Documentos básicos (para terceirizados)
+  basicDocuments: json("basic_documents"),
+  
+  // Controle
+  createdBy: uuid("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// Relacionamentos para agendamento
+export const scheduleRelations = relations(scheduleSlots, ({ many }) => ({
+  schedulings: many(cargoSchedulings),
+}));
+
+export const cargoSchedulingRelations = relations(cargoSchedulings, ({ one }) => ({
+  client: one(externalPersons, {
+    fields: [cargoSchedulings.clientId],
+    references: [externalPersons.id],
+  }),
+  slot: one(scheduleSlots, {
+    fields: [cargoSchedulings.slotId],
+    references: [scheduleSlots.id],
+  }),
+  completedBy: one(users, {
+    fields: [cargoSchedulings.completedBy],
+    references: [users.id],
+  }),
+  canceledBy: one(users, {
+    fields: [cargoSchedulings.canceledBy],
+    references: [users.id],
+  }),
+}));
+
+export const externalPersonRelations = relations(externalPersons, ({ many, one }) => ({
+  schedulings: many(cargoSchedulings),
+  createdBy: one(users, {
+    fields: [externalPersons.createdBy],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -680,6 +792,56 @@ export const insertClientWarehouseExitSchema = createInsertSchema(clientWarehous
   editedAt: true,
 });
 
+// ============= SCHEMAS DE AGENDAMENTO DE CARREAMENTO =============
+
+export const insertExternalPersonSchema = createInsertSchema(externalPersons).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  createdBy: true,
+}).extend({
+  fullName: z.string().min(1, "Nome completo é obrigatório"),
+  email: z.string().email("Email deve ser válido"),
+  personType: z.enum(["cliente", "terceirizado", "prestador"]),
+  companyName: z.string().optional(),
+  externalCompany: z.string().optional(),
+  phone: z.string().optional(),
+  document: z.string().optional(),
+  position: z.string().optional(),
+  hasSystemAccess: z.boolean().default(false),
+  allowedModules: z.array(z.string()).default([]),
+  accessLevel: z.string().default("basic"),
+  status: z.string().default("ativo"),
+});
+
+export const insertScheduleSlotSchema = createInsertSchema(scheduleSlots).omit({
+  id: true,
+  createdAt: true,
+  createdBy: true,
+}).extend({
+  date: z.string(),
+  timeSlot: z.string().min(1, "Horário é obrigatório"),
+  isAvailable: z.boolean().default(true),
+  maxCapacity: z.number().min(1).default(1),
+});
+
+export const insertCargoSchedulingSchema = createInsertSchema(cargoSchedulings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+  completedBy: true,
+  canceledAt: true,
+  canceledBy: true,
+}).extend({
+  companyName: z.string().min(1, "Nome da empresa é obrigatório"),
+  contactPerson: z.string().min(1, "Pessoa de contato é obrigatória"),
+  contactEmail: z.string().email("Email deve ser válido"),
+  contactPhone: z.string().optional(),
+  notes: z.string().optional(),
+  status: z.string().default("agendado"),
+});
+
 // Tipos TypeScript
 export type CentralWarehouseMaterial = typeof centralWarehouseMaterials.$inferSelect;
 export type InsertCentralWarehouseMaterial = z.infer<typeof insertCentralWarehouseMaterialSchema>;
@@ -703,6 +865,16 @@ export type InsertClientWarehouseEntry = z.infer<typeof insertClientWarehouseEnt
 
 export type ClientWarehouseExit = typeof clientWarehouseExits.$inferSelect;
 export type InsertClientWarehouseExit = z.infer<typeof insertClientWarehouseExitSchema>;
+
+// Tipos para agendamento de carreamento
+export type ExternalPerson = typeof externalPersons.$inferSelect;
+export type InsertExternalPerson = z.infer<typeof insertExternalPersonSchema>;
+
+export type ScheduleSlot = typeof scheduleSlots.$inferSelect;
+export type InsertScheduleSlot = z.infer<typeof insertScheduleSlotSchema>;
+
+export type CargoScheduling = typeof cargoSchedulings.$inferSelect;
+export type InsertCargoScheduling = z.infer<typeof insertCargoSchedulingSchema>;
 
 // Login schema
 export const loginSchema = z.object({
