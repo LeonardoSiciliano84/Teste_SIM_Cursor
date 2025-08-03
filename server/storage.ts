@@ -290,6 +290,17 @@ export class MemStorage implements IStorage {
     };
     this.users.set(adminUser.id, adminUser);
 
+    // Criar usuário admin adicional com formato simples para facilitar acesso
+    const adminUserSimple: User = {
+      id: randomUUID(),
+      email: "admin@felka",
+      password: "admin123",
+      name: "Administrador FELKA",
+      role: "admin",
+      createdAt: new Date(),
+    };
+    this.users.set(adminUserSimple.id, adminUserSimple);
+
     // Usuário específico para motorista
     const driverUser: User = {
       id: randomUUID(),
