@@ -317,6 +317,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual employee access route
+  app.post("/api/access-control/employee-manual", async (req, res) => {
+    try {
+      const { employeeId, direction } = req.body;
+      
+      if (!employeeId || !direction) {
+        return res.status(400).json({ message: "Employee ID e direção são obrigatórios" });
+      }
+
+      const employee = await storage.getEmployee(employeeId);
+      
+      if (!employee) {
+        return res.status(404).json({ message: "Funcionário não encontrado" });
+      }
+
+      // Registrar log de acesso manual
+      await storage.createAccessLog({
+        personType: 'employee',
+        personId: employee.id,
+        personName: employee.fullName,
+        personCpf: employee.cpf,
+        direction: direction,
+        accessMethod: 'manual',
+        location: 'Portaria'
+      });
+
+      res.json({
+        success: true,
+        employeeName: employee.fullName,
+        direction: direction,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      console.error("Erro no acesso manual do funcionário:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Visitor access route
+  app.post("/api/access-control/visitor-access", async (req, res) => {
+    try {
+      const { visitorId, direction } = req.body;
+      
+      if (!visitorId || !direction) {
+        return res.status(400).json({ message: "Visitor ID e direção são obrigatórios" });
+      }
+
+      const visitor = await storage.getVisitor(visitorId);
+      
+      if (!visitor) {
+        return res.status(404).json({ message: "Visitante não encontrado" });
+      }
+
+      // Atualizar total de visitas se for entrada
+      if (direction === 'entry') {
+        // Como não temos campos para atualizar diretamente, apenas registramos o log
+        // O total de visitas será calculado pelos logs
+      }
+
+      // Registrar log de acesso
+      await storage.createAccessLog({
+        personType: 'visitor',
+        personId: visitor.id,
+        personName: visitor.name,
+        personCpf: visitor.cpf,
+        direction: direction,
+        accessMethod: 'manual',
+        location: 'Portaria'
+      });
+
+      res.json({
+        success: true,
+        visitorName: visitor.name,
+        direction: direction,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      console.error("Erro no acesso do visitante:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

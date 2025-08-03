@@ -23,6 +23,7 @@ import PranchaManagement from "@/pages/prancha-management";
 import SinistrosPage from "@/pages/sinistros";
 import ChecklistsPage from "@/pages/checklists";
 import AccessControl from "@/pages/access-control";
+import SecurityGuardAccess from "@/pages/security-guard-access";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import VehicleEdit from "@/components/vehicles/vehicle-edit";
@@ -53,6 +54,7 @@ function Router() {
       <Route path="/sinistros" component={SinistrosPage} />
       <Route path="/checklists" component={ChecklistsPage} />
       <Route path="/access-control" component={AccessControl} />
+      <Route path="/security-guard" component={SecurityGuardAccess} />
       <Route path="/routes" component={Routes} />
       <Route path="/bookings" component={Bookings} />
       <Route path="/analytics" component={Analytics} />

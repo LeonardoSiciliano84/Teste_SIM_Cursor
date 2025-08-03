@@ -13,6 +13,9 @@ FELKA Transportes is a comprehensive transport management system designed to man
 - **Expanded Test Data:** Now includes 10 test employees across different departments and roles
 - **Clean Architecture:** Removed all face-api.js dependencies and camera diagnostic components
 - **URL Structure:** Changed from /facial-recognition to /access-control route
+- **Tabs Reorganization:** Separated employee and visitor logs into distinct tabs for better organization
+- **Security Guard Interface:** Created responsive mobile/tablet page for security guard operations
+- **Mobile-Optimized Portal:** New /security-guard route with touch-friendly interface for access control
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
