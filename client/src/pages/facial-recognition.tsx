@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { CameraDiagnostic } from "@/components/camera/CameraDiagnostic";
+import * as faceapi from 'face-api.js';
 
 interface Visitor {
   id: string;
@@ -51,11 +52,203 @@ export default function FacialRecognition() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [isFaceDetectionActive, setIsFaceDetectionActive] = useState(false);
+  const [faceDetected, setFaceDetected] = useState(false);
+  const [facePosition, setFacePosition] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [autoCapture, setAutoCapture] = useState(false);
+  const [captureCountdown, setCaptureCountdown] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Load face-api.js models
+  const loadModels = useCallback(async () => {
+    try {
+      console.log('[FACE-API] Carregando modelos...');
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+        faceapi.nets.ssdMobilenetv1.loadFromUri('/models')
+      ]);
+      console.log('[FACE-API] Modelos carregados com sucesso');
+      setModelsLoaded(true);
+    } catch (error) {
+      console.error('[FACE-API] Erro ao carregar modelos:', error);
+      toast({
+        title: "Aviso",
+        description: "Modelos de reconhecimento facial não carregados. Usando modo básico.",
+        variant: "default",
+      });
+    }
+  }, [toast]);
+
+  // Face detection function
+  const detectFaces = useCallback(async () => {
+    if (!videoRef.current || !overlayCanvasRef.current || !modelsLoaded || !isFaceDetectionActive) {
+      return;
+    }
+
+    const video = videoRef.current;
+    const canvas = overlayCanvasRef.current;
+    
+    if (video.readyState !== 4) {
+      return; // Video not ready
+    }
+
+    try {
+      // Detect faces with landmarks
+      const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 }))
+        .withFaceLandmarks();
+
+      // Clear previous drawings
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (detections.length > 0) {
+        const detection = detections[0]; // Use first detected face
+        const box = detection.detection.box;
+        
+        // Update face position
+        setFacePosition({
+          x: box.x,
+          y: box.y,
+          width: box.width,
+          height: box.height,
+        });
+
+        // Check if face is well positioned (centered and appropriate size)
+        const videoWidth = video.videoWidth;
+        const videoHeight = video.videoHeight;
+        const faceArea = box.width * box.height;
+        const videoArea = videoWidth * videoHeight;
+        const faceRatio = faceArea / videoArea;
+        
+        const centerX = box.x + box.width / 2;
+        const centerY = box.y + box.height / 2;
+        const videoCenterX = videoWidth / 2;
+        const videoCenterY = videoHeight / 2;
+        
+        const distanceFromCenter = Math.sqrt(
+          Math.pow(centerX - videoCenterX, 2) + Math.pow(centerY - videoCenterY, 2)
+        );
+        const maxDistance = Math.min(videoWidth, videoHeight) * 0.2;
+        
+        const isWellPositioned = 
+          faceRatio > 0.1 && faceRatio < 0.4 && // Face size between 10% and 40% of video
+          distanceFromCenter < maxDistance; // Face is centered
+        
+        setFaceDetected(isWellPositioned);
+
+        // Draw face detection box
+        ctx.strokeStyle = isWellPositioned ? '#22c55e' : '#ef4444'; // Green if well positioned, red otherwise
+        ctx.lineWidth = 3;
+        ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+        // Draw face landmarks
+        if (detection.landmarks) {
+          ctx.fillStyle = isWellPositioned ? '#22c55e' : '#ef4444';
+          detection.landmarks.positions.forEach((point) => {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 2, 0, 2 * Math.PI);
+            ctx.fill();
+          });
+        }
+
+        // Auto capture if face is well positioned and auto capture is enabled
+        if (isWellPositioned && autoCapture && !capturedImage) {
+          if (captureCountdown === 0) {
+            setCaptureCountdown(3);
+          }
+        } else if (!isWellPositioned) {
+          setCaptureCountdown(0);
+        }
+      } else {
+        setFaceDetected(false);
+        setFacePosition(null);
+        setCaptureCountdown(0);
+      }
+
+      // Draw guide overlay (face guide circle)
+      drawFaceGuide(ctx, canvas.width, canvas.height);
+
+    } catch (error) {
+      console.error('[FACE-API] Erro na detecção:', error);
+    }
+  }, [modelsLoaded, isFaceDetectionActive, autoCapture, capturedImage, captureCountdown]);
+
+  // Draw face guide overlay
+  const drawFaceGuide = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) * 0.25;
+
+    // Draw guide circle
+    ctx.strokeStyle = faceDetected ? '#22c55e' : '#3b82f6';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([10, 5]);
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw instruction text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = '#000000';
+    ctx.shadowBlur = 4;
+    
+    const message = faceDetected 
+      ? 'Rosto detectado! Mantenha a posição' 
+      : 'Posicione seu rosto no círculo';
+    
+    ctx.fillText(message, centerX, centerY + radius + 30);
+    ctx.shadowBlur = 0;
+  }, [faceDetected]);
+
+  // Auto capture countdown effect
+  useEffect(() => {
+    if (captureCountdown > 0) {
+      const timer = setTimeout(() => {
+        setCaptureCountdown(prev => {
+          if (prev === 1) {
+            // Capture the image
+            captureImage();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [captureCountdown]);
+
+  // Face detection interval
+  useEffect(() => {
+    if (isFaceDetectionActive && modelsLoaded) {
+      detectionIntervalRef.current = setInterval(detectFaces, 100); // Run detection every 100ms
+      return () => {
+        if (detectionIntervalRef.current) {
+          clearInterval(detectionIntervalRef.current);
+        }
+      };
+    }
+  }, [isFaceDetectionActive, modelsLoaded, detectFaces]);
+
+  // Load models on component mount
+  useEffect(() => {
+    loadModels();
+  }, [loadModels]);
 
   // Form states
   const [visitorForm, setVisitorForm] = useState({
@@ -350,6 +543,12 @@ export default function FacialRecognition() {
           try {
             await video.play();
             console.log("[CAMERA] Vídeo reproduzindo em modo simples");
+            
+            // Ativar detecção facial se modelos estão carregados
+            if (modelsLoaded) {
+              setIsFaceDetectionActive(true);
+              console.log("[FACE-API] Detecção facial ativada");
+            }
           } catch (playError) {
             console.warn("[CAMERA] Erro no autoplay:", playError);
             setVideoError("Clique no botão Play para iniciar o vídeo");
@@ -415,6 +614,21 @@ export default function FacialRecognition() {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
+    
+    // Parar detecção facial
+    setIsFaceDetectionActive(false);
+    setFaceDetected(false);
+    setFacePosition(null);
+    setCaptureCountdown(0);
+    
+    // Limpar canvas overlay
+    if (overlayCanvasRef.current) {
+      const ctx = overlayCanvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
+      }
+    }
+    
     setIsCapturing(false);
   }, []);
 
@@ -549,12 +763,45 @@ export default function FacialRecognition() {
                     style={{ transform: 'scaleX(-1)' }}
                   />
                   
+                  {/* Canvas overlay para detecção facial */}
+                  {isCapturing && (
+                    <canvas
+                      ref={overlayCanvasRef}
+                      className="absolute inset-0 w-full h-full pointer-events-none"
+                      style={{ transform: 'scaleX(-1)' }}
+                      width="640"
+                      height="480"
+                    />
+                  )}
+                  
                   {isCapturing && (
                     <>
                       {/* Indicador LIVE */}
                       <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
                         ● LIVE
                       </div>
+                      
+                      {/* Status da detecção facial */}
+                      <div className="absolute top-2 right-2 space-y-1">
+                        {modelsLoaded && (
+                          <div className="bg-green-500 text-white px-2 py-1 rounded text-xs">
+                            ✓ Face-API
+                          </div>
+                        )}
+                        {isFaceDetectionActive && (
+                          <div className={`px-2 py-1 rounded text-xs ${
+                            faceDetected ? 'bg-green-500 text-white' : 'bg-yellow-500 text-black'
+                          }`}>
+                            {faceDetected ? '✓ Rosto OK' : '⚠ Posicione'}
+                          </div>
+                        )}
+                        {captureCountdown > 0 && (
+                          <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">
+                            📸 {captureCountdown}s
+                          </div>
+                        )}
+                      </div>
+                      
                       {/* Aviso de erro */}
                       {videoError && (
                         <div className="absolute bottom-2 left-2 right-2 bg-red-500/90 text-white px-3 py-2 rounded text-sm font-medium">
@@ -599,8 +846,19 @@ export default function FacialRecognition() {
                   
                   {isCapturing && (
                     <>
-                      <Button onClick={captureImage} className="flex-1">
-                        Capturar Foto
+                      <Button 
+                        onClick={captureImage} 
+                        className="flex-1"
+                        disabled={autoCapture && !faceDetected}
+                      >
+                        {autoCapture ? (faceDetected ? 'Capturando...' : 'Posicione o rosto') : 'Capturar Foto'}
+                      </Button>
+                      <Button 
+                        onClick={() => setAutoCapture(!autoCapture)}
+                        variant={autoCapture ? "default" : "outline"}
+                        size="sm"
+                      >
+                        {autoCapture ? '🤖 Auto' : '👤 Manual'}
                       </Button>
                       <Button 
                         onClick={forcePlay} 
