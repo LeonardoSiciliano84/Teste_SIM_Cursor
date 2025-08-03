@@ -21,8 +21,8 @@
   --popover-foreground: hsl(20, 14.3%, 4.1%);
   --card: hsl(0, 0%, 100%);
   --card-foreground: hsl(20, 14.3%, 4.1%);
-  --border: hsl(220, 40%, 30%);
-  --input: hsl(220, 40%, 30%);
+  --border: hsl(227, 96%, 35%);
+  --input: hsl(227, 96%, 35%);
   --primary: hsl(228, 84%, 35%);
   --primary-foreground: hsl(211, 100%, 99%);
   --secondary: hsl(60, 4.8%, 95.9%);
@@ -44,7 +44,7 @@
   --sidebar-primary-foreground: hsl(211, 100%, 99%);
   --sidebar-accent: hsl(60, 4.8%, 95.9%);
   --sidebar-accent-foreground: hsl(24, 9.8%, 10%);
-  --sidebar-border: hsl(220, 40%, 30%);
+  --sidebar-border: hsl(227, 96%, 35%);
   --sidebar-ring: hsl(20, 14.3%, 4.1%);
 }
 

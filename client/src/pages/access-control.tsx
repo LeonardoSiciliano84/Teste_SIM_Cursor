@@ -317,14 +317,19 @@ export default function AccessControl() {
           <TabsTrigger value="visitors">Visitantes</TabsTrigger>
           <TabsTrigger value="employees">Funcionários</TabsTrigger>
           <TabsTrigger value="logs">Logs de Acesso</TabsTrigger>
-          <TabsTrigger value="qrcode">QR Code</TabsTrigger>
+          <TabsTrigger 
+            value="qrcode" 
+            className="data-[state=active]:border-4 data-[state=active]:border-[#0C29AB] data-[state=active]:bg-[#0C29AB]/10"
+          >
+            QR Code
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="visitors" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+            <Card className="border-2" style={{borderColor: '#0C29AB'}}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2" style={{color: '#0C29AB'}}>
                   <Search className="h-5 w-5" />
                   Buscar Visitante
                 </CardTitle>
@@ -346,6 +351,8 @@ export default function AccessControl() {
                     <Button 
                       onClick={handleVisitorSearch}
                       disabled={searchVisitorMutation.isPending}
+                      style={{backgroundColor: '#0C29AB', borderColor: '#0C29AB'}}
+                      className="hover:bg-[#0A237D]"
                     >
                       Buscar
                     </Button>
@@ -354,9 +361,9 @@ export default function AccessControl() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-2" style={{borderColor: '#0C29AB'}}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2" style={{color: '#0C29AB'}}>
                   <UserPlus className="h-5 w-5" />
                   Cadastro de Visitante
                 </CardTitle>
@@ -482,7 +489,8 @@ export default function AccessControl() {
                 <Button 
                   onClick={handleVisitorRegister}
                   disabled={!visitorForm.name || !visitorForm.cpf || registerVisitorMutation.isPending}
-                  className="w-full"
+                  className="w-full hover:bg-[#0A237D]"
+                  style={{backgroundColor: '#0C29AB', borderColor: '#0C29AB'}}
                 >
                   Cadastrar/Atualizar Visitante
                 </Button>
@@ -591,7 +599,13 @@ export default function AccessControl() {
         </TabsContent>
 
         <TabsContent value="qrcode" className="space-y-6">
-          <Card className="border-4 border-blue-500 shadow-lg">
+          <Card 
+            className="border-4 shadow-lg bg-gradient-to-r from-blue-50 to-blue-100" 
+            style={{
+              borderColor: '#0C29AB',
+              boxShadow: '0 0 20px rgba(12, 41, 171, 0.3)'
+            }}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <QrCode className="h-5 w-5" />
