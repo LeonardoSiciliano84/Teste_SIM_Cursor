@@ -72,6 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log("Processando QR Code:", qrCodeData);
+      console.log("Tipo de acesso recebido:", accessType);
       
       // Buscar funcionário pelo QR Code
       const employeeQrCode = await storage.getEmployeeByQrCode(qrCodeData);
@@ -91,6 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Registrar acesso
+      console.log("Criando log de acesso com direção:", accessType);
       const accessLog = await storage.createAccessLog({
         personType: "employee",
         personId: employee.id,
@@ -100,6 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accessMethod: "qrcode",
         location: "Portaria Principal"
       });
+      console.log("Log de acesso criado:", accessLog);
 
       res.json({ employee, accessLog, message: "Acesso registrado com sucesso" });
     } catch (error) {
