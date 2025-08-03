@@ -185,7 +185,11 @@ export default function FacialRecognition() {
         // Aguardar o vídeo carregar antes de reproduzir
         videoRef.current.onloadedmetadata = () => {
           if (videoRef.current) {
-            videoRef.current.play().catch(error => {
+            console.log("Video metadata loaded, attempting to play");
+            videoRef.current.play().then(() => {
+              console.log("Video is now playing");
+              setIsCapturing(true);
+            }).catch(error => {
               console.error("Error playing video:", error);
               toast({
                 title: "Erro",
@@ -195,10 +199,12 @@ export default function FacialRecognition() {
             });
           }
         };
+        
+        // Forçar o carregamento dos metadados
+        videoRef.current.load();
       }
       
       streamRef.current = stream;
-      setIsCapturing(true);
     } catch (error) {
       console.error("Error accessing camera:", error);
       let errorMessage = "Erro ao acessar a câmera";
@@ -333,7 +339,20 @@ export default function FacialRecognition() {
                       ref={videoRef}
                       className="w-full h-full object-cover"
                       autoPlay
+                      playsInline
                       muted
+                      width="640"
+                      height="480"
+                      style={{ transform: 'scaleX(-1)' }}
+                      onLoadedMetadata={() => {
+                        console.log("Video loaded metadata");
+                        if (videoRef.current) {
+                          console.log("Video dimensions:", videoRef.current.videoWidth, "x", videoRef.current.videoHeight);
+                        }
+                      }}
+                      onError={(e) => {
+                        console.error("Video error:", e);
+                      }}
                     />
                   ) : capturedImage ? (
                     <img
@@ -348,7 +367,7 @@ export default function FacialRecognition() {
                   )}
                 </div>
                 
-                <canvas ref={canvasRef} className="hidden" />
+                <canvas ref={canvasRef} className="hidden" width="640" height="480" />
                 
                 <div className="flex gap-2">
                   {!isCapturing && !capturedImage && (
