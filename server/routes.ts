@@ -27,7 +27,13 @@ import {
   insertPranchaServiceSchema,
   insertSinistroSchema,
   insertSinistroDocumentSchema,
-  insertVehicleChecklistSchema
+  insertVehicleChecklistSchema,
+  // Módulo de controle de acesso
+  insertVisitorSchema,
+  insertFacialEncodingSchema,
+  insertAccessLogSchema,
+  insertTemporaryBadgeSchema,
+  insertRecognitionAttemptSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -1985,6 +1991,275 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error exporting checklists:", error);
       res.status(500).json({ message: "Erro ao exportar checklists" });
+    }
+  });
+
+  // ============= ROTAS DO MÓDULO DE CONTROLE DE ACESSO =============
+  
+  // Rotas para visitantes
+  app.get("/api/access-control/visitors", async (req, res) => {
+    try {
+      const visitors = await storage.getVisitors();
+      res.json(visitors);
+    } catch (error) {
+      console.error("Error fetching visitors:", error);
+      res.status(500).json({ message: "Erro ao buscar visitantes" });
+    }
+  });
+
+  app.post("/api/access-control/visitors", async (req, res) => {
+    try {
+      const visitorData = insertVisitorSchema.parse(req.body);
+      const visitor = await storage.createVisitor(visitorData);
+      res.status(201).json(visitor);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Error creating visitor:", error);
+      res.status(500).json({ message: "Erro ao criar visitante" });
+    }
+  });
+
+  app.get("/api/access-control/visitors/:id", async (req, res) => {
+    try {
+      const visitor = await storage.getVisitor(req.params.id);
+      if (!visitor) {
+        return res.status(404).json({ message: "Visitante não encontrado" });
+      }
+      res.json(visitor);
+    } catch (error) {
+      console.error("Error fetching visitor:", error);
+      res.status(500).json({ message: "Erro ao buscar visitante" });
+    }
+  });
+
+  // Rotas para reconhecimento facial
+  app.post("/api/access-control/facial-recognition/enroll", async (req, res) => {
+    try {
+      const { personId, personType, imageData } = req.body;
+      
+      if (!personId || !personType || !imageData) {
+        return res.status(400).json({ message: "Dados incompletos para cadastro facial" });
+      }
+
+      // Aqui seria implementada a lógica de processamento da imagem com face-api.js
+      // Por enquanto, vamos simular o processo
+      const mockEncoding = Array.from({ length: 128 }, () => Math.random());
+      
+      const encodingData = {
+        personType,
+        personId,
+        encodingData: mockEncoding,
+        confidence: 0.95,
+        captureQuality: "excellent",
+      };
+
+      const facialEncoding = await storage.createFacialEncoding(encodingData);
+      
+      // Registrar tentativa de reconhecimento
+      await storage.createRecognitionAttempt({
+        attemptType: "enrollment",
+        success: true,
+        personType,
+        personId,
+        confidence: 0.95,
+        processingTime: 1200,
+        deviceInfo: { camera: "webcam", resolution: "640x480" }
+      });
+
+      res.status(201).json({ 
+        message: "Reconhecimento facial cadastrado com sucesso",
+        encoding: facialEncoding
+      });
+    } catch (error) {
+      console.error("Error enrolling face:", error);
+      
+      // Registrar tentativa falha
+      try {
+        await storage.createRecognitionAttempt({
+          attemptType: "enrollment",
+          success: false,
+          errorReason: error.message,
+          processingTime: 500,
+          deviceInfo: { camera: "webcam", resolution: "640x480" }
+        });
+      } catch (logError) {
+        console.error("Error logging failed attempt:", logError);
+      }
+      
+      res.status(500).json({ message: "Erro ao cadastrar reconhecimento facial" });
+    }
+  });
+
+  app.post("/api/access-control/facial-recognition/recognize", async (req, res) => {
+    try {
+      const { imageData } = req.body;
+      
+      if (!imageData) {
+        return res.status(400).json({ message: "Imagem é obrigatória" });
+      }
+
+      // Aqui seria implementada a lógica de reconhecimento com face-api.js
+      // Por enquanto, vamos simular o processo
+      const encodings = await storage.getFacialEncodings();
+      
+      // Simulação de reconhecimento
+      const mockMatch = encodings[0]; // Simula encontrar uma correspondência
+      
+      if (mockMatch) {
+        // Registrar log de acesso
+        const accessLog = await storage.createAccessLog({
+          personType: mockMatch.personType,
+          personId: mockMatch.personId,
+          personName: mockMatch.personType === "visitor" ? "Visitante Reconhecido" : "Funcionário Reconhecido",
+          direction: "entry",
+          accessMethod: "facial",
+          recognitionConfidence: 0.92,
+          location: "Portaria Principal"
+        });
+
+        res.json({
+          recognized: true,
+          person: mockMatch,
+          confidence: 0.92,
+          accessLog
+        });
+      } else {
+        res.json({
+          recognized: false,
+          message: "Pessoa não reconhecida"
+        });
+      }
+    } catch (error) {
+      console.error("Error recognizing face:", error);
+      res.status(500).json({ message: "Erro no reconhecimento facial" });
+    }
+  });
+
+  // Rotas para logs de acesso
+  app.get("/api/access-control/logs", async (req, res) => {
+    try {
+      const { personType, direction, accessMethod, startDate, endDate, location } = req.query;
+      
+      const filters = {
+        personType: personType as string,
+        direction: direction as string,
+        accessMethod: accessMethod as string,
+        startDate: startDate as string,
+        endDate: endDate as string,
+        location: location as string,
+      };
+
+      const logs = await storage.getAccessLogs(filters);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching access logs:", error);
+      res.status(500).json({ message: "Erro ao buscar logs de acesso" });
+    }
+  });
+
+  app.post("/api/access-control/logs", async (req, res) => {
+    try {
+      const logData = insertAccessLogSchema.parse(req.body);
+      const accessLog = await storage.createAccessLog(logData);
+      res.status(201).json(accessLog);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Error creating access log:", error);
+      res.status(500).json({ message: "Erro ao criar log de acesso" });
+    }
+  });
+
+  // Rotas para crachás temporários
+  app.get("/api/access-control/badges", async (req, res) => {
+    try {
+      const { status } = req.query;
+      const badges = await storage.getTemporaryBadges(status as string);
+      res.json(badges);
+    } catch (error) {
+      console.error("Error fetching badges:", error);
+      res.status(500).json({ message: "Erro ao buscar crachás" });
+    }
+  });
+
+  app.post("/api/access-control/badges", async (req, res) => {
+    try {
+      const badgeData = insertTemporaryBadgeSchema.parse(req.body);
+      const badge = await storage.createTemporaryBadge(badgeData);
+      res.status(201).json(badge);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Error creating badge:", error);
+      res.status(500).json({ message: "Erro ao criar crachá" });
+    }
+  });
+
+  app.put("/api/access-control/badges/:id/return", async (req, res) => {
+    try {
+      const { returnedBy } = req.body;
+      const badge = await storage.returnTemporaryBadge(req.params.id, returnedBy);
+      
+      if (!badge) {
+        return res.status(404).json({ message: "Crachá não encontrado" });
+      }
+      
+      res.json(badge);
+    } catch (error) {
+      console.error("Error returning badge:", error);
+      res.status(500).json({ message: "Erro ao devolver crachá" });
+    }
+  });
+
+  // Rotas para tentativas de reconhecimento
+  app.get("/api/access-control/recognition-attempts", async (req, res) => {
+    try {
+      const { attemptType, success, personType, startDate, endDate } = req.query;
+      
+      const filters = {
+        attemptType: attemptType as string,
+        success: success === "true" ? true : success === "false" ? false : undefined,
+        personType: personType as string,
+        startDate: startDate as string,
+        endDate: endDate as string,
+      };
+
+      const attempts = await storage.getRecognitionAttempts(filters);
+      res.json(attempts);
+    } catch (error) {
+      console.error("Error fetching recognition attempts:", error);
+      res.status(500).json({ message: "Erro ao buscar tentativas de reconhecimento" });
+    }
+  });
+
+  // Rotas para configurações do sistema
+  app.get("/api/access-control/config", async (req, res) => {
+    try {
+      const config = await storage.getGateSystemConfig();
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching config:", error);
+      res.status(500).json({ message: "Erro ao buscar configurações" });
+    }
+  });
+
+  app.put("/api/access-control/config/:key", async (req, res) => {
+    try {
+      const { value, updatedBy } = req.body;
+      const config = await storage.updateGateSystemConfig(req.params.key, value, updatedBy);
+      
+      if (!config) {
+        return res.status(404).json({ message: "Configuração não encontrada" });
+      }
+      
+      res.json(config);
+    } catch (error) {
+      console.error("Error updating config:", error);
+      res.status(500).json({ message: "Erro ao atualizar configuração" });
     }
   });
 

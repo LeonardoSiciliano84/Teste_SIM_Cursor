@@ -40,6 +40,19 @@ import {
   type InsertChecklistItem,
   type ChecklistHistory,
   type InsertChecklistHistory,
+  // Tipos do módulo de controle de acesso
+  type Visitor,
+  type InsertVisitor,
+  type FacialEncoding,
+  type InsertFacialEncoding,
+  type AccessLog,
+  type InsertAccessLog,
+  type TemporaryBadge,
+  type InsertTemporaryBadge,
+  type RecognitionAttempt,
+  type InsertRecognitionAttempt,
+  type GateSystemConfig,
+  type InsertGateSystemConfig,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -179,6 +192,60 @@ export interface IStorage {
   // Checklist History methods
   getChecklistHistory(checklistId: string): Promise<ChecklistHistory[]>;
   createChecklistHistory(history: InsertChecklistHistory): Promise<ChecklistHistory>;
+  
+  // ============= MÓDULO DE CONTROLE DE ACESSO =============
+  
+  // Visitor methods
+  getVisitors(): Promise<Visitor[]>;
+  getVisitor(id: string): Promise<Visitor | undefined>;
+  getVisitorByCpf(cpf: string): Promise<Visitor | undefined>;
+  createVisitor(visitor: InsertVisitor): Promise<Visitor>;
+  updateVisitor(id: string, visitor: Partial<InsertVisitor>): Promise<Visitor | undefined>;
+  deleteVisitor(id: string): Promise<boolean>;
+  
+  // Facial Encoding methods
+  getFacialEncodings(personType?: string, personId?: string): Promise<FacialEncoding[]>;
+  getFacialEncoding(id: string): Promise<FacialEncoding | undefined>;
+  createFacialEncoding(encoding: InsertFacialEncoding): Promise<FacialEncoding>;
+  updateFacialEncoding(id: string, encoding: Partial<InsertFacialEncoding>): Promise<FacialEncoding | undefined>;
+  deleteFacialEncoding(id: string): Promise<boolean>;
+  
+  // Access Log methods
+  getAccessLogs(filters?: {
+    personType?: string;
+    personId?: string;
+    direction?: string;
+    accessMethod?: string;
+    startDate?: string;
+    endDate?: string;
+    location?: string;
+  }): Promise<AccessLog[]>;
+  getAccessLog(id: string): Promise<AccessLog | undefined>;
+  createAccessLog(log: InsertAccessLog): Promise<AccessLog>;
+  
+  // Temporary Badge methods
+  getTemporaryBadges(status?: string): Promise<TemporaryBadge[]>;
+  getTemporaryBadge(id: string): Promise<TemporaryBadge | undefined>;
+  getTemporaryBadgeByNumber(badgeNumber: string): Promise<TemporaryBadge | undefined>;
+  createTemporaryBadge(badge: InsertTemporaryBadge): Promise<TemporaryBadge>;
+  updateTemporaryBadge(id: string, badge: Partial<InsertTemporaryBadge>): Promise<TemporaryBadge | undefined>;
+  returnTemporaryBadge(id: string, returnedBy: string): Promise<TemporaryBadge | undefined>;
+  
+  // Recognition Attempt methods
+  getRecognitionAttempts(filters?: {
+    attemptType?: string;
+    success?: boolean;
+    personType?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<RecognitionAttempt[]>;
+  createRecognitionAttempt(attempt: InsertRecognitionAttempt): Promise<RecognitionAttempt>;
+  
+  // Gate System Config methods
+  getGateSystemConfig(): Promise<GateSystemConfig[]>;
+  getGateSystemConfigByKey(key: string): Promise<GateSystemConfig | undefined>;
+  setGateSystemConfig(config: InsertGateSystemConfig): Promise<GateSystemConfig>;
+  updateGateSystemConfig(key: string, value: string, updatedBy: string): Promise<GateSystemConfig | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -202,6 +269,13 @@ export class MemStorage implements IStorage {
   private vehicleChecklists: Map<string, VehicleChecklist>;
   private checklistItems: Map<string, ChecklistItem>;
   private checklistHistory: Map<string, ChecklistHistory>;
+  // Módulo de controle de acesso
+  private visitors: Map<string, Visitor>;
+  private facialEncodings: Map<string, FacialEncoding>;
+  private accessLogs: Map<string, AccessLog>;
+  private temporaryBadges: Map<string, TemporaryBadge>;
+  private recognitionAttempts: Map<string, RecognitionAttempt>;
+  private gateSystemConfig: Map<string, GateSystemConfig>;
 
   constructor() {
     this.users = new Map();
@@ -224,6 +298,13 @@ export class MemStorage implements IStorage {
     this.vehicleChecklists = new Map();
     this.checklistItems = new Map();
     this.checklistHistory = new Map();
+    // Módulo de controle de acesso
+    this.visitors = new Map();
+    this.facialEncodings = new Map();
+    this.accessLogs = new Map();
+    this.temporaryBadges = new Map();
+    this.recognitionAttempts = new Map();
+    this.gateSystemConfig = new Map();
     
     // Initialize with default admin user and sample data
     this.initializeDefaultData();
@@ -1700,6 +1781,293 @@ export class MemStorage implements IStorage {
         this.checklistHistory.set(returnHistory.id, returnHistory);
       }
     });
+  }
+
+  // ============= MÉTODOS DO MÓDULO DE CONTROLE DE ACESSO =============
+  
+  // Métodos para Visitantes
+  async getVisitors(): Promise<Visitor[]> {
+    return Array.from(this.visitors.values());
+  }
+
+  async getVisitor(id: string): Promise<Visitor | undefined> {
+    return this.visitors.get(id);
+  }
+
+  async getVisitorByCpf(cpf: string): Promise<Visitor | undefined> {
+    return Array.from(this.visitors.values()).find(visitor => visitor.cpf === cpf);
+  }
+
+  async createVisitor(visitor: InsertVisitor): Promise<Visitor> {
+    const id = randomUUID();
+    const newVisitor: Visitor = {
+      id,
+      ...visitor,
+      totalVisits: 0,
+      lastVisit: null,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.visitors.set(id, newVisitor);
+    return newVisitor;
+  }
+
+  async updateVisitor(id: string, visitor: Partial<InsertVisitor>): Promise<Visitor | undefined> {
+    const existing = this.visitors.get(id);
+    if (!existing) return undefined;
+    
+    const updated: Visitor = {
+      ...existing,
+      ...visitor,
+      updatedAt: new Date(),
+    };
+    this.visitors.set(id, updated);
+    return updated;
+  }
+
+  async deleteVisitor(id: string): Promise<boolean> {
+    return this.visitors.delete(id);
+  }
+
+  // Métodos para Encoding Facial
+  async getFacialEncodings(personType?: string, personId?: string): Promise<FacialEncoding[]> {
+    const encodings = Array.from(this.facialEncodings.values());
+    let filtered = encodings;
+    
+    if (personType) {
+      filtered = filtered.filter(encoding => encoding.personType === personType);
+    }
+    
+    if (personId) {
+      filtered = filtered.filter(encoding => encoding.personId === personId);
+    }
+    
+    return filtered.filter(encoding => encoding.isActive);
+  }
+
+  async getFacialEncoding(id: string): Promise<FacialEncoding | undefined> {
+    return this.facialEncodings.get(id);
+  }
+
+  async createFacialEncoding(encoding: InsertFacialEncoding): Promise<FacialEncoding> {
+    const id = randomUUID();
+    const newEncoding: FacialEncoding = {
+      id,
+      ...encoding,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.facialEncodings.set(id, newEncoding);
+    return newEncoding;
+  }
+
+  async updateFacialEncoding(id: string, encoding: Partial<InsertFacialEncoding>): Promise<FacialEncoding | undefined> {
+    const existing = this.facialEncodings.get(id);
+    if (!existing) return undefined;
+    
+    const updated: FacialEncoding = {
+      ...existing,
+      ...encoding,
+      updatedAt: new Date(),
+    };
+    this.facialEncodings.set(id, updated);
+    return updated;
+  }
+
+  async deleteFacialEncoding(id: string): Promise<boolean> {
+    return this.facialEncodings.delete(id);
+  }
+
+  // Métodos para Logs de Acesso
+  async getAccessLogs(filters?: {
+    personType?: string;
+    personId?: string;
+    direction?: string;
+    accessMethod?: string;
+    startDate?: string;
+    endDate?: string;
+    location?: string;
+  }): Promise<AccessLog[]> {
+    let logs = Array.from(this.accessLogs.values());
+    
+    if (filters) {
+      if (filters.personType) {
+        logs = logs.filter(log => log.personType === filters.personType);
+      }
+      if (filters.personId) {
+        logs = logs.filter(log => log.personId === filters.personId);
+      }
+      if (filters.direction) {
+        logs = logs.filter(log => log.direction === filters.direction);
+      }
+      if (filters.accessMethod) {
+        logs = logs.filter(log => log.accessMethod === filters.accessMethod);
+      }
+      if (filters.location) {
+        logs = logs.filter(log => log.location === filters.location);
+      }
+      if (filters.startDate) {
+        const startDate = new Date(filters.startDate);
+        logs = logs.filter(log => new Date(log.timestamp) >= startDate);
+      }
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate);
+        logs = logs.filter(log => new Date(log.timestamp) <= endDate);
+      }
+    }
+    
+    return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
+
+  async getAccessLog(id: string): Promise<AccessLog | undefined> {
+    return this.accessLogs.get(id);
+  }
+
+  async createAccessLog(log: InsertAccessLog): Promise<AccessLog> {
+    const id = randomUUID();
+    const newLog: AccessLog = {
+      id,
+      ...log,
+      timestamp: new Date(),
+    };
+    this.accessLogs.set(id, newLog);
+    return newLog;
+  }
+
+  // Métodos para Crachás Temporários
+  async getTemporaryBadges(status?: string): Promise<TemporaryBadge[]> {
+    const badges = Array.from(this.temporaryBadges.values());
+    if (status) {
+      return badges.filter(badge => badge.status === status);
+    }
+    return badges;
+  }
+
+  async getTemporaryBadge(id: string): Promise<TemporaryBadge | undefined> {
+    return this.temporaryBadges.get(id);
+  }
+
+  async getTemporaryBadgeByNumber(badgeNumber: string): Promise<TemporaryBadge | undefined> {
+    return Array.from(this.temporaryBadges.values()).find(badge => badge.badgeNumber === badgeNumber);
+  }
+
+  async createTemporaryBadge(badge: InsertTemporaryBadge): Promise<TemporaryBadge> {
+    const id = randomUUID();
+    const newBadge: TemporaryBadge = {
+      id,
+      ...badge,
+      status: "active",
+      issueTime: new Date(),
+      actualReturn: null,
+    };
+    this.temporaryBadges.set(id, newBadge);
+    return newBadge;
+  }
+
+  async updateTemporaryBadge(id: string, badge: Partial<InsertTemporaryBadge>): Promise<TemporaryBadge | undefined> {
+    const existing = this.temporaryBadges.get(id);
+    if (!existing) return undefined;
+    
+    const updated: TemporaryBadge = {
+      ...existing,
+      ...badge,
+    };
+    this.temporaryBadges.set(id, updated);
+    return updated;
+  }
+
+  async returnTemporaryBadge(id: string, returnedBy: string): Promise<TemporaryBadge | undefined> {
+    const existing = this.temporaryBadges.get(id);
+    if (!existing) return undefined;
+    
+    const updated: TemporaryBadge = {
+      ...existing,
+      status: "returned",
+      actualReturn: new Date(),
+      returnedBy,
+    };
+    this.temporaryBadges.set(id, updated);
+    return updated;
+  }
+
+  // Métodos para Tentativas de Reconhecimento
+  async getRecognitionAttempts(filters?: {
+    attemptType?: string;
+    success?: boolean;
+    personType?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<RecognitionAttempt[]> {
+    let attempts = Array.from(this.recognitionAttempts.values());
+    
+    if (filters) {
+      if (filters.attemptType) {
+        attempts = attempts.filter(attempt => attempt.attemptType === filters.attemptType);
+      }
+      if (filters.success !== undefined) {
+        attempts = attempts.filter(attempt => attempt.success === filters.success);
+      }
+      if (filters.personType) {
+        attempts = attempts.filter(attempt => attempt.personType === filters.personType);
+      }
+      if (filters.startDate) {
+        const startDate = new Date(filters.startDate);
+        attempts = attempts.filter(attempt => new Date(attempt.timestamp) >= startDate);
+      }
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate);
+        attempts = attempts.filter(attempt => new Date(attempt.timestamp) <= endDate);
+      }
+    }
+    
+    return attempts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
+
+  async createRecognitionAttempt(attempt: InsertRecognitionAttempt): Promise<RecognitionAttempt> {
+    const id = randomUUID();
+    const newAttempt: RecognitionAttempt = {
+      id,
+      ...attempt,
+      timestamp: new Date(),
+    };
+    this.recognitionAttempts.set(id, newAttempt);
+    return newAttempt;
+  }
+
+  // Métodos para Configurações do Sistema
+  async getGateSystemConfig(): Promise<GateSystemConfig[]> {
+    return Array.from(this.gateSystemConfig.values());
+  }
+
+  async getGateSystemConfigByKey(key: string): Promise<GateSystemConfig | undefined> {
+    return Array.from(this.gateSystemConfig.values()).find(config => config.key === key);
+  }
+
+  async setGateSystemConfig(config: InsertGateSystemConfig): Promise<GateSystemConfig> {
+    const id = randomUUID();
+    const newConfig: GateSystemConfig = {
+      id,
+      ...config,
+      updatedAt: new Date(),
+    };
+    this.gateSystemConfig.set(id, newConfig);
+    return newConfig;
+  }
+
+  async updateGateSystemConfig(key: string, value: string, updatedBy: string): Promise<GateSystemConfig | undefined> {
+    const existing = Array.from(this.gateSystemConfig.values()).find(config => config.key === key);
+    if (!existing) return undefined;
+    
+    const updated: GateSystemConfig = {
+      ...existing,
+      value,
+      updatedBy,
+      updatedAt: new Date(),
+    };
+    this.gateSystemConfig.set(existing.id, updated);
+    return updated;
   }
 }
 

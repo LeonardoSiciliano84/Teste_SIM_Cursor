@@ -12,7 +12,8 @@ import {
   FileText,
   Smartphone,
   AlertTriangle,
-  CheckSquare
+  CheckSquare,
+  Eye
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ const navigation = [
   { name: "Ocorrências", href: "/occurrences", icon: FileText },
   { name: "Sinistros", href: "/sinistros", icon: AlertTriangle },
   { name: "Checklists", href: "/checklists", icon: CheckSquare },
+  { name: "Reconhecimento Facial", href: "/facial-recognition", icon: Eye },
   { name: "Portal Motorista", href: "/driver-portal", icon: Smartphone },
   { name: "Gestão de Prancha", href: "/prancha-management", icon: Package },
   { name: "Rotas", href: "/routes", icon: Map },
