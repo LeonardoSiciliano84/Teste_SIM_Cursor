@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Camera, User, Users, Eye, Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { Camera, User, Users, Eye, Clock, CheckCircle, XCircle, AlertTriangle, Settings } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { CameraDiagnostic } from "@/components/camera/CameraDiagnostic";
 
 interface Visitor {
   id: string;
@@ -360,11 +361,12 @@ export default function FacialRecognition() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="registration">Cadastro</TabsTrigger>
           <TabsTrigger value="recognition">Reconhecimento</TabsTrigger>
           <TabsTrigger value="logs">Logs de Acesso</TabsTrigger>
           <TabsTrigger value="visitors">Visitantes</TabsTrigger>
+          <TabsTrigger value="diagnostic">Diagnóstico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="registration" className="space-y-6">
@@ -793,6 +795,10 @@ export default function FacialRecognition() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="diagnostic" className="space-y-6">
+          <CameraDiagnostic />
         </TabsContent>
       </Tabs>
     </div>
