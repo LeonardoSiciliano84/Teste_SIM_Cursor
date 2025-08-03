@@ -2034,6 +2034,9 @@ export class MemStorage implements IStorage {
         this.checklistHistory.set(returnHistory.id, returnHistory);
       }
     });
+
+    // Adicionar visitantes de teste
+    this.initializeVisitorTestData();
   }
 
   // ============= MÉTODOS DO MÓDULO DE CONTROLE DE ACESSO =============
@@ -2064,6 +2067,61 @@ export class MemStorage implements IStorage {
     };
     this.visitors.set(id, newVisitor);
     return newVisitor;
+  }
+
+  // Inicializar dados de teste para visitantes
+  private initializeVisitorTestData() {
+    const testVisitors: InsertVisitor[] = [
+      {
+        name: "Carlos Eduardo Silva",
+        cpf: "12345678901",
+        company: "Empresa ABC Ltda",
+        phone: "(11) 99999-1234",
+        email: "carlos.silva@empresaabc.com.br"
+      },
+      {
+        name: "Maria Fernanda Santos",
+        cpf: "98765432109",
+        company: "Prestadora XYZ",
+        phone: "(11) 98888-5678",
+        email: "maria.santos@prestadoraxyz.com.br"
+      },
+      {
+        name: "Roberto Lima Costa",
+        cpf: "11122233344",
+        company: "Fornecedor 123",
+        phone: "(11) 97777-9012",
+        email: "roberto.costa@fornecedor123.com.br"
+      },
+      {
+        name: "Ana Paula Rodrigues",
+        cpf: "55566677788",
+        company: "Cliente Premium",
+        phone: "(11) 96666-3456", 
+        email: "ana.rodrigues@clientepremium.com.br"
+      },
+      {
+        name: "José Fernando Oliveira",
+        cpf: "33344455566",
+        company: "Consultoria Tech",
+        phone: "(11) 95555-7890",
+        email: "jose.oliveira@consultoriatech.com.br"
+      }
+    ];
+
+    testVisitors.forEach(visitorData => {
+      const id = randomUUID();
+      const visitor: Visitor = {
+        id,
+        ...visitorData,
+        totalVisits: Math.floor(Math.random() * 5), // 0-4 visitas anteriores
+        lastVisit: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000) : null,
+        isActive: true,
+        createdAt: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000), // Criado nos últimos 90 dias
+        updatedAt: new Date(),
+      };
+      this.visitors.set(id, visitor);
+    });
   }
 
   async updateVisitor(id: string, visitor: Partial<Visitor>): Promise<Visitor> {

@@ -49,6 +49,16 @@ export default function SecurityGuardAccess() {
   const cameraRef = useRef<HTMLVideoElement>(null);
   const [qrScanner, setQrScanner] = useState<any>(null);
   
+  // Estados para visitantes
+  const [showVisitorEntryForm, setShowVisitorEntryForm] = useState(false);
+  const [showNewVisitorForm, setShowNewVisitorForm] = useState(false);
+  const [visitorEntryData, setVisitorEntryData] = useState({
+    accessReason: "",
+    vehiclePlate: "",
+    authorizingPerson: "",
+    photo: ""
+  });
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -75,6 +85,11 @@ export default function SecurityGuardAccess() {
 
   const { data: vehicleStatus = [] } = useQuery({
     queryKey: ["/api/vehicles/status"],
+  });
+
+  // Query para logs de visitantes
+  const { data: recentVisitorLogs = [] } = useQuery<AccessLog[]>({
+    queryKey: ["/api/access-control/visitor-logs"],
   });
 
   // Funções do scanner de câmera
@@ -189,6 +204,97 @@ export default function SecurityGuardAccess() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/vehicles/status"] });
       setSelectedVehicle(null);
+    },
+  });
+
+  // Visitor Search Mutation
+  const visitorSearchMutation = useMutation({
+    mutationFn: async (cpf: string) => {
+      const response = await apiRequest(`/api/access-control/visitor-search`, "POST", { cpf });
+      return response;
+    },
+    onSuccess: (data) => {
+      if (data.visitor) {
+        setSelectedVisitor(data.visitor);
+        toast({
+          title: "Visitante encontrado",
+          description: `${data.visitor.name} - ${data.visitor.totalVisits} visitas`,
+        });
+      } else {
+        setSelectedVisitor(null);
+        toast({
+          title: "Visitante não encontrado",
+          description: "CPF não cadastrado no sistema",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Erro na busca",
+        description: "Erro ao buscar visitante",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Visitor Entry Mutation
+  const visitorEntryMutation = useMutation({
+    mutationFn: async (data: typeof visitorEntryData & { visitorId: string }) => {
+      return await apiRequest("/api/visitor-entries", "POST", data);
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "✅ Entrada Registrada",
+        description: `Entrada de ${data.visitor.name} registrada com sucesso`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/access-control/logs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/access-control/visitor-logs"] });
+      setShowVisitorEntryForm(false);
+      setSelectedVisitor(null);
+      setVisitorCpf("");
+      setVisitorEntryData({
+        accessReason: "",
+        vehiclePlate: "",
+        authorizingPerson: "",
+        photo: ""
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Erro ao registrar entrada",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // New Visitor Registration Mutation
+  const newVisitorMutation = useMutation({
+    mutationFn: async (visitorData: {
+      name: string;
+      cpf: string;
+      company: string;
+      phone: string;
+      email: string;
+    }) => {
+      return await apiRequest("/api/access-control/visitors", "POST", visitorData);
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "✅ Visitante Cadastrado",
+        description: `${data.visitor.name} cadastrado com sucesso`,
+      });
+      setSelectedVisitor(data.visitor);
+      setShowNewVisitorForm(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/access-control/visitors"] });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Erro ao cadastrar visitante",
+        variant: "destructive",
+      });
     },
   });
 
@@ -414,17 +520,143 @@ export default function SecurityGuardAccess() {
 
         {/* Visitor Access Tab */}
         <TabsContent value="visitor-access" className="space-y-4">
+          {/* Visitor Search */}
+          <Card className="border-2 border-[#0C29AB]">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-[#0C29AB] text-lg">
+                <Search className="h-5 w-5" />
+                Buscar Visitante
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="visitorSearch" className="text-sm font-medium">
+                  CPF do visitante
+                </Label>
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    id="visitorSearch"
+                    value={visitorCpf}
+                    onChange={(e) => setVisitorCpf(e.target.value)}
+                    placeholder="000.000.000-00"
+                    className="flex-1 text-base"
+                    maxLength={14}
+                  />
+                  <Button 
+                    onClick={() => visitorSearchMutation.mutate(visitorCpf)}
+                    disabled={!visitorCpf || visitorSearchMutation.isPending}
+                    className="bg-[#0C29AB] hover:bg-[#0C29AB]/90 px-6"
+                  >
+                    {visitorSearchMutation.isPending ? "..." : "Buscar"}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Selected Visitor Info */}
+          {selectedVisitor && (
+            <Card className="border-2 border-green-500">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-green-600">
+                  <UserCheck className="h-5 w-5" />
+                  Visitante Encontrado
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <User className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{selectedVisitor.name}</p>
+                      <p className="text-sm text-gray-600">
+                        CPF: {selectedVisitor.cpf} • {selectedVisitor.totalVisits} visitas
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Empresa: {selectedVisitor.company || "Não informado"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    onClick={() => setShowVisitorEntryForm(true)}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    size="lg"
+                  >
+                    <LogIn className="h-5 w-5 mr-2" />
+                    Registrar Entrada
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* New Visitor Registration */}
+          {!selectedVisitor && visitorCpf && visitorSearchMutation.isSuccess && (
+            <Card className="border-2 border-orange-500">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-orange-600">
+                  <UserX className="h-5 w-5" />
+                  Visitante Não Encontrado
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-orange-50 p-4 rounded-lg text-center">
+                  <p className="text-orange-800 mb-3">
+                    CPF não cadastrado no sistema
+                  </p>
+                  <Button
+                    onClick={() => setShowNewVisitorForm(true)}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Cadastrar Novo Visitante
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recent Visitor Entries */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-[#0C29AB]">
-                <Users className="h-5 w-5" />
-                Controle de Visitantes
+              <CardTitle className="flex items-center gap-2 text-gray-700">
+                <Clock className="h-5 w-5" />
+                Visitantes Recentes
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-center text-gray-500 py-8">
-                Funcionalidade em desenvolvimento
-              </p>
+              {recentVisitorLogs.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">Nenhuma entrada recente</p>
+              ) : (
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {recentVisitorLogs.slice(0, 10).map((log) => (
+                    <div key={log.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-blue-100 text-blue-600">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{log.personName}</p>
+                          <p className="text-xs text-gray-500">
+                            {log.notes || "Visitante"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge className="bg-blue-100 text-blue-800">
+                          Entrada
+                        </Badge>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(log.timestamp).toLocaleTimeString("pt-BR")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -630,6 +862,173 @@ export default function SecurityGuardAccess() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Visitor Entry Form Modal */}
+      <Dialog open={showVisitorEntryForm} onOpenChange={setShowVisitorEntryForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogIn className="h-5 w-5" />
+              Registrar Entrada do Visitante
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="accessReason">Motivo do Acesso</Label>
+              <select
+                id="accessReason"
+                value={visitorEntryData.accessReason}
+                onChange={(e) => setVisitorEntryData(prev => ({ ...prev, accessReason: e.target.value }))}
+                className="w-full mt-1 p-2 border rounded-md"
+              >
+                <option value="">Selecione o motivo</option>
+                <option value="cliente">Cliente</option>
+                <option value="prestador">Prestador de Serviço</option>
+                <option value="outros">Outros</option>
+              </select>
+            </div>
+            
+            <div>
+              <Label htmlFor="vehiclePlate">Placa do Veículo (opcional)</Label>
+              <Input
+                id="vehiclePlate"
+                value={visitorEntryData.vehiclePlate}
+                onChange={(e) => setVisitorEntryData(prev => ({ ...prev, vehiclePlate: e.target.value }))}
+                placeholder="ABC-1234"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="authorizingPerson">Pessoa Autorizadora</Label>
+              <Input
+                id="authorizingPerson"
+                value={visitorEntryData.authorizingPerson}
+                onChange={(e) => setVisitorEntryData(prev => ({ ...prev, authorizingPerson: e.target.value }))}
+                placeholder="Nome do funcionário"
+                required
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  if (selectedVisitor && visitorEntryData.accessReason && visitorEntryData.authorizingPerson) {
+                    visitorEntryMutation.mutate({
+                      ...visitorEntryData,
+                      visitorId: selectedVisitor.id
+                    });
+                  }
+                }}
+                disabled={!visitorEntryData.accessReason || !visitorEntryData.authorizingPerson || visitorEntryMutation.isPending}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                {visitorEntryMutation.isPending ? "Registrando..." : "Registrar Entrada"}
+              </Button>
+              
+              <Button 
+                onClick={() => setShowVisitorEntryForm(false)}
+                variant="outline"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Visitor Form Modal */}
+      <Dialog open={showNewVisitorForm} onOpenChange={setShowNewVisitorForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Cadastrar Novo Visitante
+            </DialogTitle>
+          </DialogHeader>
+          
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              newVisitorMutation.mutate({
+                name: formData.get('name') as string,
+                cpf: visitorCpf,
+                company: formData.get('company') as string,
+                phone: formData.get('phone') as string,
+                email: formData.get('email') as string,
+              });
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <Label htmlFor="visitorName">Nome Completo</Label>
+              <Input
+                id="visitorName"
+                name="name"
+                placeholder="Nome do visitante"
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="visitorCpfDisplay">CPF</Label>
+              <Input
+                id="visitorCpfDisplay"
+                value={visitorCpf}
+                disabled
+                className="bg-gray-100"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="visitorCompany">Empresa</Label>
+              <Input
+                id="visitorCompany"
+                name="company"
+                placeholder="Nome da empresa"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="visitorPhone">Telefone</Label>
+              <Input
+                id="visitorPhone"
+                name="phone"
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="visitorEmail">E-mail</Label>
+              <Input
+                id="visitorEmail"
+                name="email"
+                type="email"
+                placeholder="email@exemplo.com"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                type="submit"
+                disabled={newVisitorMutation.isPending}
+                className="flex-1 bg-[#0C29AB] hover:bg-[#0C29AB]/90"
+              >
+                {newVisitorMutation.isPending ? "Cadastrando..." : "Cadastrar Visitante"}
+              </Button>
+              
+              <Button 
+                type="button"
+                onClick={() => setShowNewVisitorForm(false)}
+                variant="outline"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

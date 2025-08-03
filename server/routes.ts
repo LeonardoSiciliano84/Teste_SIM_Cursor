@@ -748,6 +748,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para buscar visitante por CPF
+  app.post("/api/access-control/visitor-search", async (req, res) => {
+    try {
+      const { cpf } = req.body;
+      
+      if (!cpf) {
+        return res.status(400).json({ message: "CPF is required" });
+      }
+
+      const visitor = await storage.getVisitorByCpf(cpf);
+      
+      res.json({
+        visitor: visitor || null,
+        found: !!visitor
+      });
+    } catch (error) {
+      console.error("Error searching visitor:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Endpoint para logs de visitantes
+  app.get("/api/access-control/visitor-logs", async (req, res) => {
+    try {
+      const logs = await storage.getAccessLogs();
+      const visitorLogs = logs.filter(log => log.personType === "visitor");
+      res.json(visitorLogs);
+    } catch (error) {
+      console.error("Error fetching visitor logs:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Endpoint para registrar entrada de visitante
+  app.post("/api/visitor-entries", async (req, res) => {
+    try {
+      const {
+        visitorId,
+        accessReason,
+        vehiclePlate,
+        authorizingPerson,
+        photo
+      } = req.body;
+
+      if (!visitorId) {
+        return res.status(400).json({ message: "Visitor ID is required" });
+      }
+
+      // Get visitor from storage
+      const visitor = await storage.getVisitor(visitorId);
+      if (!visitor) {
+        return res.status(404).json({ message: "Visitor not found" });
+      }
+
+      // Increment visitor visits
+      const updatedVisitor = await storage.incrementVisitorVisits(visitorId);
+
+      // Log the visitor entry
+      await storage.createAccessLog({
+        personId: visitorId,
+        personName: visitor.name,
+        personType: "visitor",
+        direction: "entry",
+        timestamp: new Date(),
+        method: "manual",
+        notes: `Acesso autorizado - Motivo: ${accessReason}${authorizingPerson ? ` - Autorizado por: ${authorizingPerson}` : ''}`
+      });
+
+      res.json({
+        success: true,
+        visitor: updatedVisitor,
+        message: "Entrada de visitante registrada com sucesso"
+      });
+    } catch (error) {
+      console.error("Error registering visitor entry:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
