@@ -98,7 +98,7 @@ export function EmployeesPage() {
         const data = await response.json();
         
         // Criar uma nova janela para mostrar o QR Code
-        const newWindow = window.open('', '_blank', 'width=400,height=500');
+        const newWindow = window.open('', '_blank', 'width=450,height=600');
         if (newWindow) {
           newWindow.document.write(`
             <html>
@@ -110,32 +110,53 @@ export function EmployeesPage() {
                     text-align: center; 
                     padding: 20px;
                     background: #f5f5f5;
+                    margin: 0;
                   }
                   .container {
                     background: white;
                     padding: 30px;
                     border-radius: 10px;
                     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                    margin: 20px;
+                    margin: 20px auto;
+                    max-width: 350px;
                   }
                   .qr-code {
                     margin: 20px 0;
+                    display: flex;
+                    justify-content: center;
                   }
                   .employee-info {
                     margin-bottom: 20px;
                     color: #333;
                   }
+                  .employee-info h2 {
+                    color: #0C29AB;
+                    margin-bottom: 15px;
+                  }
+                  .employee-info h3 {
+                    margin: 10px 0;
+                  }
+                  .employee-info p {
+                    margin: 5px 0;
+                    font-size: 14px;
+                  }
                   .print-btn {
                     background: #0C29AB;
                     color: white;
                     border: none;
-                    padding: 10px 20px;
+                    padding: 12px 24px;
                     border-radius: 5px;
                     cursor: pointer;
                     margin-top: 20px;
+                    font-size: 14px;
+                    font-weight: bold;
                   }
                   .print-btn:hover {
                     background: #0922A0;
+                  }
+                  #qrcode canvas {
+                    border: 2px solid #ddd;
+                    border-radius: 8px;
                   }
                   @media print {
                     body { background: white; }
@@ -159,21 +180,28 @@ export function EmployeesPage() {
                     <p><strong>Departamento:</strong> ${employee.department}</p>
                   </div>
                   <div class="qr-code">
-                    <div id="qrcode"></div>
+                    <div id="qrcode">Carregando QR Code...</div>
                   </div>
                   <p><small>QR Code único para controle de acesso</small></p>
                   <button class="print-btn" onclick="window.print()">Imprimir QR Code</button>
                 </div>
-                <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+                
                 <script>
-                  QRCode.toCanvas(document.getElementById('qrcode'), '${data.qrCodeData}', {
-                    width: 200,
-                    margin: 2,
-                    color: {
-                      dark: '#000000',
-                      light: '#FFFFFF'
-                    }
-                  });
+                  // Função para gerar QR Code usando API do Google Charts
+                  function generateQRCode() {
+                    const qrData = encodeURIComponent('${data.qrCodeData}');
+                    const qrSize = '200x200';
+                    const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=' + qrSize + '&data=' + qrData;
+                    
+                    const qrContainer = document.getElementById('qrcode');
+                    qrContainer.innerHTML = '<img src="' + qrUrl + '" alt="QR Code" style="width: 200px; height: 200px; border: 2px solid #ddd; border-radius: 8px;">';
+                  }
+                  
+                  // Gerar QR Code quando a página carregar
+                  document.addEventListener('DOMContentLoaded', generateQRCode);
+                  
+                  // Fallback: gerar após um breve delay
+                  setTimeout(generateQRCode, 100);
                 </script>
               </body>
             </html>
