@@ -22,7 +22,9 @@ import {
   Calendar,
   UserPlus,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  DollarSign,
+  Circle
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -57,7 +59,16 @@ const navigation = [
       { name: "Gestão de Prancha", href: "/prancha-management", icon: Package }
     ]
   },
-  { name: "Manutenção", href: "/maintenance", icon: Wrench },
+  {
+    name: "Manutenção",
+    href: "/maintenance",
+    icon: Wrench,
+    children: [
+      { name: "Lançamento de Custos", href: "/maintenance/costs", icon: DollarSign },
+      { name: "Controle de Pneus", href: "/maintenance/tires", icon: Circle },
+      { name: "Controle por Veículo", href: "/maintenance/vehicles", icon: Car }
+    ]
+  },
   {
     name: "Almoxarifado",
     href: "/warehouse",
