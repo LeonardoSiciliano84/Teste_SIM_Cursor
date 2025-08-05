@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Clock, Users, MapPin, AlertCircle, CheckCircle, XCircle, Plus, CalendarDays, ChevronLeft, ChevronRight, User, Settings, LogOut, Shield, Printer } from "lucide-react";
+import { Calendar, Clock, Users, MapPin, AlertCircle, CheckCircle, XCircle, Plus, CalendarDays, ChevronLeft, ChevronRight, User, Settings, LogOut, Shield, Printer, BarChart3, TrendingUp, PieChart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 interface ScheduleSlot {
   id: string;
@@ -400,6 +401,75 @@ export default function CargoScheduling() {
   const totalSlots = slots.length;
   const availableSlots = slots.filter((slot: ScheduleSlot) => slot.isAvailable && slot.currentBookings < slot.maxCapacity && slot.status !== 'bloqueado').length;
   const occupiedSlots = totalSlots - availableSlots;
+
+  // Dados para gráficos de relatório
+  const getWeeklyBookingsData = () => {
+    const weeks: Record<string, number> = {};
+    allSchedulings.forEach((booking: CargoScheduling) => {
+      const date = new Date(booking.date);
+      const startOfWeek = new Date(date.setDate(date.getDate() - date.getDay()));
+      const weekKey = format(startOfWeek, 'dd/MM', { locale: ptBR });
+      weeks[weekKey] = (weeks[weekKey] || 0) + 1;
+    });
+    
+    return Object.entries(weeks)
+      .map(([week, count]) => ({ week, agendamentos: count }))
+      .sort((a, b) => b.agendamentos - a.agendamentos)
+      .slice(0, 6);
+  };
+
+  const getTopClientsData = () => {
+    const clients: Record<string, number> = {};
+    allSchedulings.forEach((booking: CargoScheduling) => {
+      const client = booking.companyName || 'Cliente não identificado';
+      clients[client] = (clients[client] || 0) + 1;
+    });
+    
+    return Object.entries(clients)
+      .map(([cliente, agendamentos]) => ({ cliente, agendamentos }))
+      .sort((a, b) => b.agendamentos - a.agendamentos)
+      .slice(0, 5);
+  };
+
+  const getHourDistributionData = () => {
+    const hours: Record<string, number> = {};
+    allSchedulings.forEach((booking: CargoScheduling) => {
+      const hour = booking.timeSlot;
+      hours[hour] = (hours[hour] || 0) + 1;
+    });
+    
+    return Object.entries(hours)
+      .map(([horario, agendamentos]) => ({ horario, agendamentos }))
+      .sort((a, b) => a.horario.localeCompare(b.horario));
+  };
+
+  const getStatusData = () => {
+    const statusMap: Record<string, { name: string; color: string }> = {
+      agendado: { name: 'Agendado', color: '#0C29AB' },
+      concluido: { name: 'Concluído', color: '#22c55e' },
+      cancelado: { name: 'Cancelado', color: '#ef4444' },
+      finalizado: { name: 'Finalizado', color: '#22c55e' }
+    };
+
+    const statusCount: Record<string, number> = {};
+    allSchedulings.forEach((booking: CargoScheduling) => {
+      const status = booking.status || 'agendado';
+      statusCount[status] = (statusCount[status] || 0) + 1;
+    });
+
+    return Object.entries(statusCount).map(([status, value]) => ({
+      name: statusMap[status]?.name || status,
+      value,
+      color: statusMap[status]?.color || '#6b7280'
+    }));
+  };
+
+  const weeklyData = getWeeklyBookingsData();
+  const topClientsData = getTopClientsData();
+  const hourDistributionData = getHourDistributionData();
+  const statusData = getStatusData();
+
+  const COLORS = ['#0C29AB', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -962,16 +1032,106 @@ export default function CargoScheduling() {
                 <div className="text-3xl font-bold text-yellow-600 mb-2">
                   {allSchedulings.filter((b: CargoScheduling) => b.status === 'agendado').length}
                 </div>
-                <div className="text-sm text-gray-600">Carregamentos</div>
-                <div className="text-xs text-gray-500 mt-1">0% do total</div>
+                <div className="text-sm text-gray-600">Agendados</div>
+                <div className="text-xs text-gray-500 mt-1">{Math.round((allSchedulings.filter((b: CargoScheduling) => b.status === 'agendado').length / Math.max(allSchedulings.length, 1)) * 100)}% do total</div>
               </div>
 
               <div className="bg-white p-6 rounded-lg shadow-sm border text-center">
                 <div className="text-3xl font-bold text-red-600 mb-2">
                   {allSchedulings.filter((b: CargoScheduling) => b.status === 'cancelado').length}
                 </div>
-                <div className="text-sm text-gray-600">Descarregamentos</div>
-                <div className="text-xs text-gray-500 mt-1">0% do total</div>
+                <div className="text-sm text-gray-600">Cancelados</div>
+                <div className="text-xs text-gray-500 mt-1">{Math.round((allSchedulings.filter((b: CargoScheduling) => b.status === 'cancelado').length / Math.max(allSchedulings.length, 1)) * 100)}% do total</div>
+              </div>
+            </div>
+
+            {/* Gráficos de Relatório */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Agendamentos por Semana */}
+              <div className="bg-white rounded-lg p-6 shadow-sm border">
+                <div className="flex items-center gap-2 mb-4">
+                  <BarChart3 className="h-5 w-5 text-[#0C29AB]" />
+                  <h2 className="text-lg font-semibold">Agendamentos por Semana</h2>
+                </div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={weeklyData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="week" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="agendamentos" fill="#0C29AB" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Top Clientes */}
+              <div className="bg-white rounded-lg p-6 shadow-sm border">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp className="h-5 w-5 text-[#0C29AB]" />
+                  <h2 className="text-lg font-semibold">Top 5 Clientes</h2>
+                </div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topClientsData} layout="horizontal">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="cliente" type="category" width={100} />
+                      <Tooltip />
+                      <Bar dataKey="agendamentos" fill="#22c55e" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Distribuição por Horário */}
+              <div className="bg-white rounded-lg p-6 shadow-sm border">
+                <div className="flex items-center gap-2 mb-4">
+                  <Clock className="h-5 w-5 text-[#0C29AB]" />
+                  <h2 className="text-lg font-semibold">Distribuição por Horário</h2>
+                </div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={hourDistributionData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="horario" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="agendamentos" stroke="#f59e0b" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Status dos Agendamentos */}
+              <div className="bg-white rounded-lg p-6 shadow-sm border">
+                <div className="flex items-center gap-2 mb-4">
+                  <PieChart className="h-5 w-5 text-[#0C29AB]" />
+                  <h2 className="text-lg font-semibold">Status dos Agendamentos</h2>
+                </div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Tooltip />
+                      <Legend />
+                      <Pie
+                        data={statusData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {statusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
 
@@ -1038,10 +1198,12 @@ export default function CargoScheduling() {
                 </div>
 
                 <div className="mt-6 pt-6 border-t">
-                  <h3 className="font-medium mb-3">Distribuição por Horário</h3>
-                  <p className="text-sm text-gray-500 text-center">
-                    Nenhum dado disponível para o período selecionado
-                  </p>
+                  <h3 className="font-medium mb-3">Resumo dos Dados</h3>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <p>• Top cliente: {topClientsData[0]?.cliente || 'N/A'} ({topClientsData[0]?.agendamentos || 0} agendamentos)</p>
+                    <p>• Horário mais popular: {hourDistributionData.sort((a, b) => b.agendamentos - a.agendamentos)[0]?.horario || 'N/A'}</p>
+                    <p>• Taxa de conclusão: {Math.round((allSchedulings.filter(b => b.status === 'concluido').length / Math.max(allSchedulings.length, 1)) * 100)}%</p>
+                  </div>
                 </div>
               </div>
             </div>
