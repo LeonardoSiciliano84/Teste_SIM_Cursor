@@ -147,8 +147,11 @@ export default function CargoScheduling() {
       });
       setShowConfirmationModal(true);
       
+      // Invalidar todas as queries relacionadas ao agendamento
       queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling'] });
       queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/my-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/slots'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/all-bookings'] });
     },
     onError: (error: any) => {
       toast({
@@ -173,6 +176,8 @@ export default function CargoScheduling() {
       setSelectedBooking(null);
       queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling'] });
       queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/my-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/slots'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/all-bookings'] });
     },
     onError: (error: any) => {
       toast({
