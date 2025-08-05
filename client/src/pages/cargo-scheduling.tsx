@@ -113,16 +113,31 @@ export default function CargoScheduling() {
     onSuccess: (data) => {
       // Definir dados do agendamento confirmado
       const selectedSlot = slots.find((slot: ScheduleSlot) => selectedSlots.includes(slot.id));
+      
+      // Parse do horário dos slots selecionados
+      let timeSlot = '08:00';
+      if (selectedSlot?.timeSlot) {
+        timeSlot = selectedSlot.timeSlot;
+      } else if (selectedSlots.length > 0) {
+        // Extract hour from slot ID (e.g., "slot-2025-08-05-8" -> "08:00")
+        const hourMatch = selectedSlots[0].match(/-(\d+)$/);
+        if (hourMatch) {
+          const hour = parseInt(hourMatch[1]);
+          timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+        }
+      }
+      
       setConfirmedBooking({
-        ...data,
-        date: selectedSlot?.date,
-        timeSlot: selectedSlot?.timeSlot,
+        id: data.id,
+        date: selectedSlot?.date || format(selectedDate, 'yyyy-MM-dd'),
+        timeSlot: timeSlot,
         companyName: user?.companyName || 'Empresa Cliente',
         contactPerson: user?.name || user?.email || 'Cliente',
         contactEmail: user?.email || 'cliente@email.com',
         contactPhone: user?.phone || '',
         manager: 'Administrador',
-        notes: bookingForm.notes
+        notes: bookingForm.notes || '',
+        status: 'agendado'
       });
       
       setShowBookingModal(false);
@@ -1137,7 +1152,7 @@ export default function CargoScheduling() {
                   <div>
                     <label className="text-sm font-medium text-gray-700">Data e Horário:</label>
                     <p className="text-sm text-gray-900">
-                      {format(new Date(confirmedBooking.date), 'dd/MM/yyyy')} às {confirmedBooking.timeSlot}
+                      {confirmedBooking.date ? format(new Date(confirmedBooking.date), 'dd/MM/yyyy') : 'Data não disponível'} às {confirmedBooking.timeSlot || 'Horário não disponível'}
                     </p>
                   </div>
                   <div>
