@@ -63,6 +63,39 @@ export default function CargoScheduling() {
   const [selectedBooking, setSelectedBooking] = useState<CargoScheduling | null>(null);
   const [managerAction, setManagerAction] = useState<'complete' | 'cancel'>('complete');
   const [managerNotes, setManagerNotes] = useState('');
+
+  // Mutation para ações do gerente (concluir/cancelar)
+  const managerActionMutation = useMutation({
+    mutationFn: async ({ bookingId, action, notes }: { bookingId: string, action: 'complete' | 'cancel', notes: string }) => {
+      return apiRequest(`/api/cargo-scheduling/manager-action/${bookingId}`, {
+        method: 'PATCH',
+        body: {
+          action,
+          notes
+        }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: managerAction === 'complete' ? "Agendamento concluído" : "Agendamento cancelado",
+        description: "Ação realizada com sucesso.",
+      });
+      setShowManagerModal(false);
+      setManagerNotes('');
+      setSelectedBooking(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/my-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/slots'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/all-bookings'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro interno do servidor",
+        variant: "destructive",
+      });
+    },
+  });
   const [activeTab, setActiveTab] = useState('agendamento');
   const [searchEmail, setSearchEmail] = useState('');
   const [cancellationReason, setCancellationReason] = useState('');
@@ -1097,32 +1130,15 @@ export default function CargoScheduling() {
             </Button>
             <Button 
               variant={managerAction === 'complete' ? 'default' : 'destructive'}
+              disabled={managerActionMutation.isPending}
               onClick={() => {
                 if (selectedBooking) {
-                  // Implementar ação do gestor via API
-                  apiRequest(`/api/cargo-scheduling/manager-action/${selectedBooking.id}`, {
-                    method: 'PATCH',
-                    body: JSON.stringify({
-                      action: managerAction,
-                      notes: managerNotes
-                    })
-                  }).then(() => {
-                    toast({
-                      title: managerAction === 'complete' ? "Agendamento concluído" : "Agendamento cancelado",
-                      description: "Ação realizada com sucesso.",
-                    });
-                    queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling'] });
-                    queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/my-bookings'] });
-                  }).catch((error) => {
-                    toast({
-                      title: "Erro",
-                      description: error.message || "Erro interno do servidor",
-                      variant: "destructive",
-                    });
+                  managerActionMutation.mutate({
+                    bookingId: selectedBooking.id,
+                    action: managerAction,
+                    notes: managerNotes
                   });
                 }
-                setShowManagerModal(false);
-                setManagerNotes('');
               }}
               data-testid="button-confirm-manager"
             >
