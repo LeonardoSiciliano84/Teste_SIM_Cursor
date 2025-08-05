@@ -67,12 +67,9 @@ export default function CargoScheduling() {
   // Mutation para ações do gerente (concluir/cancelar)
   const managerActionMutation = useMutation({
     mutationFn: async ({ bookingId, action, notes }: { bookingId: string, action: 'complete' | 'cancel', notes: string }) => {
-      return apiRequest(`/api/cargo-scheduling/manager-action/${bookingId}`, {
-        method: 'PATCH',
-        body: {
-          action,
-          notes
-        }
+      return apiRequest(`/api/cargo-scheduling/manager-action/${bookingId}`, 'PATCH', {
+        action,
+        notes
       });
     },
     onSuccess: () => {
