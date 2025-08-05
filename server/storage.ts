@@ -3082,6 +3082,29 @@ export class MemStorage implements IStorage {
     return slots.sort((a, b) => a.timeSlot.localeCompare(b.timeSlot));
   }
 
+  async getAllScheduleSlots(): Promise<any[]> {
+    const slots = Array.from(this.scheduleSlots.values());
+    
+    // Atualizar contagem de reservas para cada slot
+    for (const slot of slots) {
+      const bookings = Array.from(this.cargoSchedulings.values())
+        .filter(booking => 
+          booking.slotId === slot.id && 
+          ['agendado', 'confirmado', 'em_andamento'].includes(booking.status)
+        );
+      slot.currentBookings = bookings.length;
+      // Marcar como não disponível se a capacidade for atingida
+      slot.isAvailable = slot.currentBookings < slot.maxCapacity;
+    }
+    
+    return slots.sort((a, b) => {
+      // Ordenar por data primeiro, depois por horário
+      const dateCompare = a.date.localeCompare(b.date);
+      if (dateCompare !== 0) return dateCompare;
+      return a.timeSlot.localeCompare(b.timeSlot);
+    });
+  }
+
   async createScheduleSlot(data: any): Promise<any> {
     const slot = {
       id: randomUUID(),

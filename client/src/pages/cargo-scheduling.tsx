@@ -174,6 +174,12 @@ export default function CargoScheduling() {
     enabled: !!selectedDate,
   });
 
+  // Buscar todos os horários para o modal de bloqueio
+  const { data: allSlots = [] } = useQuery({
+    queryKey: ['/api/cargo-scheduling/slots', 'all'],
+    queryFn: () => apiRequest('/api/cargo-scheduling/slots?all=true'),
+  });
+
   // Buscar agendamentos do cliente (funciona para admin e cliente)
   const { data: mySchedulings = [] } = useQuery({
     queryKey: ['/api/cargo-scheduling/my-bookings', user?.id],
@@ -1415,7 +1421,7 @@ export default function CargoScheduling() {
                     {(() => {
                       // Filter slots for the selected week (7 days from blockWeekDate)
                       const weekStart = new Date(blockWeekDate);
-                      const weekSlots = slots.filter(slot => {
+                      const weekSlots = allSlots.filter(slot => {
                         const slotDate = new Date(slot.date);
                         const diffDays = Math.floor((slotDate.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24));
                         return diffDays >= 0 && diffDays < 7;
@@ -1432,7 +1438,7 @@ export default function CargoScheduling() {
                         if (!acc[date]) acc[date] = [];
                         acc[date].push(slot);
                         return acc;
-                      }, {} as Record<string, typeof slots>);
+                      }, {} as Record<string, typeof allSlots>);
 
                       return Object.entries(groupedSlots).map(([date, daySlots]) => (
                         <div key={date} className="space-y-2">
@@ -1507,7 +1513,7 @@ export default function CargoScheduling() {
                   
                   {(() => {
                     const weekStart = new Date(blockWeekDate);
-                    const weekSlots = slots.filter(slot => {
+                    const weekSlots = allSlots.filter(slot => {
                       const slotDate = new Date(slot.date);
                       const diffDays = Math.floor((slotDate.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24));
                       return diffDays >= 0 && diffDays < 7;

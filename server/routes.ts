@@ -1290,12 +1290,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/cargo-scheduling/slots", async (req, res) => {
     try {
       const date = req.query.date as string;
-      if (!date) {
-        return res.status(400).json({ message: "Data é obrigatória" });
-      }
+      const all = req.query.all as string;
       
-      const slots = await storage.getScheduleSlots(date);
-      res.json(slots);
+      if (all === 'true') {
+        // Retornar todos os slots
+        const slots = await storage.getAllScheduleSlots();
+        res.json(slots);
+      } else if (date) {
+        const slots = await storage.getScheduleSlots(date);
+        res.json(slots);
+      } else {
+        return res.status(400).json({ message: "Data é obrigatória quando all=true não for fornecido" });
+      }
     } catch (error) {
       console.error("Error fetching schedule slots:", error);
       res.status(500).json({ message: "Internal server error" });
