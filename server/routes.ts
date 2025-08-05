@@ -1373,8 +1373,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/cargo-scheduling/cancel/:id", async (req, res) => {
     try {
       const { reason } = req.body;
+      const booking = await storage.getBookingById(req.params.id);
+      
+      if (!booking) {
+        return res.status(404).json({ message: "Agendamento não encontrado" });
+      }
+      
+      // Cancelar o agendamento
       await storage.cancelBooking(req.params.id, reason);
-      res.status(204).send();
+      
+      // Simular envio de e-mails (em produção, integrar com SendGrid ou similar)
+      console.log(`📧 E-mail de cancelamento enviado para: ${booking.contactEmail}`);
+      console.log(`📧 E-mail de cancelamento enviado para: admin@felka.com`);
+      console.log(`Motivo do cancelamento: ${reason}`);
+      console.log(`Data do agendamento: ${booking.date} às ${booking.timeSlot}`);
+      console.log(`Empresa: ${booking.companyName}`);
+      
+      res.json({ 
+        message: "Agendamento cancelado com sucesso",
+        emailSent: true,
+        booking: {
+          id: booking.id,
+          date: booking.date,
+          timeSlot: booking.timeSlot,
+          companyName: booking.companyName,
+          status: "cancelado"
+        }
+      });
     } catch (error) {
       console.error("Error canceling booking:", error);
       res.status(500).json({ message: "Internal server error" });

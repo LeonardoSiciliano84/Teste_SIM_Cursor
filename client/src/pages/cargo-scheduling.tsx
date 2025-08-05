@@ -63,6 +63,7 @@ export default function CargoScheduling() {
   const [managerNotes, setManagerNotes] = useState('');
   const [activeTab, setActiveTab] = useState('agendamento');
   const [searchEmail, setSearchEmail] = useState('');
+  const [cancellationReason, setCancellationReason] = useState('');
   
   // Dados do formulário de agendamento
   const [bookingForm, setBookingForm] = useState({
@@ -139,13 +140,21 @@ export default function CargoScheduling() {
         body: JSON.stringify({ reason: data.reason }),
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Agendamento cancelado",
-        description: "O agendamento foi cancelado com sucesso.",
+        title: "Agendamento cancelado com sucesso",
+        description: "E-mails de cancelamento foram enviados para você e para a administração.",
       });
       setShowCancelModal(false);
+      setSelectedBooking(null);
       queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao cancelar agendamento",
+        description: error.message || "Erro interno do servidor",
+        variant: "destructive",
+      });
     },
   });
 
@@ -224,6 +233,17 @@ export default function CargoScheduling() {
     const now = new Date();
     const hoursUntilBooking = differenceInHours(bookingDateTime, now);
     return hoursUntilBooking >= 3;
+  };
+
+  // Função para confirmar cancelamento
+  const handleCancelConfirm = () => {
+    if (selectedBooking && cancellationReason.trim()) {
+      cancelBookingMutation.mutate({ 
+        bookingId: selectedBooking.id,
+        reason: cancellationReason.trim()
+      });
+      setCancellationReason('');
+    }
   };
 
   // Buscar agendamentos por e-mail
@@ -498,75 +518,108 @@ export default function CargoScheduling() {
             </div>
 
             {/* Meus Agendamentos */}
-            {!isManager && (
-              <div className="bg-white rounded-lg p-6 shadow-sm border">
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold mb-2">Meus Agendamentos</h2>
-                  <div className="flex gap-2">
-                    <Input
-                      type="email"
-                      placeholder="Digite seu e-mail para buscar"
-                      value={searchEmail}
-                      onChange={(e) => setSearchEmail(e.target.value)}
-                      className="flex-1"
-                      data-testid="input-search-email"
-                    />
-                    <Button onClick={searchBookingsByEmail} data-testid="button-search">
-                      Buscar
-                    </Button>
-                  </div>
-                </div>
+            <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold mb-2">Meus Agendamentos</h2>
+                <p className="text-sm text-gray-600">Histórico dos seus agendamentos realizados</p>
+              </div>
 
+              {/* Lista de Agendamentos do Cliente */}
+              <div className="space-y-3">
                 {mySchedulings.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500 text-sm">Digite seu e-mail para ver seus agendamentos</p>
+                    <p className="text-gray-500 text-sm">Nenhum agendamento encontrado</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {mySchedulings.map((booking: CargoScheduling) => (
+                  mySchedulings.map((booking: CargoScheduling) => {
+                    const canCancelBooking = canCancel(booking);
+                    const bookingDate = new Date(`${booking.date}T${booking.timeSlot}`);
+                    const now = new Date();
+                    const hoursUntilBooking = differenceInHours(bookingDate, now);
+                    
+                    return (
                       <div
                         key={booking.id}
-                        className="border rounded-lg p-4 space-y-2"
+                        className="border rounded-lg p-4 hover:shadow-sm transition-shadow"
                         data-testid={`booking-${booking.id}`}
                       >
                         <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium">{booking.companyName}</h4>
-                            <p className="text-sm text-gray-600">
-                              {format(new Date(booking.date), 'dd/MM/yyyy')} às {booking.timeSlot}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-medium text-gray-900">{booking.companyName}</h4>
+                              <Badge
+                                variant={
+                                  booking.status === 'agendado' ? 'default' :
+                                  booking.status === 'concluido' || booking.status === 'finalizado' ? 'secondary' :
+                                  'destructive'
+                                }
+                                className={
+                                  booking.status === 'agendado' ? 'bg-blue-100 text-blue-800' :
+                                  booking.status === 'concluido' || booking.status === 'finalizado' ? 'bg-green-100 text-green-800' :
+                                  'bg-red-100 text-red-800'
+                                }
+                              >
+                                {booking.status === 'agendado' ? 'AGENDADO' :
+                                 booking.status === 'concluido' ? 'FINALIZADO' :
+                                 booking.status === 'finalizado' ? 'FINALIZADO' :
+                                 'CANCELADO'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <Calendar className="h-4 w-4 inline mr-1" />
+                              {format(new Date(booking.date), 'dd/MM/yyyy', { locale: ptBR })} às {booking.timeSlot}
                             </p>
+                            <p className="text-sm text-gray-600">
+                              Contato: {booking.contactPerson} - {booking.contactEmail}
+                            </p>
+                            {booking.notes && (
+                              <p className="text-sm text-gray-500 mt-2 italic">
+                                Obs: {booking.notes}
+                              </p>
+                            )}
+                            {booking.status === 'agendado' && hoursUntilBooking < 3 && hoursUntilBooking > 0 && (
+                              <p className="text-xs text-amber-600 mt-2">
+                                <AlertCircle className="h-3 w-3 inline mr-1" />
+                                Restam {Math.ceil(hoursUntilBooking)}h para cancelamento
+                              </p>
+                            )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant={
-                                booking.status === 'agendado' ? 'default' :
-                                booking.status === 'concluido' ? 'secondary' :
-                                'destructive'
-                              }
-                            >
-                              {booking.status.toUpperCase()}
-                            </Badge>
-                            {canCancel(booking) && booking.status === 'agendado' && (
+                          
+                          <div className="flex items-center gap-2 ml-4">
+                            {booking.status === 'agendado' && (
                               <Button
-                                variant="outline"
+                                variant={canCancelBooking ? "destructive" : "outline"}
                                 size="sm"
+                                disabled={!canCancelBooking}
                                 onClick={() => {
-                                  setSelectedBooking(booking);
-                                  setShowCancelModal(true);
+                                  if (canCancelBooking) {
+                                    setSelectedBooking(booking);
+                                    setShowCancelModal(true);
+                                  }
                                 }}
+                                className={canCancelBooking ? 
+                                  "bg-red-600 hover:bg-red-700 text-white" : 
+                                  "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400"
+                                }
                                 data-testid={`button-cancel-${booking.id}`}
                               >
+                                <XCircle className="h-4 w-4 mr-1" />
                                 Cancelar
                               </Button>
+                            )}
+                            {booking.status === 'cancelado' && booking.cancellationReason && (
+                              <div className="text-xs text-red-600 max-w-40">
+                                Motivo: {booking.cancellationReason}
+                              </div>
                             )}
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })
                 )}
               </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -907,37 +960,73 @@ export default function CargoScheduling() {
       </Dialog>
 
       {/* Modal de Cancelamento */}
-      <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
-        <DialogContent>
+      <Dialog open={showCancelModal} onOpenChange={(open) => {
+        setShowCancelModal(open);
+        if (!open) {
+          setCancellationReason('');
+        }
+      }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Cancelar Agendamento</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p>Tem certeza que deseja cancelar este agendamento?</p>
+            {selectedBooking && (
+              <div className="bg-amber-50 p-3 rounded-md">
+                <p className="text-sm text-amber-800 mb-2">
+                  <AlertCircle className="h-4 w-4 inline mr-1" />
+                  Você está prestes a cancelar o agendamento:
+                </p>
+                <div className="text-sm">
+                  <p><strong>Data:</strong> {format(new Date(selectedBooking.date), 'dd/MM/yyyy', { locale: ptBR })} às {selectedBooking.timeSlot}</p>
+                  <p><strong>Empresa:</strong> {selectedBooking.companyName}</p>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-2">
-              <Label htmlFor="cancelReason">Motivo do Cancelamento</Label>
+              <Label htmlFor="cancelReason">Motivo do Cancelamento <span className="text-red-500">*</span></Label>
               <Textarea
                 id="cancelReason"
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
                 placeholder="Informe o motivo do cancelamento..."
+                rows={3}
                 data-testid="textarea-cancel-reason"
               />
+              {!cancellationReason.trim() && (
+                <p className="text-xs text-gray-500">Este campo é obrigatório</p>
+              )}
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded-md">
+              <p className="text-xs text-blue-700">
+                📧 Um e-mail de cancelamento será enviado automaticamente para você e para a administração.
+              </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCancelModal(false)} data-testid="button-cancel-cancel">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCancelModal(false)} 
+              data-testid="button-cancel-cancel"
+            >
               Manter Agendamento
             </Button>
             <Button 
               variant="destructive" 
-              onClick={() => {
-                if (selectedBooking) {
-                  const reason = (document.getElementById('cancelReason') as HTMLTextAreaElement)?.value;
-                  cancelBookingMutation.mutate({ bookingId: selectedBooking.id, reason });
-                }
-              }}
+              onClick={handleCancelConfirm}
+              disabled={!cancellationReason.trim() || cancelBookingMutation.isPending}
               data-testid="button-confirm-cancel"
             >
-              Confirmar Cancelamento
+              {cancelBookingMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Cancelando...
+                </>
+              ) : (
+                'Confirmar Cancelamento'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -3155,6 +3155,18 @@ export class MemStorage implements IStorage {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
+  async getBookingById(id: string): Promise<any | null> {
+    const booking = this.cargoSchedulings.get(id);
+    if (!booking) return null;
+    
+    const slot = this.scheduleSlots.get(booking.slotId);
+    return {
+      ...booking,
+      date: slot?.date,
+      timeSlot: slot?.timeSlot,
+    };
+  }
+
   async getAllBookings(): Promise<any[]> {
     return Array.from(this.cargoSchedulings.values())
       .map(booking => {
