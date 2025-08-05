@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Clock, Users, MapPin, AlertCircle, CheckCircle, XCircle, Plus, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Clock, Users, MapPin, AlertCircle, CheckCircle, XCircle, Plus, CalendarDays, ChevronLeft, ChevronRight, User, Settings, LogOut, Shield } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth";
 
 interface ScheduleSlot {
@@ -64,12 +66,7 @@ export default function CargoScheduling() {
   
   // Dados do formulário de agendamento
   const [bookingForm, setBookingForm] = useState({
-    companyName: '',
-    contactPerson: '',
-    contactEmail: '',
-    contactPhone: '',
-    notes: '',
-    manager: ''
+    notes: ''
   });
   
   const { user } = useAuth();
@@ -121,12 +118,7 @@ export default function CargoScheduling() {
       setShowBookingModal(false);
       setSelectedSlots([]);
       setBookingForm({
-        companyName: '',
-        contactPerson: '',
-        contactEmail: '',
-        contactPhone: '',
-        notes: '',
-        manager: ''
+        notes: ''
       });
       queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling'] });
     },
@@ -210,20 +202,17 @@ export default function CargoScheduling() {
 
   // Função para confirmar agendamento
   const handleBookingSubmit = () => {
-    if (!bookingForm.companyName || !bookingForm.contactPerson || !bookingForm.contactEmail) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     // Criar um agendamento para cada slot selecionado
     selectedSlots.forEach(slotId => {
       createBookingMutation.mutate({
         slotId,
         ...bookingForm,
+        // Dados preenchidos automaticamente do usuário logado
+        companyName: user?.companyName || 'Empresa Cliente',
+        contactPerson: user?.name || user?.email || 'Cliente',
+        contactEmail: user?.email || 'cliente@email.com',
+        contactPhone: user?.phone || '',
+        manager: 'Administrador',
         clientId: user?.id || 'guest',
       });
     });
@@ -272,36 +261,86 @@ export default function CargoScheduling() {
             </div>
             <span className="text-xl font-semibold text-gray-900">Sistema de Agendamento Felka</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant={activeTab === 'agendamento' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('agendamento')}
-              className={activeTab === 'agendamento' ? 'bg-[#0C29AB] hover:bg-[#0A2299]' : ''}
-              data-testid="tab-agendamento"
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Agendamento
-            </Button>
-            {isManager && (
+          
+          <div className="flex items-center gap-4">
+            {/* Navegação por Botões */}
+            <div className="flex items-center gap-2">
               <Button 
-                variant={activeTab === 'admin' ? 'default' : 'outline'}
-                onClick={() => setActiveTab('admin')}
-                className={activeTab === 'admin' ? 'bg-[#0C29AB] hover:bg-[#0A2299]' : ''}
-                data-testid="tab-admin"
+                variant={activeTab === 'agendamento' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('agendamento')}
+                className={activeTab === 'agendamento' ? 'bg-[#0C29AB] hover:bg-[#0A2299]' : ''}
+                data-testid="tab-agendamento"
               >
-                <Users className="h-4 w-4 mr-2" />
-                Admin
+                <Calendar className="h-4 w-4 mr-2" />
+                Agendamento
               </Button>
-            )}
-            <Button 
-              variant={activeTab === 'relatorios' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('relatorios')}
-              className={activeTab === 'relatorios' ? 'bg-[#0C29AB] hover:bg-[#0A2299]' : ''}
-              data-testid="tab-relatorios"
-            >
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Relatórios
-            </Button>
+              {isManager && (
+                <Button 
+                  variant={activeTab === 'admin' ? 'default' : 'outline'}
+                  onClick={() => setActiveTab('admin')}
+                  className={activeTab === 'admin' ? 'bg-[#0C29AB] hover:bg-[#0A2299]' : ''}
+                  data-testid="tab-admin"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Admin
+                </Button>
+              )}
+              <Button 
+                variant={activeTab === 'relatorios' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('relatorios')}
+                className={activeTab === 'relatorios' ? 'bg-[#0C29AB] hover:bg-[#0A2299]' : ''}
+                data-testid="tab-relatorios"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Relatórios
+              </Button>
+            </div>
+
+            {/* Dropdown do Perfil do Usuário */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 p-2" data-testid="user-profile-menu">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.profileImage || ""} />
+                    <AvatarFallback className="bg-[#0C29AB] text-white">
+                      {user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="text-left">
+                    <p className="text-sm font-medium">{user?.name || user?.email}</p>
+                    <p className="text-xs text-gray-500">{user?.role === 'admin' ? 'Administrador' : 'Cliente'}</p>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem data-testid="user-data">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Dados do Usuário</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem data-testid="security">
+                  <Shield className="mr-2 h-4 w-4" />
+                  <span>Segurança</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem data-testid="settings">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Configurações</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="text-red-600 focus:text-red-600"
+                  onClick={() => {
+                    // Implementar logout
+                    console.log('Logout');
+                  }}
+                  data-testid="logout"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sair</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -829,59 +868,15 @@ export default function CargoScheduling() {
               </p>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="companyName">Nome da Empresa *</Label>
-              <Input
-                id="companyName"
-                value={bookingForm.companyName}
-                onChange={(e) => setBookingForm(prev => ({ ...prev, companyName: e.target.value }))}
-                data-testid="input-company-name"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="contactPerson">Pessoa de Contato *</Label>
-              <Input
-                id="contactPerson"
-                value={bookingForm.contactPerson}
-                onChange={(e) => setBookingForm(prev => ({ ...prev, contactPerson: e.target.value }))}
-                data-testid="input-contact-person"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="contactEmail">E-mail *</Label>
-              <Input
-                id="contactEmail"
-                type="email"
-                value={bookingForm.contactEmail}
-                onChange={(e) => setBookingForm(prev => ({ ...prev, contactEmail: e.target.value }))}
-                data-testid="input-contact-email"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="contactPhone">Telefone</Label>
-              <Input
-                id="contactPhone"
-                value={bookingForm.contactPhone}
-                onChange={(e) => setBookingForm(prev => ({ ...prev, contactPhone: e.target.value }))}
-                data-testid="input-contact-phone"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="manager">Gestor Responsável</Label>
-              <Select value={bookingForm.manager} onValueChange={(value) => setBookingForm(prev => ({ ...prev, manager: value }))}>
-                <SelectTrigger data-testid="select-manager">
-                  <SelectValue placeholder="Selecione o gestor" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
-                  <SelectItem value="coordinator">Coordenador</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Dados do Cliente (Preenchidos Automaticamente) */}
+            <div className="bg-gray-50 p-4 rounded-md">
+              <h4 className="font-medium text-gray-900 mb-2">Dados do Agendamento</h4>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p><strong>Empresa:</strong> {user?.companyName || 'Empresa Cliente'}</p>
+                <p><strong>Contato:</strong> {user?.name || user?.email || 'Cliente'}</p>
+                <p><strong>E-mail:</strong> {user?.email || 'cliente@email.com'}</p>
+                <p><strong>Gestor:</strong> Administrador</p>
+              </div>
             </div>
             
             <div className="space-y-2">
@@ -891,6 +886,7 @@ export default function CargoScheduling() {
                 value={bookingForm.notes}
                 onChange={(e) => setBookingForm(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Informações adicionais sobre a carga..."
+                rows={4}
                 data-testid="textarea-notes"
               />
             </div>
