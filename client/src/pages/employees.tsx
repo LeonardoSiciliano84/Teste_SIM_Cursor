@@ -307,9 +307,15 @@ export function EmployeesPage() {
             Exportar XLSX
           </Button>
           <Link href="/employees/new">
-            <Button className="gap-2" style={{ backgroundColor: '#0C29AB', color: 'white' }}>
+            <Button className="gap-2 mr-3" style={{ backgroundColor: '#0C29AB', color: 'white' }}>
               <Plus className="h-4 w-4" />
               Novo Colaborador
+            </Button>
+          </Link>
+          <Link href="/external-persons">
+            <Button className="gap-2" style={{ backgroundColor: '#059669', color: 'white' }}>
+              <Plus className="h-4 w-4" />
+              Novo Externo
             </Button>
           </Link>
         </div>

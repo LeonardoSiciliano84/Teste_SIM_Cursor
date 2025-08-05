@@ -1525,6 +1525,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============= MÓDULO DE TERCEIROS (PESSOAS EXTERNAS) =============
+  
+  // Listar todas as pessoas externas
+  app.get("/api/external-persons", async (req, res) => {
+    try {
+      const persons = await storage.getExternalPersons();
+      res.json({ persons });
+    } catch (error) {
+      console.error("Error fetching external persons:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Obter pessoa externa por ID
+  app.get("/api/external-persons/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const person = await storage.getExternalPerson(id);
+      
+      if (!person) {
+        return res.status(404).json({ message: "Pessoa não encontrada" });
+      }
+      
+      res.json({ person });
+    } catch (error) {
+      console.error("Error fetching external person:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Criar nova pessoa externa
+  app.post("/api/external-persons", async (req, res) => {
+    try {
+      const personData = req.body;
+      
+      // Verificar se email já existe
+      const existingPerson = await storage.getExternalPersonByEmail(personData.email);
+      if (existingPerson) {
+        return res.status(400).json({ message: "Email já cadastrado no sistema" });
+      }
+      
+      const person = await storage.createExternalPerson(personData);
+      res.status(201).json({ person });
+    } catch (error) {
+      console.error("Error creating external person:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Atualizar pessoa externa
+  app.put("/api/external-persons/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const person = await storage.updateExternalPerson(id, updates);
+      
+      if (!person) {
+        return res.status(404).json({ message: "Pessoa não encontrada" });
+      }
+      
+      res.json({ person });
+    } catch (error) {
+      console.error("Error updating external person:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Atualizar status da pessoa externa
+  app.patch("/api/external-persons/:id/status", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status, reason } = req.body;
+      
+      const person = await storage.updateExternalPersonStatus(id, status, reason);
+      
+      if (!person) {
+        return res.status(404).json({ message: "Pessoa não encontrada" });
+      }
+      
+      res.json({ person });
+    } catch (error) {
+      console.error("Error updating external person status:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

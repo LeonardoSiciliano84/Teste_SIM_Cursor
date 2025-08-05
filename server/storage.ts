@@ -72,6 +72,9 @@ import {
   type InsertTire,
   type TireMovement,
   type InsertTireMovement,
+  // Tipos de terceiros
+  type ExternalPerson,
+  type InsertExternalPerson,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -316,6 +319,14 @@ export interface IStorage {
   // Tire Movement methods
   getTireMovements(tireId?: string): Promise<TireMovement[]>;
   createTireMovement(movement: InsertTireMovement): Promise<TireMovement>;
+
+  // External Person methods (Terceiros)
+  getExternalPersons(): Promise<ExternalPerson[]>;
+  getExternalPerson(id: string): Promise<ExternalPerson | undefined>;
+  getExternalPersonByEmail(email: string): Promise<ExternalPerson | undefined>;
+  createExternalPerson(person: InsertExternalPerson): Promise<ExternalPerson>;
+  updateExternalPerson(id: string, person: Partial<InsertExternalPerson>): Promise<ExternalPerson | undefined>;
+  updateExternalPersonStatus(id: string, status: string, reason?: string): Promise<ExternalPerson | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -357,6 +368,8 @@ export class MemStorage implements IStorage {
   private clientWarehouseMaterials: Map<string, ClientWarehouseMaterial>;
   private clientWarehouseEntries: Map<string, ClientWarehouseEntry>;
   private clientWarehouseExits: Map<string, ClientWarehouseExit>;
+  // Módulo de terceiros
+  private externalPersons: Map<string, ExternalPerson>;
 
   constructor() {
     this.users = new Map();
@@ -397,6 +410,8 @@ export class MemStorage implements IStorage {
     this.clientWarehouseMaterials = new Map();
     this.clientWarehouseEntries = new Map();
     this.clientWarehouseExits = new Map();
+    // Módulo de terceiros
+    this.externalPersons = new Map();
     
     // Initialize with default admin user and sample data
     this.initializeDefaultData();
@@ -3325,6 +3340,63 @@ export class MemStorage implements IStorage {
     }
     
     return blockedSlots;
+  }
+
+  // ============= MÉTODOS DE TERCEIROS (PESSOAS EXTERNAS) =============
+  
+  async getExternalPersons(): Promise<ExternalPerson[]> {
+    return Array.from(this.externalPersons.values());
+  }
+
+  async getExternalPerson(id: string): Promise<ExternalPerson | undefined> {
+    return this.externalPersons.get(id);
+  }
+
+  async getExternalPersonByEmail(email: string): Promise<ExternalPerson | undefined> {
+    return Array.from(this.externalPersons.values())
+      .find(person => person.email === email);
+  }
+
+  async createExternalPerson(person: InsertExternalPerson): Promise<ExternalPerson> {
+    const newPerson: ExternalPerson = {
+      id: randomUUID(),
+      ...person,
+      status: 'ativo',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    this.externalPersons.set(newPerson.id, newPerson);
+    return newPerson;
+  }
+
+  async updateExternalPerson(id: string, person: Partial<InsertExternalPerson>): Promise<ExternalPerson | undefined> {
+    const existing = this.externalPersons.get(id);
+    if (!existing) return undefined;
+
+    const updated: ExternalPerson = {
+      ...existing,
+      ...person,
+      updatedAt: new Date(),
+    };
+
+    this.externalPersons.set(id, updated);
+    return updated;
+  }
+
+  async updateExternalPersonStatus(id: string, status: string, reason?: string): Promise<ExternalPerson | undefined> {
+    const existing = this.externalPersons.get(id);
+    if (!existing) return undefined;
+
+    const updated: ExternalPerson = {
+      ...existing,
+      status,
+      statusReason: reason,
+      updatedAt: new Date(),
+    };
+
+    this.externalPersons.set(id, updated);
+    return updated;
   }
 
 }

@@ -1,622 +1,472 @@
 import { useState } from "react";
-import { Plus, Users, Building2, UserCheck, Search, Edit, Trash2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { 
+  UserPlus, 
+  Search, 
+  Filter, 
+  Edit, 
+  UserX, 
+  CheckCircle,
+  Mail,
+  Building,
+  Phone,
+  User,
+  Shield,
+  Calendar
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { ExternalPersonForm } from "@/components/employees/external-person-form";
+import type { ExternalPerson } from "@shared/schema";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-const externalPersonSchema = z.object({
-  fullName: z.string().min(1, "Nome completo é obrigatório"),
-  email: z.string().email("Email deve ser válido"),
-  personType: z.enum(["cliente", "terceirizado", "prestador"]),
-  companyName: z.string().optional(),
-  externalCompany: z.string().optional(),
-  phone: z.string().optional(),
-  document: z.string().optional(),
-  position: z.string().optional(),
-  hasSystemAccess: z.boolean().default(false),
-  allowedModules: z.array(z.string()).default([]),
-  accessLevel: z.string().default("basic"),
-  status: z.string().default("ativo"),
-});
-
-type ExternalPersonForm = z.infer<typeof externalPersonSchema>;
-
-interface ExternalPerson {
-  id: string;
-  fullName: string;
-  email: string;
-  phone?: string;
-  document?: string;
-  companyName?: string;
-  externalCompany?: string;
-  position?: string;
-  personType: string;
-  hasSystemAccess: boolean;
-  allowedModules: string[];
-  accessLevel: string;
-  status: string;
-  createdAt: string;
-}
-
-const availableModules = [
-  { id: 'cargo-scheduling', name: 'Agendamento de Carreamento' },
-  { id: 'access-control', name: 'Controle de Acesso' },
-  { id: 'warehouse', name: 'Almoxarifado' },
-  { id: 'reports', name: 'Relatórios' },
-];
-
-export default function ExternalPersons() {
-  const [showModal, setShowModal] = useState(false);
-  const [editingPerson, setEditingPerson] = useState<ExternalPerson | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<string>('all');
-  const [selectedModules, setSelectedModules] = useState<string[]>([]);
-
+export function ExternalPersonsPage() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("todos");
+  const [filterStatus, setFilterStatus] = useState("todos");
+  const [showNewExternalForm, setShowNewExternalForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [selectedExternal, setSelectedExternal] = useState<ExternalPerson | null>(null);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [statusAction, setStatusAction] = useState<"activate" | "deactivate">("deactivate");
+  const [deactivationReason, setDeactivationReason] = useState("");
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const form = useForm<ExternalPersonForm>({
-    resolver: zodResolver(externalPersonSchema),
-    defaultValues: {
-      fullName: '',
-      email: '',
-      personType: 'cliente',
-      companyName: '',
-      externalCompany: '',
-      phone: '',
-      document: '',
-      position: '',
-      hasSystemAccess: false,
-      allowedModules: [],
-      accessLevel: 'basic',
-      status: 'ativo',
-    },
-  });
-
-  // Buscar pessoas externas
+  // Buscar terceiros
   const { data: externalPersons = [], isLoading } = useQuery({
-    queryKey: ['/api/external-persons'],
+    queryKey: ["/api/external-persons"],
   });
 
-  // Mutação para criar/editar pessoa externa
-  const savePersonMutation = useMutation({
-    mutationFn: async (data: ExternalPersonForm) => {
-      const url = editingPerson 
-        ? `/api/external-persons/${editingPerson.id}`
-        : '/api/external-persons';
-      
-      return apiRequest(url, {
-        method: editingPerson ? 'PUT' : 'POST',
-        body: JSON.stringify({ ...data, allowedModules: selectedModules }),
+  // Filtrar terceiros
+  const filteredExternals = (externalPersons as ExternalPerson[]).filter((external: ExternalPerson) => {
+    const matchesSearch = 
+      external.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      external.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      external.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesType = filterType === "todos" || external.personType === filterType;
+    const matchesStatus = filterStatus === "todos" || external.status === filterStatus;
+    
+    return matchesSearch && matchesType && matchesStatus;
+  });
+
+  // Mutation para alterar status
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status, reason }: { id: string; status: string; reason?: string }) => {
+      return apiRequest(`/api/external-persons/${id}/status`, 'PATCH', { 
+        status, 
+        inactiveReason: reason 
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, { status }) => {
       toast({
-        title: editingPerson ? "Pessoa externa atualizada!" : "Pessoa externa cadastrada!",
-        description: "Os dados foram salvos com sucesso.",
+        title: `Terceiro ${status === 'ativo' ? 'reativado' : 'desativado'}`,
+        description: `O status foi alterado com sucesso.`,
       });
-      setShowModal(false);
-      setEditingPerson(null);
-      form.reset();
-      setSelectedModules([]);
-      queryClient.invalidateQueries({ queryKey: ['/api/external-persons'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/external-persons"] });
+      setShowStatusDialog(false);
+      setSelectedExternal(null);
+      setDeactivationReason("");
     },
     onError: (error: any) => {
       toast({
-        title: "Erro ao salvar",
+        title: "Erro ao alterar status",
         description: error.message || "Erro interno do servidor",
         variant: "destructive",
       });
     },
   });
 
-  // Mutação para excluir pessoa externa
-  const deletePersonMutation = useMutation({
+  // Mutation para reenviar dados de acesso
+  const resendAccessMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/external-persons/${id}`, {
-        method: 'DELETE',
-      });
+      return apiRequest(`/api/external-persons/${id}/resend-access`, 'POST');
     },
     onSuccess: () => {
       toast({
-        title: "Pessoa externa excluída",
-        description: "O cadastro foi removido com sucesso.",
+        title: "Dados de acesso enviados",
+        description: "Os dados de acesso foram reenviados por e-mail.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/external-persons'] });
     },
     onError: (error: any) => {
       toast({
-        title: "Erro ao excluir",
+        title: "Erro ao reenviar dados",
         description: error.message || "Erro interno do servidor",
         variant: "destructive",
       });
     },
   });
 
-  const handleEdit = (person: ExternalPerson) => {
-    setEditingPerson(person);
-    setSelectedModules(person.allowedModules || []);
-    form.reset({
-      fullName: person.fullName,
-      email: person.email,
-      personType: person.personType as any,
-      companyName: person.companyName || '',
-      externalCompany: person.externalCompany || '',
-      phone: person.phone || '',
-      document: person.document || '',
-      position: person.position || '',
-      hasSystemAccess: person.hasSystemAccess,
-      allowedModules: person.allowedModules || [],
-      accessLevel: person.accessLevel,
-      status: person.status,
+  const handleEdit = (external: ExternalPerson) => {
+    setSelectedExternal(external);
+    setShowEditForm(true);
+  };
+
+  const handleStatusChange = (external: ExternalPerson, action: "activate" | "deactivate") => {
+    setSelectedExternal(external);
+    setStatusAction(action);
+    setShowStatusDialog(true);
+  };
+
+  const confirmStatusChange = () => {
+    if (!selectedExternal) return;
+    
+    const newStatus = statusAction === "activate" ? "ativo" : "inativo";
+    statusMutation.mutate({
+      id: selectedExternal.id,
+      status: newStatus,
+      reason: statusAction === "deactivate" ? deactivationReason : undefined
     });
-    setShowModal(true);
   };
 
-  const handleAdd = () => {
-    setEditingPerson(null);
-    setSelectedModules([]);
-    form.reset();
-    setShowModal(true);
+  const handleResendAccess = (external: ExternalPerson) => {
+    resendAccessMutation.mutate(external.id);
   };
 
-  const onSubmit = (data: ExternalPersonForm) => {
-    savePersonMutation.mutate(data);
-  };
-
-  const filteredPersons = externalPersons.filter((person: ExternalPerson) => {
-    const matchesSearch = person.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         person.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (person.companyName || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterType === 'all' || person.personType === filterType;
-    
-    return matchesSearch && matchesFilter;
-  });
-
-  const personTypeLabel = (type: string) => {
-    switch (type) {
-      case 'cliente': return 'Cliente';
-      case 'terceirizado': return 'Terceirizado';
-      case 'prestador': return 'Prestador';
-      default: return type;
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "ativo":
+        return <Badge className="bg-green-100 text-green-800">Ativo</Badge>;
+      case "inativo":
+        return <Badge className="bg-red-100 text-red-800">Inativo</Badge>;
+      case "bloqueado":
+        return <Badge className="bg-orange-100 text-orange-800">Bloqueado</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
-  const renderPersonCard = (person: ExternalPerson) => (
-    <Card key={person.id} className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-semibold text-lg">{person.fullName}</h3>
-              <Badge variant={
-                person.personType === 'cliente' ? 'default' :
-                person.personType === 'terceirizado' ? 'secondary' :
-                'outline'
-              }>
-                {personTypeLabel(person.personType)}
-              </Badge>
-              {person.hasSystemAccess && (
-                <Badge variant="outline" className="text-green-600 border-green-600">
-                  <UserCheck className="w-3 h-3 mr-1" />
-                  Acesso Sistema
-                </Badge>
-              )}
-            </div>
-            
-            <div className="space-y-1 text-sm text-gray-600">
-              <p><strong>Email:</strong> {person.email}</p>
-              {person.phone && <p><strong>Telefone:</strong> {person.phone}</p>}
-              {person.document && <p><strong>Documento:</strong> {person.document}</p>}
-              {person.companyName && <p><strong>Empresa:</strong> {person.companyName}</p>}
-              {person.externalCompany && <p><strong>Empresa Externa:</strong> {person.externalCompany}</p>}
-              {person.position && <p><strong>Cargo:</strong> {person.position}</p>}
-            </div>
+  const getTypeBadge = (type: string) => {
+    switch (type) {
+      case "cliente":
+        return <Badge className="bg-blue-100 text-blue-800">Cliente</Badge>;
+      case "porteiro":
+        return <Badge className="bg-purple-100 text-purple-800">Porteiro</Badge>;
+      default:
+        return <Badge variant="secondary">{type}</Badge>;
+    }
+  };
 
-            {person.hasSystemAccess && person.allowedModules.length > 0 && (
-              <div className="mt-3">
-                <p className="text-sm font-medium text-gray-700 mb-1">Módulos Permitidos:</p>
-                <div className="flex flex-wrap gap-1">
-                  {person.allowedModules.map(moduleId => {
-                    const module = availableModules.find(m => m.id === moduleId);
-                    return module ? (
-                      <Badge key={moduleId} variant="outline" className="text-xs">
-                        {module.name}
-                      </Badge>
-                    ) : null;
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex gap-2 ml-4">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleEdit(person)}
-              data-testid={`button-edit-${person.id}`}
-            >
-              <Edit className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => deletePersonMutation.mutate(person.id)}
-              className="text-red-600 hover:text-red-700"
-              data-testid={`button-delete-${person.id}`}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
         </div>
-      </CardContent>
-    </Card>
-  );
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Pessoas Externas
-        </h1>
-        <p className="text-gray-600">
-          Cadastro de clientes, terceirizados e prestadores de serviço
-        </p>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Controle de Terceiros</h1>
+          <p className="text-gray-600">Gerencie clientes e porteiros de empresas terceirizadas</p>
+        </div>
+        <Button 
+          onClick={() => setShowNewExternalForm(true)}
+          className="bg-[#0C29AB] hover:bg-[#0A2299]"
+          data-testid="button-new-external"
+        >
+          <UserPlus className="h-4 w-4 mr-2" />
+          + Novo Externo
+        </Button>
       </div>
 
-      {/* Controles */}
-      <div className="mb-6 space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Buscar por nome, email ou empresa..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-                data-testid="input-search"
-              />
+      {/* Filtros */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="search">Buscar</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="search"
+                  placeholder="Nome, empresa ou e-mail..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="filterType">Tipo de Permissão</Label>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger data-testid="select-filter-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os tipos</SelectItem>
+                  <SelectItem value="cliente">Cliente</SelectItem>
+                  <SelectItem value="porteiro">Porteiro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="filterStatus">Status</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger data-testid="select-filter-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os status</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                  <SelectItem value="bloqueado">Bloqueado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-end">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilterType("todos");
+                  setFilterStatus("todos");
+                }}
+                data-testid="button-clear-filters"
+              >
+                Limpar Filtros
+              </Button>
             </div>
           </div>
-          
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filtrar por tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os tipos</SelectItem>
-              <SelectItem value="cliente">Clientes</SelectItem>
-              <SelectItem value="terceirizado">Terceirizados</SelectItem>
-              <SelectItem value="prestador">Prestadores</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Button
-            onClick={handleAdd}
-            className="bg-[#0C29AB] hover:bg-blue-800"
-            data-testid="button-add-person"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Pessoa
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Lista de Pessoas */}
-      <div className="space-y-4">
-        {isLoading ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500">Carregando...</p>
+      {/* Tabela de Terceiros */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Terceiros Cadastrados ({filteredExternals.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Empresa</TableHead>
+                  <TableHead>Contato</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Cadastrado em</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredExternals.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      Nenhum terceiro encontrado
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredExternals.map((external: ExternalPerson) => (
+                    <TableRow key={external.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          {external.photo ? (
+                            <img 
+                              src={external.photo} 
+                              alt={external.fullName}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                              <User className="h-4 w-4 text-gray-500" />
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-medium">{external.fullName}</div>
+                            {external.position && (
+                              <div className="text-sm text-gray-500">{external.position}</div>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Building className="h-4 w-4 text-gray-400" />
+                          {external.companyName}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-3 w-3 text-gray-400" />
+                            {external.email}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="h-3 w-3 text-gray-400" />
+                            {external.phone}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getTypeBadge(external.personType)}</TableCell>
+                      <TableCell>{getStatusBadge(external.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Calendar className="h-3 w-3" />
+                          {format(new Date(external.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEdit(external)}
+                            data-testid={`button-edit-${external.id}`}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          
+                          {external.status === "ativo" ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleStatusChange(external, "deactivate")}
+                              data-testid={`button-deactivate-${external.id}`}
+                            >
+                              <UserX className="h-3 w-3" />
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleStatusChange(external, "activate")}
+                              data-testid={`button-activate-${external.id}`}
+                            >
+                              <CheckCircle className="h-3 w-3" />
+                            </Button>
+                          )}
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleResendAccess(external)}
+                            disabled={resendAccessMutation.isPending}
+                            data-testid={`button-resend-${external.id}`}
+                          >
+                            <Mail className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
-        ) : filteredPersons.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-8">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                Nenhuma pessoa encontrada
-              </h3>
-              <p className="text-gray-500 mb-4">
-                {searchTerm || filterType !== 'all' 
-                  ? 'Tente ajustar os filtros de busca.'
-                  : 'Comece cadastrando uma nova pessoa externa.'
-                }
-              </p>
-              {!searchTerm && filterType === 'all' && (
-                <Button
-                  onClick={handleAdd}
-                  className="bg-[#0C29AB] hover:bg-blue-800"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Cadastrar Primeira Pessoa
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          filteredPersons.map(renderPersonCard)
-        )}
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Modal de Cadastro/Edição */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <ExternalPersonForm
+        isOpen={showNewExternalForm}
+        onClose={() => setShowNewExternalForm(false)}
+      />
+
+      <ExternalPersonForm
+        isOpen={showEditForm}
+        onClose={() => {
+          setShowEditForm(false);
+          setSelectedExternal(null);
+        }}
+        externalPerson={selectedExternal}
+        isEditing={true}
+      />
+
+      {/* Dialog de Alteração de Status */}
+      <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingPerson ? 'Editar Pessoa Externa' : 'Nova Pessoa Externa'}
+              {statusAction === "activate" ? "Reativar Terceiro" : "Desativar Terceiro"}
             </DialogTitle>
+            <DialogDescription>
+              {statusAction === "activate" 
+                ? `Tem certeza que deseja reativar ${selectedExternal?.fullName}?`
+                : `Tem certeza que deseja desativar ${selectedExternal?.fullName}?`
+              }
+            </DialogDescription>
           </DialogHeader>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Dados Básicos */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg border-b pb-2">Dados Básicos</h3>
-                
-                <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome Completo *</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Nome completo da pessoa" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>E-mail *</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="email" placeholder="email@empresa.com" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          {statusAction === "deactivate" && (
+            <div className="space-y-2">
+              <Label htmlFor="reason">Motivo da Desativação</Label>
+              <Input
+                id="reason"
+                placeholder="Digite o motivo da desativação..."
+                value={deactivationReason}
+                onChange={(e) => setDeactivationReason(e.target.value)}
+                data-testid="input-deactivation-reason"
+              />
+            </div>
+          )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Telefone</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="(11) 99999-9999" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="document"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>CPF/CNPJ</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="000.000.000-00" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Tipo e Empresa */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg border-b pb-2">Classificação</h3>
-                
-                <FormField
-                  control={form.control}
-                  name="personType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Pessoa *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="cliente">Cliente</SelectItem>
-                          <SelectItem value="terceirizado">Terceirizado</SelectItem>
-                          <SelectItem value="prestador">Prestador de Serviço</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {form.watch('personType') === 'cliente' && (
-                  <FormField
-                    control={form.control}
-                    name="companyName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome da Empresa</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Nome da empresa cliente" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                {(form.watch('personType') === 'terceirizado' || form.watch('personType') === 'prestador') && (
-                  <>
-                    <FormField
-                      control={form.control}
-                      name="externalCompany"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Empresa Terceirizada</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Nome da empresa terceirizada" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="position"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Cargo/Função</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Cargo ou função exercida" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
-              </div>
-
-              {/* Acesso ao Sistema */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg border-b pb-2">Acesso ao Sistema</h3>
-                
-                <FormField
-                  control={form.control}
-                  name="hasSystemAccess"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          Permitir acesso ao sistema
-                        </FormLabel>
-                        <p className="text-sm text-muted-foreground">
-                          Esta pessoa poderá fazer login no sistema
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
-                {form.watch('hasSystemAccess') && (
-                  <>
-                    <div>
-                      <Label>Módulos Permitidos</Label>
-                      <div className="mt-2 space-y-2">
-                        {availableModules.map(module => {
-                          // Permissões automáticas por tipo
-                          const isAutoAllowed = 
-                            (module.id === 'cargo-scheduling' && form.watch('personType') === 'cliente') ||
-                            (module.id === 'access-control' && (form.watch('personType') === 'terceirizado' || form.watch('personType') === 'prestador'));
-                          
-                          return (
-                            <div key={module.id} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={module.id}
-                                checked={selectedModules.includes(module.id) || isAutoAllowed}
-                                disabled={isAutoAllowed}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedModules(prev => [...prev, module.id]);
-                                  } else {
-                                    setSelectedModules(prev => prev.filter(id => id !== module.id));
-                                  }
-                                }}
-                              />
-                              <Label htmlFor={module.id} className="text-sm">
-                                {module.name}
-                                {isAutoAllowed && (
-                                  <Badge variant="outline" className="ml-2 text-xs">
-                                    Automático
-                                  </Badge>
-                                )}
-                              </Label>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="accessLevel"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nível de Acesso</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="basic">Básico</SelectItem>
-                              <SelectItem value="advanced">Avançado</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowModal(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-[#0C29AB] hover:bg-blue-800"
-                  disabled={savePersonMutation.isPending}
-                  data-testid="button-save-person"
-                >
-                  {savePersonMutation.isPending 
-                    ? 'Salvando...' 
-                    : editingPerson ? 'Atualizar' : 'Cadastrar'
-                  }
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmStatusChange}
+              disabled={statusMutation.isPending || (statusAction === "deactivate" && !deactivationReason.trim())}
+              className={statusAction === "activate" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
+              data-testid="button-confirm-status"
+            >
+              {statusMutation.isPending ? "Processando..." : 
+                statusAction === "activate" ? "Reativar" : "Desativar"
+              }
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

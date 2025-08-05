@@ -16,6 +16,7 @@ import { EmployeesPage } from "@/pages/employees";
 import { EmployeeNewPage } from "@/pages/employee-new";
 import { EmployeeDetailsPage } from "@/pages/employee-details";
 import { EmployeeEditPage } from "@/pages/employee-edit";
+import { ExternalPersonsPage } from "@/pages/external-persons";
 import { OccurrencesPage } from "@/pages/occurrences";
 import DriverPortal from "@/pages/driver-portal";
 import DriverLogin from "@/pages/driver-login";
@@ -66,7 +67,7 @@ function Router() {
       <Route path="/warehouse" component={Warehouse} />
       <Route path="/dashboards" component={Dashboards} />
       <Route path="/cargo-scheduling" component={CargoScheduling} />
-      <Route path="/external-persons" component={ExternalPersons} />
+      <Route path="/external-persons" component={ExternalPersonsPage} />
       <Route path="/routes" component={Routes} />
       <Route path="/bookings" component={Bookings} />
       <Route path="/analytics" component={Analytics} />

@@ -547,28 +547,30 @@ export const externalPersons = pgTable("external_persons", {
   // Dados básicos
   fullName: text("full_name").notNull(),
   email: text("email").notNull().unique(),
-  phone: text("phone"),
+  phone: text("phone").notNull(),
   document: text("document"), // CPF ou CNPJ
+  photo: text("photo"), // URL da foto ou caminho do arquivo
   
   // Tipo de pessoa externa
-  personType: text("person_type").notNull(), // cliente, terceirizado, prestador
+  personType: text("person_type").notNull(), // cliente, porteiro
   
-  // Dados específicos por tipo
-  companyName: text("company_name"), // Para clientes
-  externalCompany: text("external_company"), // Para terceirizados/prestadores
+  // Dados da empresa
+  companyName: text("company_name").notNull(), // Nome da empresa terceirizada
   position: text("position"), // Cargo/função
   
-  // Permissões e acesso
-  hasSystemAccess: boolean("has_system_access").notNull().default(false),
-  allowedModules: text("allowed_modules").array().default([]), // Array de módulos permitidos
-  accessLevel: text("access_level").default("basic"), // basic, advanced
+  // Credenciais de acesso
+  hasSystemAccess: boolean("has_system_access").notNull().default(true),
+  loginEmail: text("login_email").notNull().unique(), // Email para login (mesmo que email)
+  temporaryPassword: text("temporary_password"), // Senha temporária (hash)
+  passwordChanged: boolean("password_changed").notNull().default(false),
+  lastLoginAt: timestamp("last_login_at"),
+  
+  // Permissões baseadas no tipo
+  accessLevel: text("access_level").notNull(), // cliente, porteiro
   
   // Status
   status: text("status").notNull().default("ativo"), // ativo, inativo, bloqueado
   inactiveReason: text("inactive_reason"),
-  
-  // Documentos básicos (para terceirizados)
-  basicDocuments: json("basic_documents"),
   
   // Controle
   createdBy: uuid("created_by").references(() => users.id).notNull(),
@@ -799,18 +801,23 @@ export const insertExternalPersonSchema = createInsertSchema(externalPersons).om
   createdAt: true,
   updatedAt: true,
   createdBy: true,
+  temporaryPassword: true,
+  loginEmail: true,
+  passwordChanged: true,
+  lastLoginAt: true,
 }).extend({
   fullName: z.string().min(1, "Nome completo é obrigatório"),
   email: z.string().email("Email deve ser válido"),
-  personType: z.enum(["cliente", "terceirizado", "prestador"]),
-  companyName: z.string().optional(),
-  externalCompany: z.string().optional(),
-  phone: z.string().optional(),
+  phone: z.string().min(1, "Telefone é obrigatório"),
+  companyName: z.string().min(1, "Nome da empresa é obrigatório"),
+  personType: z.enum(["cliente", "porteiro"], {
+    required_error: "Tipo de permissão é obrigatório",
+  }),
+  photo: z.string().optional(),
   document: z.string().optional(),
   position: z.string().optional(),
-  hasSystemAccess: z.boolean().default(false),
-  allowedModules: z.array(z.string()).default([]),
-  accessLevel: z.string().default("basic"),
+  hasSystemAccess: z.boolean().default(true),
+  accessLevel: z.string().default("cliente"),
   status: z.string().default("ativo"),
 });
 

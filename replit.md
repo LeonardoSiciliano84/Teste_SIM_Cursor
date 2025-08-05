@@ -33,6 +33,12 @@ FELKA Transportes is a comprehensive transport management system designed to man
 - **Time Slot Management:** Visual calendar with available/occupied slots, multiple selection capability, and real-time status updates
 - **PDF and Email Integration:** Automatic generation of booking confirmations and email notifications for clients and managers
 - **3-Hour Cancellation Policy:** Implemented booking cancellation window with automatic policy enforcement
+- **External Persons Module Implementation:** Added comprehensive third-party management system (terceiros)
+- **Schema Extension:** Enhanced database schema with ExternalPerson entity for clients and security guards
+- **Role-Based Access:** Implemented access control with client and security guard permissions
+- **Automated Credentials:** System generates login/password automatically with email notifications
+- **Navigation Enhancement:** Added "+ Novo Externo" button alongside "+ Novo Colaborador" in employees page
+- **Full CRUD Operations:** Complete backend API endpoints for external persons management with status control
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
