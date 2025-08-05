@@ -3075,6 +3075,8 @@ export class MemStorage implements IStorage {
           ['agendado', 'confirmado', 'em_andamento'].includes(booking.status)
         );
       slot.currentBookings = bookings.length;
+      // Marcar como não disponível se a capacidade for atingida
+      slot.isAvailable = slot.currentBookings < slot.maxCapacity;
     }
     
     return slots.sort((a, b) => a.timeSlot.localeCompare(b.timeSlot));
@@ -3130,13 +3132,34 @@ export class MemStorage implements IStorage {
 
   // Agendamentos
   async createCargoScheduling(data: any): Promise<any> {
+    // Encontrar o slot correspondente baseado na data e horário
+    const slot = Array.from(this.scheduleSlots.values())
+      .find(s => s.date === data.date && s.timeSlot === data.timeSlot);
+    
+    if (!slot) {
+      throw new Error(`Slot não encontrado para ${data.date} às ${data.timeSlot}`);
+    }
+    
+    // Verificar se o slot ainda tem capacidade
+    const existingBookings = Array.from(this.cargoSchedulings.values())
+      .filter(booking => 
+        booking.slotId === slot.id && 
+        ['agendado', 'confirmado', 'em_andamento'].includes(booking.status)
+      );
+    
+    if (existingBookings.length >= slot.maxCapacity) {
+      throw new Error('Horário não disponível - capacidade esgotada');
+    }
+    
     const booking = {
       id: randomUUID(),
       ...data,
+      slotId: slot.id, // Vincular ao slot correto
       status: 'agendado',
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+    
     this.cargoSchedulings.set(booking.id, booking);
     return booking;
   }
