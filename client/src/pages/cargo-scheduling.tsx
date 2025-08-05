@@ -68,6 +68,7 @@ export default function CargoScheduling() {
   const [weekDate, setWeekDate] = useState('');
   const [serviceType, setServiceType] = useState('');
   const [selectedSlotsToBlock, setSelectedSlotsToBlock] = useState<string[]>([]);
+  const [blockWeekDate, setBlockWeekDate] = useState('');
 
   // Mutation para ações do gerente (concluir/cancelar)
   const managerActionMutation = useMutation({
@@ -140,6 +141,7 @@ export default function CargoScheduling() {
       });
       setShowBlockSlotsModal(false);
       setSelectedSlotsToBlock([]);
+      setBlockWeekDate('');
       queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/slots'] });
     },
     onError: (error: any) => {
@@ -1375,52 +1377,167 @@ export default function CargoScheduling() {
 
       {/* Modal para Bloquear Horários */}
       <Dialog open={showBlockSlotsModal} onOpenChange={setShowBlockSlotsModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Bloquear Horários</DialogTitle>
             <DialogDescription>
-              Selecione os horários que deseja bloquear
+              Selecione primeiro a semana e depois os horários que deseja bloquear
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="max-h-60 overflow-y-auto space-y-2">
-              {slots.filter(slot => slot.status === 'disponivel').map((slot) => (
-                <div key={slot.id} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id={`slot-${slot.id}`}
-                    checked={selectedSlotsToBlock.includes(slot.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedSlotsToBlock([...selectedSlotsToBlock, slot.id]);
-                      } else {
-                        setSelectedSlotsToBlock(selectedSlotsToBlock.filter(id => id !== slot.id));
-                      }
-                    }}
-                    className="rounded border-gray-300"
-                    data-testid={`checkbox-slot-${slot.id}`}
-                  />
-                  <label htmlFor={`slot-${slot.id}`} className="text-sm">
-                    {format(new Date(slot.date), 'dd/MM/yyyy')} - {slot.timeSlot}
-                  </label>
-                </div>
-              ))}
-              {slots.filter(slot => slot.status === 'disponivel').length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  Nenhum horário disponível para bloquear
-                </p>
-              )}
+            {/* Seletor de Semana */}
+            <div className="space-y-2">
+              <Label htmlFor="blockWeekDate">Selecionar Semana</Label>
+              <Input
+                id="blockWeekDate"
+                type="date"
+                value={blockWeekDate}
+                onChange={(e) => {
+                  setBlockWeekDate(e.target.value);
+                  setSelectedSlotsToBlock([]); // Reset selected slots when week changes
+                }}
+                data-testid="input-block-week-date"
+              />
             </div>
+
+            {/* Lista de Horários da Semana */}
+            {blockWeekDate && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm">Horários da Semana</h4>
+                  <span className="text-xs text-gray-500">
+                    {selectedSlotsToBlock.length} selecionado{selectedSlotsToBlock.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                
+                <div className="max-h-80 overflow-y-auto border rounded-lg p-3">
+                  <div className="grid gap-3">
+                    {(() => {
+                      // Filter slots for the selected week (7 days from blockWeekDate)
+                      const weekStart = new Date(blockWeekDate);
+                      const weekSlots = slots.filter(slot => {
+                        const slotDate = new Date(slot.date);
+                        const diffDays = Math.floor((slotDate.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24));
+                        return diffDays >= 0 && diffDays < 7;
+                      }).sort((a, b) => {
+                        // Sort by date first, then by time
+                        const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+                        if (dateCompare !== 0) return dateCompare;
+                        return a.timeSlot.localeCompare(b.timeSlot);
+                      });
+
+                      // Group slots by date
+                      const groupedSlots = weekSlots.reduce((acc, slot) => {
+                        const date = slot.date;
+                        if (!acc[date]) acc[date] = [];
+                        acc[date].push(slot);
+                        return acc;
+                      }, {} as Record<string, typeof slots>);
+
+                      return Object.entries(groupedSlots).map(([date, daySlots]) => (
+                        <div key={date} className="space-y-2">
+                          <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded">
+                            <h5 className="font-medium text-sm">
+                              {format(new Date(date), 'EEEE, dd/MM/yyyy', { locale: ptBR })}
+                            </h5>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const daySlotIds = daySlots.map(s => s.id);
+                                  const allDaySelected = daySlotIds.every(id => selectedSlotsToBlock.includes(id));
+                                  if (allDaySelected) {
+                                    // Deselect all day slots
+                                    setSelectedSlotsToBlock(prev => prev.filter(id => !daySlotIds.includes(id)));
+                                  } else {
+                                    // Select all day slots
+                                    setSelectedSlotsToBlock(prev => [...new Set([...prev, ...daySlotIds])]);
+                                  }
+                                }}
+                                className="text-xs"
+                                data-testid={`button-select-all-${date}`}
+                              >
+                                {daySlots.every(s => selectedSlotsToBlock.includes(s.id)) ? 'Desmarcar Todos' : 'Marcar Todos'}
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-2 ml-3">
+                            {daySlots.map((slot) => (
+                              <div key={slot.id} className="flex items-center space-x-2 p-2 rounded border">
+                                <input
+                                  type="checkbox"
+                                  id={`slot-${slot.id}`}
+                                  checked={selectedSlotsToBlock.includes(slot.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedSlotsToBlock([...selectedSlotsToBlock, slot.id]);
+                                    } else {
+                                      setSelectedSlotsToBlock(selectedSlotsToBlock.filter(id => id !== slot.id));
+                                    }
+                                  }}
+                                  className="rounded border-gray-300"
+                                  data-testid={`checkbox-slot-${slot.id}`}
+                                />
+                                <label htmlFor={`slot-${slot.id}`} className="text-sm flex-1">
+                                  <span className="font-medium">{slot.timeSlot}</span>
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <Badge variant={
+                                      slot.status === 'disponivel' ? 'default' :
+                                      slot.status === 'ocupado' ? 'destructive' :
+                                      'secondary'
+                                    } className="text-xs">
+                                      {slot.status === 'disponivel' ? 'Disponível' :
+                                       slot.status === 'ocupado' ? 'Ocupado' :
+                                       slot.status === 'bloqueado' ? 'Bloqueado' : slot.status}
+                                    </Badge>
+                                    <span className="text-xs text-gray-500">
+                                      {slot.currentBookings || 0}/{slot.maxCapacity || 1}
+                                    </span>
+                                  </div>
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                  
+                  {(() => {
+                    const weekStart = new Date(blockWeekDate);
+                    const weekSlots = slots.filter(slot => {
+                      const slotDate = new Date(slot.date);
+                      const diffDays = Math.floor((slotDate.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24));
+                      return diffDays >= 0 && diffDays < 7;
+                    });
+                    
+                    return weekSlots.length === 0 && (
+                      <div className="text-center py-8">
+                        <p className="text-sm text-gray-500">
+                          Nenhum horário encontrado para esta semana.
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Crie horários usando "Criar Semana Completa" primeiro.
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowBlockSlotsModal(false);
               setSelectedSlotsToBlock([]);
+              setBlockWeekDate('');
             }} data-testid="button-cancel-block-slots">
               Cancelar
             </Button>
             <Button 
-              disabled={blockSlotsMutation.isPending || selectedSlotsToBlock.length === 0}
+              disabled={blockSlotsMutation.isPending || selectedSlotsToBlock.length === 0 || !blockWeekDate}
               onClick={() => {
                 blockSlotsMutation.mutate(selectedSlotsToBlock);
               }}
