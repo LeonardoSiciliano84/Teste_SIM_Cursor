@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Clock, Users, MapPin, AlertCircle, CheckCircle, XCircle, Plus, CalendarDays, ChevronLeft, ChevronRight, User, Settings, LogOut, Shield } from "lucide-react";
+import { Calendar, Clock, Users, MapPin, AlertCircle, CheckCircle, XCircle, Plus, CalendarDays, ChevronLeft, ChevronRight, User, Settings, LogOut, Shield, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +58,8 @@ export default function CargoScheduling() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showManagerModal, setShowManagerModal] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [confirmedBooking, setConfirmedBooking] = useState<any>(null);
   const [selectedBooking, setSelectedBooking] = useState<CargoScheduling | null>(null);
   const [managerAction, setManagerAction] = useState<'complete' | 'cancel'>('complete');
   const [managerNotes, setManagerNotes] = useState('');
@@ -108,16 +110,28 @@ export default function CargoScheduling() {
     mutationFn: async (data: any) => {
       return apiRequest('/api/cargo-scheduling/book', 'POST', data);
     },
-    onSuccess: () => {
-      toast({
-        title: "Agendamento realizado!",
-        description: "Seu agendamento foi confirmado. PDF e e-mail de confirmação foram enviados.",
+    onSuccess: (data) => {
+      // Definir dados do agendamento confirmado
+      const selectedSlot = slots.find((slot: ScheduleSlot) => selectedSlots.includes(slot.id));
+      setConfirmedBooking({
+        ...data,
+        date: selectedSlot?.date,
+        timeSlot: selectedSlot?.timeSlot,
+        companyName: user?.companyName || 'Empresa Cliente',
+        contactPerson: user?.name || user?.email || 'Cliente',
+        contactEmail: user?.email || 'cliente@email.com',
+        contactPhone: user?.phone || '',
+        manager: 'Administrador',
+        notes: bookingForm.notes
       });
+      
       setShowBookingModal(false);
       setSelectedSlots([]);
       setBookingForm({
         notes: ''
       });
+      setShowConfirmationModal(true);
+      
       queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling'] });
       queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/my-bookings'] });
     },
@@ -1088,6 +1102,117 @@ export default function CargoScheduling() {
               data-testid="button-confirm-manager"
             >
               {managerAction === 'complete' ? 'Concluir' : 'Cancelar'} Agendamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Confirmação do Agendamento */}
+      <Dialog open={showConfirmationModal} onOpenChange={setShowConfirmationModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              Agendamento Confirmado
+            </DialogTitle>
+          </DialogHeader>
+          
+          {confirmedBooking && (
+            <div className="space-y-6">
+              {/* Header com logo FELKA */}
+              <div className="text-center border-b pb-4">
+                <h1 className="text-2xl font-bold text-[#0C29AB]">FELKA TRANSPORTES</h1>
+                <p className="text-sm text-gray-600 mt-1">Comprovante de Agendamento</p>
+              </div>
+
+              {/* Informações do Agendamento */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Protocolo:</label>
+                    <p className="text-sm text-gray-900 font-mono">{confirmedBooking.id}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Data e Horário:</label>
+                    <p className="text-sm text-gray-900">
+                      {format(new Date(confirmedBooking.date), 'dd/MM/yyyy')} às {confirmedBooking.timeSlot}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Status:</label>
+                    <Badge className="ml-2 bg-green-100 text-green-800">AGENDADO</Badge>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Empresa:</label>
+                    <p className="text-sm text-gray-900">{confirmedBooking.companyName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Contato:</label>
+                    <p className="text-sm text-gray-900">{confirmedBooking.contactPerson}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">E-mail:</label>
+                    <p className="text-sm text-gray-900">{confirmedBooking.contactEmail}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Observações */}
+              {confirmedBooking.notes && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Observações:</label>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg mt-1">
+                    {confirmedBooking.notes}
+                  </p>
+                </div>
+              )}
+
+              {/* Informações Importantes */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 mb-2">Informações Importantes:</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Compareça com 15 minutos de antecedência</li>
+                  <li>• Tenha em mãos os documentos necessários</li>
+                  <li>• Cancelamentos devem ser feitos com até 3 horas de antecedência</li>
+                  <li>• Em caso de dúvidas, entre em contato conosco</li>
+                </ul>
+              </div>
+
+              {/* Rodapé */}
+              <div className="text-center text-xs text-gray-500 border-t pt-4">
+                <p>FELKA Transportes - Sistema de Agendamento</p>
+                <p>Documento gerado em {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => window.print()}
+              className="flex items-center gap-2"
+              data-testid="button-print"
+            >
+              <Printer className="h-4 w-4" />
+              Imprimir
+            </Button>
+            <Button
+              onClick={() => {
+                setShowConfirmationModal(false);
+                toast({
+                  title: "Agendamento salvo!",
+                  description: "Seu agendamento foi confirmado com sucesso.",
+                });
+              }}
+              className="bg-[#0C29AB] hover:bg-[#0C29AB]/90"
+              data-testid="button-close-confirmation"
+            >
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>
