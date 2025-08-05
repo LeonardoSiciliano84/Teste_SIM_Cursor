@@ -1410,8 +1410,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ações do gestor (concluir/cancelar)
   app.patch("/api/cargo-scheduling/manager-action/:id", async (req, res) => {
     try {
+      console.log("📝 Manager action request:", {
+        id: req.params.id,
+        body: req.body,
+        method: req.method,
+        url: req.url
+      });
+      
       const { action, notes } = req.body;
+      console.log("📝 Extracted data:", { action, notes });
+      
       const booking = await storage.managerActionBooking(req.params.id, action, notes);
+      console.log("📝 Updated booking:", booking);
+      
       res.json(booking);
     } catch (error) {
       console.error("Error executing manager action:", error);
