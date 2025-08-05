@@ -106,10 +106,7 @@ export default function CargoScheduling() {
   // Mutação para criar agendamento
   const createBookingMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest('/api/cargo-scheduling/book', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('/api/cargo-scheduling/book', 'POST', data);
     },
     onSuccess: () => {
       toast({
@@ -135,10 +132,7 @@ export default function CargoScheduling() {
   // Mutação para cancelar agendamento
   const cancelBookingMutation = useMutation({
     mutationFn: async (data: { bookingId: string; reason?: string }) => {
-      return apiRequest(`/api/cargo-scheduling/cancel/${data.bookingId}`, {
-        method: 'DELETE',
-        body: JSON.stringify({ reason: data.reason }),
-      });
+      return apiRequest(`/api/cargo-scheduling/cancel/${data.bookingId}`, 'DELETE', { reason: data.reason });
     },
     onSuccess: (data) => {
       toast({
