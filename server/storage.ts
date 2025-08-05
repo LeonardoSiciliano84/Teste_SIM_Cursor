@@ -407,7 +407,7 @@ export class MemStorage implements IStorage {
 
   private initializeDefaultData() {
     const adminUser: User = {
-      id: randomUUID(),
+      id: "7c11006f-3064-4941-9092-97fe5fc89619", // ID fixo para manter consistência
       email: "admin@felka.com",
       password: "admin123", // In production, this should be hashed
       name: "Administrador",
