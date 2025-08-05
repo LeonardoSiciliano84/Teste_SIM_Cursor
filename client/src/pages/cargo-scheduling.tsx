@@ -82,11 +82,11 @@ export default function CargoScheduling() {
     enabled: !!selectedDate,
   });
 
-  // Buscar agendamentos do cliente
+  // Buscar agendamentos do cliente (funciona para admin e cliente)
   const { data: mySchedulings = [] } = useQuery({
     queryKey: ['/api/cargo-scheduling/my-bookings', user?.id],
     queryFn: () => apiRequest(`/api/cargo-scheduling/my-bookings?clientId=${user?.id || 'guest'}`),
-    enabled: !isManager && !!user,
+    enabled: !!user,
   });
 
   // Buscar todos os agendamentos (para gestor)
