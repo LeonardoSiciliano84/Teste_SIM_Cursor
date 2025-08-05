@@ -37,9 +37,15 @@ const navigation = [
       { name: "Análises", href: "/analytics", icon: BarChart3 }
     ]
   },
-  { name: "Veículos", href: "/vehicles", icon: Car },
-  { name: "Sinistros", href: "/sinistros", icon: AlertTriangle },
-  { name: "Checklists", href: "/checklists", icon: CheckSquare },
+  {
+    name: "Frota",
+    icon: Car,
+    children: [
+      { name: "Veículos", href: "/vehicles", icon: Car },
+      { name: "Sinistros", href: "/sinistros", icon: AlertTriangle },
+      { name: "Checklists", href: "/checklists", icon: CheckSquare }
+    ]
+  },
   {
     name: "Colaboradores",
     icon: Users,
