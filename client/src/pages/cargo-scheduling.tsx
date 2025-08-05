@@ -309,7 +309,7 @@ export default function CargoScheduling() {
   const hasAvailableSlots = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     return slots.some((slot: ScheduleSlot) => 
-      slot.date === dateStr && slot.isAvailable && slot.currentBookings < slot.maxCapacity
+      slot.date === dateStr && slot.isAvailable && slot.currentBookings < slot.maxCapacity && slot.status !== 'bloqueado'
     );
   };
 
@@ -398,7 +398,7 @@ export default function CargoScheduling() {
 
   // Estatísticas dos horários
   const totalSlots = slots.length;
-  const availableSlots = slots.filter((slot: ScheduleSlot) => slot.isAvailable && slot.currentBookings < slot.maxCapacity).length;
+  const availableSlots = slots.filter((slot: ScheduleSlot) => slot.isAvailable && slot.currentBookings < slot.maxCapacity && slot.status !== 'bloqueado').length;
   const occupiedSlots = totalSlots - availableSlots;
 
   return (
@@ -599,7 +599,7 @@ export default function CargoScheduling() {
                     </p>
                   ) : (
                     slots.map((slot: ScheduleSlot) => {
-                      const isAvailable = slot.isAvailable && slot.currentBookings < slot.maxCapacity;
+                      const isAvailable = slot.isAvailable && slot.currentBookings < slot.maxCapacity && slot.status !== 'bloqueado';
                       const isSelected = selectedSlots.includes(slot.id);
                       
                       return (
@@ -621,9 +621,10 @@ export default function CargoScheduling() {
                           <div className="flex items-center justify-between">
                             <span className="font-medium">{slot.timeSlot}</span>
                             <span className={`text-xs px-2 py-1 rounded ${
+                              slot.status === 'bloqueado' ? 'bg-red-100 text-red-800' :
                               isAvailable ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'
                             }`}>
-                              {isAvailable ? 'LIVRE' : 'OCUPADO'}
+                              {slot.status === 'bloqueado' ? 'BLOQUEADO' : isAvailable ? 'LIVRE' : 'OCUPADO'}
                             </span>
                           </div>
                           <div className="text-xs mt-1 opacity-75">
