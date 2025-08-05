@@ -146,7 +146,21 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           )}
         </button>
         
-
+        {/* Parent item direct link if it has href */}
+        {item.href && isExpanded && (
+          <Link
+            href={item.href}
+            className={cn(
+              "flex items-center px-3 py-2 ml-6 text-xs font-medium rounded-lg transition-colors",
+              location === item.href
+                ? "bg-blue-100 text-blue-800"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+            )}
+          >
+            <item.icon className="w-4 h-4 mr-2" />
+            {item.name}
+          </Link>
+        )}
 
         {/* Submenu items */}
         {isExpanded && (
