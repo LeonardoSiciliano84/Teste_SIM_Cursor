@@ -84,9 +84,12 @@ export default function CargoScheduling() {
 
   // Buscar agendamentos do cliente
   const { data: mySchedulings = [] } = useQuery({
-    queryKey: ['/api/cargo-scheduling/my-bookings'],
-    queryFn: () => apiRequest('/api/cargo-scheduling/my-bookings'),
-    enabled: !isManager,
+    queryKey: ['/api/cargo-scheduling/my-bookings', user?.id],
+    queryFn: () => {
+      console.log('Buscando agendamentos para clientId:', user?.id);
+      return apiRequest(`/api/cargo-scheduling/my-bookings?clientId=${user?.id || 'guest'}`);
+    },
+    enabled: !isManager && !!user,
   });
 
   // Buscar todos os agendamentos (para gestor)
@@ -119,6 +122,7 @@ export default function CargoScheduling() {
         notes: ''
       });
       queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/my-bookings'] });
     },
     onError: (error: any) => {
       toast({
@@ -142,6 +146,7 @@ export default function CargoScheduling() {
       setShowCancelModal(false);
       setSelectedBooking(null);
       queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/my-bookings'] });
     },
     onError: (error: any) => {
       toast({
@@ -1071,6 +1076,7 @@ export default function CargoScheduling() {
                       description: "Ação realizada com sucesso.",
                     });
                     queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling'] });
+                    queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/my-bookings'] });
                   }).catch((error) => {
                     toast({
                       title: "Erro",

@@ -1348,8 +1348,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Buscar meus agendamentos (cliente)
   app.get("/api/cargo-scheduling/my-bookings", async (req, res) => {
     try {
-      // Em uma implementação real, pegar o ID do cliente do token/sessão
-      const clientId = req.query.clientId as string || "1";
+      // Para demonstração, vamos buscar todos os agendamentos do usuário atual
+      // Em produção, usar autenticação real para pegar o clientId
+      const clientId = req.query.clientId as string || "guest";
       const bookings = await storage.getClientBookings(clientId);
       res.json(bookings);
     } catch (error) {
