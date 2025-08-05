@@ -25,11 +25,16 @@ import {
   ChevronDown,
   Mail,
   Phone,
-  Calendar
+  Calendar,
+  Menu
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
-export default function Header() {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export default function Header({ onMenuClick }: HeaderProps) {
   const { user, logout } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
   const [showSecurity, setShowSecurity] = useState(false);
@@ -49,9 +54,19 @@ export default function Header() {
 
   return (
     <>
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+      <header className="bg-white border-b border-gray-200 px-6 py-4 lg:ml-64">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
+            {/* Mobile menu button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={onMenuClick}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            
             <img 
               src="/src/assets/felka-logo.svg" 
               alt="Felka Transportes" 

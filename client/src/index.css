@@ -235,6 +235,20 @@
   @apply bg-white border border-gray-200 rounded-lg shadow-lg p-2;
 }
 
+/* Sidebar hierarchical menu styles */
+.sidebar-submenu {
+  background-color: rgba(59, 130, 246, 0.05);
+  border-left: 2px solid #e5e7eb;
+}
+
+.sidebar-submenu-item:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.sidebar-parent-active {
+  background: linear-gradient(90deg, #0C29AB 0%, rgba(12, 41, 171, 0.1) 100%);
+}
+
 /* Table styles */
 .data-table {
   @apply w-full border-collapse;

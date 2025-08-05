@@ -39,6 +39,11 @@ FELKA Transportes is a comprehensive transport management system designed to man
 - **Automated Credentials:** System generates login/password automatically with email notifications
 - **Navigation Enhancement:** Added "+ Novo Externo" button alongside "+ Novo Colaborador" in employees page
 - **Full CRUD Operations:** Complete backend API endpoints for external persons management with status control
+- **Hierarchical Menu Structure:** Completely restructured sidebar with collapsible parent/child menu organization
+- **Menu Categories:** Organized into 4 main categories: Dashboards, Colaboradores, Almoxarifado, and Controle de Acesso
+- **Mobile Responsive Menu:** Added mobile hamburger menu with overlay, touch-friendly interface for tablets/phones
+- **Visual Menu Indicators:** Implemented chevron icons, active state highlighting, and submenu visual separation
+- **Submenu Organization:** Dashboard subitems, Colaboradores with 5 subitems, Almoxarifado with Agendamento, Controle de Acesso with Portaria
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
