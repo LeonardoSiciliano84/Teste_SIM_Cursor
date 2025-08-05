@@ -3241,6 +3241,69 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
+  // Criar semana completa de horários
+  async createWeekSlots(startDate: string, serviceType: string): Promise<any[]> {
+    const slots = [];
+    const start = new Date(startDate);
+    
+    // Criar horários para 7 dias (segunda a domingo)
+    for (let day = 0; day < 7; day++) {
+      const date = new Date(start);
+      date.setDate(start.getDate() + day);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      // Horários: 8h às 17h (10 slots por dia)
+      for (let hour = 8; hour <= 17; hour++) {
+        const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+        
+        // Verificar se já existe
+        const existing = Array.from(this.scheduleSlots.values())
+          .find(slot => slot.date === dateStr && slot.timeSlot === timeSlot);
+        
+        if (!existing) {
+          const slot = {
+            id: `slot-${dateStr}-${hour}`,
+            date: dateStr,
+            timeSlot,
+            isAvailable: true,
+            maxCapacity: 2, // Capacidade para 2 agendamentos por horário
+            currentBookings: 0,
+            serviceType,
+            status: 'disponivel',
+            createdBy: "admin",
+            createdAt: new Date(),
+          };
+          this.scheduleSlots.set(slot.id, slot);
+          slots.push(slot);
+        }
+      }
+    }
+    
+    return slots;
+  }
+
+  // Bloquear horários selecionados
+  async blockSlots(slotIds: string[]): Promise<any[]> {
+    const blockedSlots = [];
+    
+    for (const slotId of slotIds) {
+      const slot = this.scheduleSlots.get(slotId);
+      if (slot) {
+        const updatedSlot = {
+          ...slot,
+          status: 'bloqueado',
+          isAvailable: false,
+          blockedAt: new Date(),
+          blockedBy: "admin",
+        };
+        this.scheduleSlots.set(slotId, updatedSlot);
+        blockedSlots.push(updatedSlot);
+      }
+    }
+    
+    return blockedSlots;
+  }
+
 }
 
 export const storage = new MemStorage();

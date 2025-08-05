@@ -1430,6 +1430,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Criar semana completa de horários
+  app.post("/api/cargo-scheduling/create-week", async (req, res) => {
+    try {
+      const { startDate, serviceType } = req.body;
+      
+      if (!startDate || !serviceType) {
+        return res.status(400).json({ message: "Data de início e tipo de serviço são obrigatórios" });
+      }
+      
+      const slots = await storage.createWeekSlots(startDate, serviceType);
+      
+      console.log(`📅 Semana completa criada: ${slots.length} horários para ${serviceType} a partir de ${startDate}`);
+      
+      res.status(201).json({ 
+        message: "Semana criada com sucesso",
+        slotsCreated: slots.length,
+        slots 
+      });
+    } catch (error) {
+      console.error("Error creating week slots:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Bloquear horários selecionados
+  app.post("/api/cargo-scheduling/block-slots", async (req, res) => {
+    try {
+      const { slotIds } = req.body;
+      
+      if (!slotIds || !Array.isArray(slotIds) || slotIds.length === 0) {
+        return res.status(400).json({ message: "IDs dos horários são obrigatórios" });
+      }
+      
+      const blockedSlots = await storage.blockSlots(slotIds);
+      
+      console.log(`🚫 ${blockedSlots.length} horário(s) bloqueado(s): ${slotIds.join(', ')}`);
+      
+      res.json({ 
+        message: "Horários bloqueados com sucesso",
+        slotsBlocked: blockedSlots.length,
+        blockedSlots 
+      });
+    } catch (error) {
+      console.error("Error blocking slots:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

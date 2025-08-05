@@ -63,6 +63,11 @@ export default function CargoScheduling() {
   const [selectedBooking, setSelectedBooking] = useState<CargoScheduling | null>(null);
   const [managerAction, setManagerAction] = useState<'complete' | 'cancel'>('complete');
   const [managerNotes, setManagerNotes] = useState('');
+  const [showCreateWeekModal, setShowCreateWeekModal] = useState(false);
+  const [showBlockSlotsModal, setShowBlockSlotsModal] = useState(false);
+  const [weekDate, setWeekDate] = useState('');
+  const [serviceType, setServiceType] = useState('');
+  const [selectedSlotsToBlock, setSelectedSlotsToBlock] = useState<string[]>([]);
 
   // Mutation para ações do gerente (concluir/cancelar)
   const managerActionMutation = useMutation({
@@ -93,6 +98,59 @@ export default function CargoScheduling() {
       });
     },
   });
+
+  // Mutation para criar semana completa de horários
+  const createWeekMutation = useMutation({
+    mutationFn: async ({ date, serviceType }: { date: string, serviceType: string }) => {
+      return apiRequest('/api/cargo-scheduling/create-week', 'POST', {
+        startDate: date,
+        serviceType
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Semana criada com sucesso",
+        description: "Todos os horários da semana foram criados.",
+      });
+      setShowCreateWeekModal(false);
+      setWeekDate('');
+      setServiceType('');
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/slots'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar semana",
+        description: error.message || "Erro interno do servidor",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation para bloquear horários
+  const blockSlotsMutation = useMutation({
+    mutationFn: async (slotIds: string[]) => {
+      return apiRequest('/api/cargo-scheduling/block-slots', 'POST', {
+        slotIds
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Horários bloqueados",
+        description: "Os horários selecionados foram bloqueados com sucesso.",
+      });
+      setShowBlockSlotsModal(false);
+      setSelectedSlotsToBlock([]);
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/slots'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao bloquear horários",
+        description: error.message || "Erro interno do servidor",
+        variant: "destructive",
+      });
+    },
+  });
+
   const [activeTab, setActiveTab] = useState('agendamento');
   const [searchEmail, setSearchEmail] = useState('');
   const [cancellationReason, setCancellationReason] = useState('');
@@ -732,11 +790,21 @@ export default function CargoScheduling() {
                 <div className="mt-6 pt-6 border-t">
                   <h3 className="font-medium mb-3">Criação em Lote</h3>
                   <div className="space-y-2">
-                    <Button variant="outline" className="w-full" data-testid="button-create-week">
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      onClick={() => setShowCreateWeekModal(true)}
+                      data-testid="button-create-week"
+                    >
                       <Calendar className="h-4 w-4 mr-2" />
                       Criar Semana Completa
                     </Button>
-                    <Button variant="outline" className="w-full" data-testid="button-block-hours">
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      onClick={() => setShowBlockSlotsModal(true)}
+                      data-testid="button-block-hours"
+                    >
                       <XCircle className="h-4 w-4 mr-2" />
                       Bloquear Horários
                     </Button>
@@ -1251,6 +1319,115 @@ export default function CargoScheduling() {
               data-testid="button-close-confirmation"
             >
               Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para Criar Semana Completa */}
+      <Dialog open={showCreateWeekModal} onOpenChange={setShowCreateWeekModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Criar Semana Completa de Horários</DialogTitle>
+            <DialogDescription>
+              Crie todos os horários disponíveis para uma semana inteira
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="weekDate">Data de Início da Semana</Label>
+              <Input
+                id="weekDate"
+                type="date"
+                value={weekDate}
+                onChange={(e) => setWeekDate(e.target.value)}
+                data-testid="input-week-date"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="serviceType">Tipo de Serviço</Label>
+              <Input
+                id="serviceType"
+                value={serviceType}
+                onChange={(e) => setServiceType(e.target.value)}
+                placeholder="Ex: Carregamento, Descarregamento..."
+                data-testid="input-service-type"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateWeekModal(false)} data-testid="button-cancel-create-week">
+              Cancelar
+            </Button>
+            <Button 
+              disabled={createWeekMutation.isPending || !weekDate || !serviceType}
+              onClick={() => {
+                createWeekMutation.mutate({ date: weekDate, serviceType });
+              }}
+              className="bg-[#0C29AB] hover:bg-[#0A2299]"
+              data-testid="button-confirm-create-week"
+            >
+              {createWeekMutation.isPending ? 'Criando...' : 'Criar Semana'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para Bloquear Horários */}
+      <Dialog open={showBlockSlotsModal} onOpenChange={setShowBlockSlotsModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Bloquear Horários</DialogTitle>
+            <DialogDescription>
+              Selecione os horários que deseja bloquear
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {slots.filter(slot => slot.status === 'disponivel').map((slot) => (
+                <div key={slot.id} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`slot-${slot.id}`}
+                    checked={selectedSlotsToBlock.includes(slot.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedSlotsToBlock([...selectedSlotsToBlock, slot.id]);
+                      } else {
+                        setSelectedSlotsToBlock(selectedSlotsToBlock.filter(id => id !== slot.id));
+                      }
+                    }}
+                    className="rounded border-gray-300"
+                    data-testid={`checkbox-slot-${slot.id}`}
+                  />
+                  <label htmlFor={`slot-${slot.id}`} className="text-sm">
+                    {format(new Date(slot.date), 'dd/MM/yyyy')} - {slot.timeSlot}
+                  </label>
+                </div>
+              ))}
+              {slots.filter(slot => slot.status === 'disponivel').length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  Nenhum horário disponível para bloquear
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowBlockSlotsModal(false);
+              setSelectedSlotsToBlock([]);
+            }} data-testid="button-cancel-block-slots">
+              Cancelar
+            </Button>
+            <Button 
+              disabled={blockSlotsMutation.isPending || selectedSlotsToBlock.length === 0}
+              onClick={() => {
+                blockSlotsMutation.mutate(selectedSlotsToBlock);
+              }}
+              variant="destructive"
+              data-testid="button-confirm-block-slots"
+            >
+              {blockSlotsMutation.isPending ? 'Bloqueando...' : `Bloquear ${selectedSlotsToBlock.length} Horário${selectedSlotsToBlock.length !== 1 ? 's' : ''}`}
             </Button>
           </DialogFooter>
         </DialogContent>
