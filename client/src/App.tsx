@@ -31,6 +31,7 @@ import Warehouse from "@/pages/warehouse";
 import Dashboards from "@/pages/dashboards";
 import CargoScheduling from "@/pages/cargo-scheduling";
 import ExternalPersons from "@/pages/external-persons";
+import VehiclesParked from "@/pages/VehiclesParked";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import VehicleEdit from "@/components/vehicles/vehicle-edit";
@@ -68,6 +69,7 @@ function Router() {
       <Route path="/dashboards" component={Dashboards} />
       <Route path="/cargo-scheduling" component={CargoScheduling} />
       <Route path="/external-persons" component={ExternalPersonsPage} />
+      <Route path="/vehicles-parked" component={VehiclesParked} />
       <Route path="/routes" component={Routes} />
       <Route path="/bookings" component={Bookings} />
       <Route path="/analytics" component={Analytics} />

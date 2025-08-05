@@ -3399,6 +3399,74 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
+  getParkedVehicles(): Array<any> {
+    // Mock data for parked vehicles in maintenance
+    const mockParkedVehicles = [
+      {
+        id: "v1",
+        plate: "FLK-2023",
+        classification: "Caminhão Baú",
+        maintenanceType: "Corretiva",
+        stoppedDate: "2025-01-30T08:00:00Z",
+        expectedReleaseDate: "2025-02-10T16:00:00Z",
+        daysParked: 6,
+        status: "Em Manutenção"
+      },
+      {
+        id: "v2",
+        plate: "FLK-2024",
+        classification: "Carreta",
+        maintenanceType: "Preventiva",
+        stoppedDate: "2025-02-01T14:30:00Z",
+        expectedReleaseDate: "2025-02-08T10:00:00Z",
+        daysParked: 4,
+        status: "Em Manutenção"
+      },
+      {
+        id: "v3",
+        plate: "FLK-2025",
+        classification: "Bitrem",
+        maintenanceType: "Emergencial",
+        stoppedDate: "2025-01-25T16:45:00Z",
+        expectedReleaseDate: "2025-02-15T12:00:00Z",
+        daysParked: 11,
+        status: "Em Manutenção"
+      },
+      {
+        id: "v4",
+        plate: "FLK-2026",
+        classification: "Caminhão Toco",
+        maintenanceType: "Revisão",
+        stoppedDate: "2025-02-03T09:15:00Z",
+        expectedReleaseDate: "2025-02-07T17:00:00Z",
+        daysParked: 2,
+        status: "Em Manutenção"
+      },
+      {
+        id: "v5",
+        plate: "FLK-2027",
+        classification: "Carreta",
+        maintenanceType: "Corretiva",
+        stoppedDate: "2025-01-28T11:20:00Z",
+        expectedReleaseDate: "2025-02-12T14:30:00Z",
+        daysParked: 8,
+        status: "Em Manutenção"
+      }
+    ];
+
+    // Calculate days parked dynamically
+    return mockParkedVehicles.map(vehicle => {
+      const stoppedDate = new Date(vehicle.stoppedDate);
+      const today = new Date();
+      const daysParked = Math.floor((today.getTime() - stoppedDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      return {
+        ...vehicle,
+        daysParked: Math.max(0, daysParked)
+      };
+    });
+  }
+
 }
 
 export const storage = new MemStorage();

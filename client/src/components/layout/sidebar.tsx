@@ -44,6 +44,7 @@ const navigation = [
     icon: Car,
     children: [
       { name: "Veículos", href: "/vehicles", icon: Car },
+      { name: "Veículos Parados", href: "/vehicles-parked", icon: Circle },
       { name: "Sinistros", href: "/sinistros", icon: AlertTriangle },
       { name: "Checklists", href: "/checklists", icon: CheckSquare }
     ]

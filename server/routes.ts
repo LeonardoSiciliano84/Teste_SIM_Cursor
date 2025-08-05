@@ -504,6 +504,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get parked vehicles (in maintenance) for logistics monitoring
+  app.get('/api/vehicles/parked', async (req, res) => {
+    try {
+      const parkedVehicles = storage.getParkedVehicles();
+      res.json(parkedVehicles);
+    } catch (error) {
+      console.error('Error fetching parked vehicles:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Vehicle Exit Route
   app.post("/api/vehicles/exit", async (req, res) => {
     try {
