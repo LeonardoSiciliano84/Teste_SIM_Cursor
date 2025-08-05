@@ -238,17 +238,22 @@ export default function CargoScheduling() {
   const handleBookingSubmit = () => {
     // Criar um agendamento para cada slot selecionado
     selectedSlots.forEach(slotId => {
-      createBookingMutation.mutate({
-        slotId,
-        ...bookingForm,
-        // Dados preenchidos automaticamente do usuário logado
-        companyName: user?.companyName || 'Empresa Cliente',
-        contactPerson: user?.name || user?.email || 'Cliente',
-        contactEmail: user?.email || 'cliente@email.com',
-        contactPhone: user?.phone || '',
-        manager: 'Administrador',
-        clientId: user?.id || 'guest',
-      });
+      const selectedSlot = slots.find((slot: ScheduleSlot) => slot.id === slotId);
+      if (selectedSlot) {
+        createBookingMutation.mutate({
+          slotId,
+          date: selectedSlot.date,
+          timeSlot: selectedSlot.timeSlot,
+          ...bookingForm,
+          // Dados preenchidos automaticamente do usuário logado
+          companyName: user?.companyName || 'Empresa Cliente',
+          contactPerson: user?.name || user?.email || 'Cliente',
+          contactEmail: user?.email || 'cliente@email.com',
+          contactPhone: user?.phone || '',
+          manager: 'Administrador',
+          clientId: user?.id || 'guest',
+        });
+      }
     });
   };
 
