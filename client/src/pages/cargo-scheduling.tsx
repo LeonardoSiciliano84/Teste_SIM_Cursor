@@ -70,6 +70,8 @@ export default function CargoScheduling() {
   const [serviceType, setServiceType] = useState('');
   const [selectedSlotsToBlock, setSelectedSlotsToBlock] = useState<string[]>([]);
   const [blockWeekDate, setBlockWeekDate] = useState('');
+  const [adminSlotDate, setAdminSlotDate] = useState('');
+  const [adminSlotServiceType, setAdminSlotServiceType] = useState('');
 
   // Mutation para ações do gerente (concluir/cancelar)
   const managerActionMutation = useMutation({
@@ -148,6 +150,32 @@ export default function CargoScheduling() {
     onError: (error: any) => {
       toast({
         title: "Erro ao bloquear horários",
+        description: error.message || "Erro interno do servidor",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation para criar horário individual
+  const createSlotMutation = useMutation({
+    mutationFn: async ({ dateTime, serviceType }: { dateTime: string, serviceType: string }) => {
+      return apiRequest('/api/cargo-scheduling/create-slot', 'POST', {
+        dateTime,
+        serviceType
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Horário criado com sucesso",
+        description: "O horário foi adicionado à agenda.",
+      });
+      setAdminSlotDate('');
+      setAdminSlotServiceType('');
+      queryClient.invalidateQueries({ queryKey: ['/api/cargo-scheduling/slots'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar horário",
         description: error.message || "Erro interno do servidor",
         variant: "destructive",
       });
@@ -390,6 +418,23 @@ export default function CargoScheduling() {
     }
     // Implementar busca por e-mail
     console.log("Buscando agendamentos para:", searchEmail);
+  };
+
+  // Função para criar horário individual
+  const handleCreateSlot = () => {
+    if (!adminSlotDate || !adminSlotServiceType) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha a data/hora e o tipo de serviço.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createSlotMutation.mutate({
+      dateTime: adminSlotDate,
+      serviceType: adminSlotServiceType
+    });
   };
 
   const calendarDays = generateCalendarDays();
@@ -843,13 +888,15 @@ export default function CargoScheduling() {
                     <Input
                       id="adminDate"
                       type="datetime-local"
+                      value={adminSlotDate}
+                      onChange={(e) => setAdminSlotDate(e.target.value)}
                       className="mt-1"
                       data-testid="input-admin-date"
                     />
                   </div>
                   <div>
                     <Label htmlFor="serviceType">Tipo de Serviço</Label>
-                    <Select>
+                    <Select value={adminSlotServiceType} onValueChange={setAdminSlotServiceType}>
                       <SelectTrigger data-testid="select-service-type">
                         <SelectValue placeholder="Selecione o serviço" />
                       </SelectTrigger>
@@ -860,9 +907,14 @@ export default function CargoScheduling() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button className="w-full bg-[#0C29AB] hover:bg-[#0A2299]" data-testid="button-create-slot">
+                  <Button 
+                    className="w-full bg-[#0C29AB] hover:bg-[#0A2299]" 
+                    onClick={handleCreateSlot}
+                    disabled={createSlotMutation.isPending}
+                    data-testid="button-create-slot"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
-                    Criar Horário
+                    {createSlotMutation.isPending ? "Criando..." : "Criar Horário"}
                   </Button>
                 </div>
 

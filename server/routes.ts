@@ -1484,6 +1484,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Criar horário individual
+  app.post("/api/cargo-scheduling/create-slot", async (req, res) => {
+    try {
+      const { dateTime, serviceType } = req.body;
+      
+      if (!dateTime || !serviceType) {
+        return res.status(400).json({ message: "Data/hora e tipo de serviço são obrigatórios" });
+      }
+      
+      // Parse do datetime para extrair data e horário
+      const parsedDate = new Date(dateTime);
+      const date = parsedDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const hour = parsedDate.getHours();
+      const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+      
+      // Criar o slot individual
+      const slotData = {
+        id: `slot-${date}-${hour}`,
+        date,
+        timeSlot,
+        isAvailable: true,
+        maxCapacity: 5,
+        currentBookings: 0,
+        serviceType,
+        status: 'available'
+      };
+      
+      const slot = await storage.createScheduleSlot(slotData);
+      
+      console.log(`⏰ Horário individual criado: ${date} às ${timeSlot} para ${serviceType}`);
+      
+      res.status(201).json({ 
+        message: "Horário criado com sucesso",
+        slot 
+      });
+    } catch (error) {
+      console.error("Error creating individual slot:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
