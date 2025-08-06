@@ -24,7 +24,8 @@ import {
   ChevronDown,
   ChevronRight,
   DollarSign,
-  Circle
+  Circle,
+  Upload
 } from "lucide-react";
 import { authManager } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -57,7 +58,8 @@ const navigation = [
       { name: "Motoristas", href: "/drivers", icon: Truck },
       { name: "Ocorrências", href: "/occurrences", icon: FileText },
       { name: "Pessoas Externas", href: "/external-persons", icon: UserPlus },
-      { name: "Gestão de Prancha", href: "/prancha-management", icon: Package }
+      { name: "Gestão de Prancha", href: "/prancha-management", icon: Package },
+      { name: "Importação de Dados", href: "/data-import", icon: Upload }
     ]
   },
   {

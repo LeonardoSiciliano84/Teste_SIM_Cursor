@@ -95,6 +95,7 @@ export interface IStorage {
   // Vehicle methods
   getVehicles(): Promise<Vehicle[]>;
   getVehicle(id: string): Promise<Vehicle | undefined>;
+  getVehicleByPlate(plate: string): Promise<Vehicle | undefined>;
   createVehicle(vehicle: InsertVehicle): Promise<Vehicle>;
   updateVehicle(id: string, vehicle: Partial<InsertVehicle>): Promise<Vehicle | undefined>;
   deleteVehicle(id: string): Promise<boolean>;
@@ -136,6 +137,7 @@ export interface IStorage {
   // Employee methods
   getEmployees(): Promise<Employee[]>;
   getEmployee(id: string): Promise<Employee | undefined>;
+  getEmployeeByCpf(cpf: string): Promise<Employee | undefined>;
   createEmployee(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
   deleteEmployee(id: string): Promise<boolean>;
@@ -1057,6 +1059,17 @@ export class MemStorage implements IStorage {
     return this.vehicles.get(id);
   }
 
+  async getVehicleByPlate(plate: string): Promise<Vehicle | undefined> {
+    const normalizedPlate = plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    for (const vehicle of this.vehicles.values()) {
+      const vehiclePlate = vehicle.plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (vehiclePlate === normalizedPlate) {
+        return vehicle;
+      }
+    }
+    return undefined;
+  }
+
   async createVehicle(insertVehicle: InsertVehicle): Promise<Vehicle> {
     const id = randomUUID();
     const vehicle: Vehicle = {
@@ -1402,6 +1415,16 @@ export class MemStorage implements IStorage {
 
   async deleteEmployee(id: string): Promise<boolean> {
     return this.employees.delete(id);
+  }
+
+  async getEmployeeByCpf(cpf: string): Promise<Employee | undefined> {
+    try {
+      const [employee] = await db.select().from(employees).where(eq(employees.cpf, cpf));
+      return employee;
+    } catch (error) {
+      console.error('Erro ao buscar funcionário por CPF:', error);
+      return undefined;
+    }
   }
 
   // Desativar colaborador com motivo

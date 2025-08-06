@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { storage } from "./storage";
 import { loginSchema } from "@shared/schema";
+import multer from "multer";
+import * as XLSX from "xlsx";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware para CORS
@@ -1812,6 +1814,306 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating external person status:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // ============= ROTAS DE IMPORTAÇÃO DE DADOS =============
+  
+  // Configurar multer para upload de arquivos
+  const upload = multer({ 
+    dest: 'uploads/',
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+        cb(null, true);
+      } else {
+        cb(new Error('Apenas arquivos .xlsx são permitidos'), false);
+      }
+    },
+    limits: {
+      fileSize: 10 * 1024 * 1024 // 10MB limite
+    }
+  });
+
+  // Função para validar dados de colaborador
+  function validateEmployeeData(row: any, rowIndex: number) {
+    const errors: string[] = [];
+    
+    // Validações obrigatórias
+    if (!row['Nome completo']) errors.push('Nome completo é obrigatório');
+    if (!row['CPF']) errors.push('CPF é obrigatório');
+    if (!row['Telefone']) errors.push('Telefone é obrigatório');
+    if (!row['Cargo']) errors.push('Cargo é obrigatório');
+    if (!row['Departamento']) errors.push('Departamento é obrigatório');
+    if (!row['Matrícula']) errors.push('Matrícula é obrigatória');
+    
+    // Validação de CPF (formato básico)
+    if (row['CPF']) {
+      const cpf = row['CPF'].toString().replace(/[^\d]/g, '');
+      if (cpf.length !== 11) {
+        errors.push('CPF deve ter 11 dígitos');
+      }
+    }
+    
+    // Validação de email (se fornecido)
+    if (row['E-mail']) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(row['E-mail'])) {
+        errors.push('E-mail inválido');
+      }
+    }
+    
+    return errors;
+  }
+
+  // Função para validar dados de veículo
+  function validateVehicleData(row: any, rowIndex: number) {
+    const errors: string[] = [];
+    
+    // Validações obrigatórias
+    if (!row['Placa']) errors.push('Placa é obrigatória');
+    if (!row['Marca']) errors.push('Marca é obrigatória');
+    if (!row['Modelo']) errors.push('Modelo é obrigatório');
+    if (!row['Ano de fabricação']) errors.push('Ano de fabricação é obrigatório');
+    if (!row['Ano modelo']) errors.push('Ano modelo é obrigatório');
+    if (!row['Tipo de veículo']) errors.push('Tipo de veículo é obrigatório');
+    if (!row['Classificação']) errors.push('Classificação é obrigatória');
+    
+    // Validação de placa (formato brasileiro)
+    if (row['Placa']) {
+      const plateRegex = /^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$/;
+      if (!plateRegex.test(row['Placa'].toString().toUpperCase())) {
+        errors.push('Placa deve estar no formato ABC-1234 ou ABC1D23');
+      }
+    }
+    
+    // Validação de anos
+    const currentYear = new Date().getFullYear();
+    if (row['Ano de fabricação']) {
+      const year = parseInt(row['Ano de fabricação']);
+      if (year < 1980 || year > currentYear + 1) {
+        errors.push('Ano de fabricação inválido');
+      }
+    }
+    
+    if (row['Ano modelo']) {
+      const year = parseInt(row['Ano modelo']);
+      if (year < 1980 || year > currentYear + 1) {
+        errors.push('Ano modelo inválido');
+      }
+    }
+    
+    return errors;
+  }
+
+  // Função para converter dados de colaborador para o formato do banco
+  function convertEmployeeData(row: any) {
+    return {
+      fullName: row['Nome completo'],
+      cpf: row['CPF']?.toString().replace(/[^\d]/g, ''),
+      rg: row['RG']?.toString(),
+      birthDate: row['Data de nascimento'] ? new Date(row['Data de nascimento']) : null,
+      phone: row['Telefone']?.toString(),
+      email: row['E-mail']?.toString(),
+      position: row['Cargo']?.toString(),
+      department: row['Departamento']?.toString(),
+      employeeNumber: row['Matrícula']?.toString(),
+      admissionDate: row['Data de admissão'] ? new Date(row['Data de admissão']) : null,
+      salary: row['Salário'] ? parseFloat(row['Salário']) : null,
+      address: row['Endereço']?.toString(),
+      nationality: row['Nacionalidade']?.toString() || 'Brasileira',
+      driverLicense: row['CNH']?.toString(),
+      driverLicenseCategory: row['Categoria CNH']?.toString(),
+      driverLicenseExpiry: row['Vencimento CNH'] ? new Date(row['Vencimento CNH']) : null,
+      status: 'ativo',
+      accessLevel: 'employee'
+    };
+  }
+
+  // Função para converter dados de veículo para o formato do banco
+  function convertVehicleData(row: any) {
+    const plate = row['Placa']?.toString().toUpperCase();
+    const brand = row['Marca']?.toString();
+    const model = row['Modelo']?.toString();
+    
+    return {
+      name: `${brand} ${model} - ${plate}`,
+      plate: plate,
+      brand: brand,
+      model: model,
+      chassis: row['Chassi']?.toString(),
+      renavam: row['RENAVAM']?.toString(),
+      manufactureYear: parseInt(row['Ano de fabricação']),
+      modelYear: parseInt(row['Ano modelo']),
+      vehicleType: row['Tipo de veículo']?.toString(),
+      classification: row['Classificação']?.toString(),
+      loadCapacity: row['Capacidade de carga (kg)'] ? parseFloat(row['Capacidade de carga (kg)']) : null,
+      fuelTankCapacity: row['Capacidade do tanque (L)'] ? parseFloat(row['Capacidade do tanque (L)']) : null,
+      fuelConsumption: row['Consumo (km/L)'] ? parseFloat(row['Consumo (km/L)']) : null,
+      preventiveMaintenanceKm: row['Intervalo de revisão (km)'] ? parseInt(row['Intervalo de revisão (km)']) : 15000,
+      purchaseDate: row['Data de compra'] ? new Date(row['Data de compra']) : null,
+      purchaseValue: row['Valor de compra'] ? parseFloat(row['Valor de compra']) : null,
+      currentLocation: row['Localização atual']?.toString() || 'Garagem Central',
+      status: 'ativo'
+    };
+  }
+
+  // Rota de importação de colaboradores
+  app.post("/api/import/employees", upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: "Arquivo não enviado" });
+      }
+
+      const selectedFields = JSON.parse(req.body.fields);
+      
+      // Ler arquivo Excel
+      const workbook = XLSX.readFile(req.file.path);
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+
+      if (data.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Arquivo está vazio ou não possui dados válidos" 
+        });
+      }
+
+      const result = {
+        success: true,
+        imported: 0,
+        errors: [] as Array<{ row: number; error: string }>,
+        skipped: 0
+      };
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i] as any;
+        const rowNumber = i + 2; // +2 porque linha 1 é cabeçalho e índice começa em 0
+
+        try {
+          // Validar dados
+          const validationErrors = validateEmployeeData(row, rowNumber);
+          if (validationErrors.length > 0) {
+            result.errors.push({
+              row: rowNumber,
+              error: validationErrors.join(', ')
+            });
+            continue;
+          }
+
+          // Converter dados
+          const employeeData = convertEmployeeData(row);
+          
+          // Verificar se já existe pelo CPF
+          const existingEmployee = await storage.getEmployeeByCpf(employeeData.cpf);
+          if (existingEmployee) {
+            result.skipped++;
+            continue;
+          }
+
+          // Criar colaborador
+          await storage.createEmployee(employeeData);
+          result.imported++;
+
+        } catch (error) {
+          result.errors.push({
+            row: rowNumber,
+            error: `Erro ao processar: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+          });
+        }
+      }
+
+      // Limpar arquivo temporário
+      require('fs').unlinkSync(req.file.path);
+
+      res.json(result);
+
+    } catch (error) {
+      console.error("Erro na importação de colaboradores:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro interno do servidor" 
+      });
+    }
+  });
+
+  // Rota de importação de veículos
+  app.post("/api/import/vehicles", upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: "Arquivo não enviado" });
+      }
+
+      const selectedFields = JSON.parse(req.body.fields);
+      
+      // Ler arquivo Excel
+      const workbook = XLSX.readFile(req.file.path);
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+
+      if (data.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Arquivo está vazio ou não possui dados válidos" 
+        });
+      }
+
+      const result = {
+        success: true,
+        imported: 0,
+        errors: [] as Array<{ row: number; error: string }>,
+        skipped: 0
+      };
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i] as any;
+        const rowNumber = i + 2; // +2 porque linha 1 é cabeçalho e índice começa em 0
+
+        try {
+          // Validar dados
+          const validationErrors = validateVehicleData(row, rowNumber);
+          if (validationErrors.length > 0) {
+            result.errors.push({
+              row: rowNumber,
+              error: validationErrors.join(', ')
+            });
+            continue;
+          }
+
+          // Converter dados
+          const vehicleData = convertVehicleData(row);
+          
+          // Verificar se já existe pela placa
+          const existingVehicle = await storage.getVehicleByPlate(vehicleData.plate);
+          if (existingVehicle) {
+            result.skipped++;
+            continue;
+          }
+
+          // Criar veículo
+          await storage.createVehicle(vehicleData);
+          result.imported++;
+
+        } catch (error) {
+          result.errors.push({
+            row: rowNumber,
+            error: `Erro ao processar: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+          });
+        }
+      }
+
+      // Limpar arquivo temporário
+      require('fs').unlinkSync(req.file.path);
+
+      res.json(result);
+
+    } catch (error) {
+      console.error("Erro na importação de veículos:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro interno do servidor" 
+      });
     }
   });
 
