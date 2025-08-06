@@ -154,18 +154,68 @@ export default function DataImport() {
       return;
     }
 
-    // Criar um template de exemplo
+    // Criar um template XLSX de exemplo
     const entityFields = FIELD_DEFINITIONS[selectedEntity as keyof typeof FIELD_DEFINITIONS];
     const selectedFieldsData = entityFields.fields.filter(field => selectedFields.includes(field.key));
     
-    const csvContent = selectedFieldsData.map(field => field.label).join(',');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    // Criar dados de exemplo para demonstrar o formato
+    const headers = selectedFieldsData.map(field => field.label);
+    let exampleRow: string[] = [];
+    
+    if (selectedEntity === 'employees') {
+      exampleRow = headers.map(header => {
+        switch (header) {
+          case 'Nome': return 'João Silva Santos';
+          case 'CPF': return '12345678901';
+          case 'Cargo': return 'Motorista';
+          case 'Departamento': return 'Operacional';
+          case 'Telefone': return '(11) 99999-9999';
+          case 'Email': return 'joao.silva@felka.com.br';
+          case 'Matrícula': return 'EMP001';
+          case 'Data de Admissão': return '01/01/2024';
+          case 'Salário': return '3500.00';
+          case 'Endereço': return 'Rua das Flores, 123';
+          default: return 'Exemplo';
+        }
+      });
+    } else if (selectedEntity === 'vehicles') {
+      exampleRow = headers.map(header => {
+        switch (header) {
+          case 'Placa': return 'ABC-1234';
+          case 'Marca': return 'Mercedes-Benz';
+          case 'Modelo': return 'Actros';
+          case 'Chassi': return '9BM979018LB123456';
+          case 'RENAVAM': return '12345678901';
+          case 'Ano de Fabricação': return '2020';
+          case 'Ano do Modelo': return '2020';
+          case 'Tipo de Veículo': return 'Caminhão';
+          case 'Classificação': return 'Pesado';
+          case 'Capacidade de Carga': return '15000';
+          case 'Capacidade do Tanque': return '300';
+          case 'KM Atual': return '50000';
+          default: return 'Exemplo';
+        }
+      });
+    }
+
+    // Criar conteúdo Excel-like mas simples para download
+    const xlsxContent = [
+      headers.join('\t'), // Cabeçalho separado por tab
+      exampleRow.join('\t') // Linha de exemplo separada por tab
+    ].join('\n');
+    
+    const blob = new Blob([xlsxContent], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `template_${selectedEntity}.csv`;
+    a.download = `template_${selectedEntity}.xlsx`;
     a.click();
     window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Template baixado",
+      description: "Arquivo template Excel (.xlsx) baixado com sucesso.",
+    });
   };
 
   const resetImport = () => {
@@ -299,10 +349,10 @@ export default function DataImport() {
                     <label htmlFor="file-upload" className="cursor-pointer">
                       <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                       <p className="text-lg font-medium text-gray-700">
-                        Clique para selecionar arquivo .xlsx
+                        Clique para selecionar arquivo Excel (.xlsx)
                       </p>
                       <p className="text-sm text-gray-500">
-                        Ou arraste e solte o arquivo aqui
+                        Ou arraste e solte o arquivo Excel (.xlsx) aqui
                       </p>
                     </label>
                   </div>

@@ -1823,16 +1823,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const upload = multer({ 
     dest: 'uploads/',
     fileFilter: (req, file, cb) => {
-      if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+      if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+          file.originalname.toLowerCase().endsWith('.xlsx')) {
         cb(null, true);
       } else {
-        cb(new Error('Apenas arquivos .xlsx são permitidos'), false);
+        cb(new Error('Apenas arquivos .xlsx são permitidos'));
       }
     },
     limits: {
       fileSize: 10 * 1024 * 1024 // 10MB limite
     }
   });
+
+  // Funções auxiliares para validação e conversão de dados
+  function validateEmployeeData(row: any, rowNumber: number): string[] {
+    const errors: string[] = [];
+
+    // Validar campos obrigatórios
+    if (!row['Nome'] && !row['nome'] && !row['fullName']) {
+      errors.push('Nome é obrigatório');
+    }
+    
+    if (!row['CPF'] && !row['cpf']) {
+      errors.push('CPF é obrigatório');
+    } else {
+      const cpf = String(row['CPF'] || row['cpf']).replace(/[^\d]/g, '');
+      if (cpf.length !== 11) {
+        errors.push('CPF deve ter 11 dígitos');
+      }
+    }
+
+    if (!row['Cargo'] && !row['cargo'] && !row['position']) {
+      errors.push('Cargo é obrigatório');
+    }
+
+    return errors;
+  }
+
+  function validateVehicleData(row: any, rowNumber: number): string[] {
+    const errors: string[] = [];
+
+    // Validar campos obrigatórios
+    if (!row['Placa'] && !row['placa'] && !row['plate']) {
+      errors.push('Placa é obrigatória');
+    }
+    
+    if (!row['Marca'] && !row['marca'] && !row['brand']) {
+      errors.push('Marca é obrigatória');
+    }
+
+    if (!row['Modelo'] && !row['modelo'] && !row['model']) {
+      errors.push('Modelo é obrigatório');
+    }
+
+    return errors;
+  }
+
+  function convertEmployeeData(row: any): any {
+    const cpf = String(row['CPF'] || row['cpf']).replace(/[^\d]/g, '');
+    
+    return {
+      fullName: row['Nome'] || row['nome'] || row['fullName'] || '',
+      cpf: cpf,
+      rg: row['RG'] || row['rg'] || null,
+      birthDate: row['Data de Nascimento'] || row['birthDate'] || null,
+      phone: row['Telefone'] || row['phone'] || row['telefone'] || '',
+      email: row['Email'] || row['email'] || null,
+      position: row['Cargo'] || row['cargo'] || row['position'] || '',
+      department: row['Departamento'] || row['department'] || row['departamento'] || 'Geral',
+      employeeNumber: row['Matrícula'] || row['employeeNumber'] || row['matricula'] || `EMP${Date.now()}`,
+      admissionDate: row['Data de Admissão'] || row['admissionDate'] || null,
+      salary: parseFloat(String(row['Salário'] || row['salary'] || '0').replace(/[^\d.,]/g, '').replace(',', '.')) || null,
+      address: row['Endereço'] || row['address'] || row['endereco'] || null,
+      status: 'active',
+      accessLevel: 'user'
+    };
+  }
+
+  function convertVehicleData(row: any): any {
+    return {
+      name: `${row['Marca'] || row['marca'] || row['brand']} ${row['Modelo'] || row['modelo'] || row['model']}`,
+      plate: String(row['Placa'] || row['placa'] || row['plate']).toUpperCase(),
+      brand: row['Marca'] || row['marca'] || row['brand'] || '',
+      model: row['Modelo'] || row['modelo'] || row['model'] || '',
+      chassis: row['Chassi'] || row['chassis'] || null,
+      renavam: row['RENAVAM'] || row['renavam'] || null,
+      manufactureYear: parseInt(String(row['Ano de Fabricação'] || row['manufactureYear'] || row['ano_fabricacao'] || new Date().getFullYear())) || new Date().getFullYear(),
+      modelYear: parseInt(String(row['Ano do Modelo'] || row['modelYear'] || row['ano_modelo'] || new Date().getFullYear())) || new Date().getFullYear(),
+      vehicleType: row['Tipo de Veículo'] || row['vehicleType'] || row['tipo'] || 'Caminhão',
+      classification: row['Classificação'] || row['classification'] || row['classificacao'] || 'Leve',
+      loadCapacity: parseFloat(String(row['Capacidade de Carga'] || row['loadCapacity'] || '0').replace(/[^\d.,]/g, '').replace(',', '.')) || null,
+      fuelTankCapacity: parseFloat(String(row['Capacidade do Tanque'] || row['fuelTankCapacity'] || '0').replace(/[^\d.,]/g, '').replace(',', '.')) || null,
+      purchaseDate: row['Data de Compra'] || row['purchaseDate'] || null,
+      purchaseValue: String(parseFloat(String(row['Valor de Compra'] || row['purchaseValue'] || '0').replace(/[^\d.,]/g, '').replace(',', '.')) || 0),
+      currentMileage: parseInt(String(row['KM Atual'] || row['currentMileage'] || '0').replace(/[^\d]/g, '')) || 0,
+      status: 'active'
+    };
+  }
 
   // Função para validar dados de colaborador
   function validateEmployeeData(row: any, rowIndex: number) {
