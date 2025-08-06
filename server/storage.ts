@@ -3527,11 +3527,19 @@ export class MemStorage implements IStorage {
     location: 'oficina_interna' | 'oficina_externa';
     scheduledDate: string;
   }) {
+    console.log('Dados recebidos para agendamento:', data);
+    
     // Buscar veículo no banco de dados
     const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, data.vehicleId));
+    console.log('Veículo encontrado:', vehicle);
+    
     const [driver] = await db.select().from(employees).where(eq(employees.id, data.driverId));
+    console.log('Motorista encontrado:', driver);
     
     if (!vehicle || !driver) {
+      console.log('Erro: Veículo ou motorista não encontrado');
+      console.log('Vehicle ID buscado:', data.vehicleId);
+      console.log('Driver ID buscado:', data.driverId);
       throw new Error('Veículo ou motorista não encontrado');
     }
 

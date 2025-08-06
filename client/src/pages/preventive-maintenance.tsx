@@ -176,12 +176,18 @@ export default function PreventiveMaintenance() {
       return;
     }
 
-    scheduleMaintenanceMutation.mutate({
+    const dataToSend = {
       vehicleId: selectedVehicle.id,
       driverId: selectedDriver,
       location: selectedLocation as 'oficina_interna' | 'oficina_externa',
       scheduledDate: format(selectedDate, 'yyyy-MM-dd'),
-    });
+    };
+    
+    console.log('Enviando dados para agendamento:', dataToSend);
+    console.log('Veículo selecionado:', selectedVehicle);
+    console.log('Motorista selecionado ID:', selectedDriver);
+
+    scheduleMaintenanceMutation.mutate(dataToSend);
   };
 
   if (isLoading) {
