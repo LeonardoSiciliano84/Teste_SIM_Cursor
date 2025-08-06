@@ -77,6 +77,9 @@ import {
   type InsertExternalPerson,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { vehicles, employees } from "@shared/schema";
 
 export interface IStorage {
   // User methods
