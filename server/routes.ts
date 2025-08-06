@@ -1820,6 +1820,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ============= ROTAS DE IMPORTAÇÃO DE DADOS =============
   
+  // Rota para gerar templates Excel
+  app.post("/api/template/:entity", async (req, res) => {
+    try {
+      const { entity } = req.params;
+      const { fields } = req.body;
+
+      if (!fields || !Array.isArray(fields)) {
+        return res.status(400).json({ success: false, message: "Campos não especificados" });
+      }
+
+      // Definir mapeamentos de campos para labels
+      const fieldLabels: Record<string, Record<string, string>> = {
+        employees: {
+          fullName: 'Nome',
+          cpf: 'CPF',
+          rg: 'RG',
+          birthDate: 'Data de Nascimento',
+          phone: 'Telefone',
+          email: 'Email',
+          position: 'Cargo',
+          department: 'Departamento',
+          employeeNumber: 'Matrícula',
+          admissionDate: 'Data de Admissão',
+          salary: 'Salário',
+          address: 'Endereço'
+        },
+        vehicles: {
+          plate: 'Placa',
+          brand: 'Marca',
+          model: 'Modelo',
+          chassis: 'Chassi',
+          renavam: 'RENAVAM',
+          manufactureYear: 'Ano de Fabricação',
+          modelYear: 'Ano do Modelo',
+          vehicleType: 'Tipo de Veículo',
+          classification: 'Classificação',
+          loadCapacity: 'Capacidade de Carga',
+          fuelTankCapacity: 'Capacidade do Tanque',
+          currentMileage: 'KM Atual'
+        }
+      };
+
+      const labels = fieldLabels[entity];
+      if (!labels) {
+        return res.status(400).json({ success: false, message: "Entidade inválida" });
+      }
+
+      // Criar cabeçalhos
+      const headers = fields.map((field: string) => labels[field] || field);
+
+      // Criar dados de exemplo
+      const sampleData = [];
+      const numRows = entity === 'vehicles' ? 5 : 3; // Mais exemplos para veículos
+
+      for (let i = 0; i < numRows; i++) {
+        const row: Record<string, any> = {};
+        
+        fields.forEach((field: string) => {
+          const header = labels[field] || field;
+          
+          if (entity === 'employees') {
+            switch (field) {
+              case 'fullName': row[header] = ['João Silva Santos', 'Maria Oliveira Costa', 'Carlos Eduardo Pereira'][i] || `Colaborador ${i + 1}`; break;
+              case 'cpf': row[header] = ['12345678901', '98765432109', '11122233344'][i] || `${String(i).padStart(2, '0')}${String(i).repeat(9)}`; break;
+              case 'rg': row[header] = ['12.345.678-9', '98.765.432-1', '11.122.233-4'][i] || `${i}${i}.${i}${i}${i}.${i}${i}${i}-${i}`; break;
+              case 'birthDate': row[header] = ['15/05/1985', '22/08/1990', '10/12/1988'][i] || `0${i + 1}/01/198${5 + i}`; break;
+              case 'phone': row[header] = ['(11) 99999-9999', '(11) 88888-8888', '(11) 77777-7777'][i] || `(11) ${i}${i}${i}${i}${i}-${i}${i}${i}${i}`; break;
+              case 'email': row[header] = ['joao.silva@felka.com.br', 'maria.costa@felka.com.br', 'carlos.pereira@felka.com.br'][i] || `colaborador${i + 1}@felka.com.br`; break;
+              case 'position': row[header] = ['Motorista', 'Analista de Logística', 'Supervisor'][i] || 'Colaborador'; break;
+              case 'department': row[header] = ['Operacional', 'Administrativo', 'Supervisão'][i] || 'Geral'; break;
+              case 'employeeNumber': row[header] = [`EMP00${i + 1}`, `EMP00${i + 2}`, `EMP00${i + 3}`][i] || `EMP${String(i + 1).padStart(3, '0')}`; break;
+              case 'admissionDate': row[header] = ['01/01/2024', '15/02/2024', '10/03/2024'][i] || `${String(i + 1).padStart(2, '0')}/01/2024`; break;
+              case 'salary': row[header] = ['3500.00', '4200.00', '5800.00'][i] || `${3000 + (i * 500)}.00`; break;
+              case 'address': row[header] = ['Rua das Flores, 123', 'Av. Brasil, 456', 'Rua Santos, 789'][i] || `Rua Exemplo, ${123 + (i * 100)}`; break;
+              default: row[header] = `Exemplo ${i + 1}`;
+            }
+          } else if (entity === 'vehicles') {
+            switch (field) {
+              case 'plate': row[header] = ['ABC-1234', 'DEF-5678', 'GHI-9012', 'JKL-3456', 'MNO-7890'][i] || `ABC-${1234 + i}`; break;
+              case 'brand': row[header] = ['Mercedes-Benz', 'Volvo', 'Scania', 'Iveco', 'Ford'][i] || 'Mercedes-Benz'; break;
+              case 'model': row[header] = ['Actros', 'FH', 'R450', 'Stralis', 'Cargo'][i] || 'Actros'; break;
+              case 'chassis': row[header] = ['9BM979018LB123456', '9BM979018LB123457', '9BM979018LB123458', '9BM979018LB123459', '9BM979018LB123460'][i] || `9BM979018LB12345${i}`; break;
+              case 'renavam': row[header] = ['12345678901', '12345678902', '12345678903', '12345678904', '12345678905'][i] || `1234567890${i}`; break;
+              case 'manufactureYear': row[header] = [2020, 2021, 2019, 2022, 2023][i] || 2020 + i; break;
+              case 'modelYear': row[header] = [2020, 2021, 2019, 2022, 2023][i] || 2020 + i; break;
+              case 'vehicleType': row[header] = ['Caminhão', 'Carreta', 'Caminhão', 'Semi-reboque', 'Caminhão'][i] || 'Caminhão'; break;
+              case 'classification': row[header] = ['Pesado', 'Pesado', 'Médio', 'Pesado', 'Leve'][i] || 'Pesado'; break;
+              case 'loadCapacity': row[header] = ['15000', '25000', '12000', '30000', '8000'][i] || `${15000 + (i * 2000)}`; break;
+              case 'fuelTankCapacity': row[header] = ['300', '400', '250', '500', '200'][i] || `${300 + (i * 50)}`; break;
+              case 'currentMileage': row[header] = ['50000', '75000', '30000', '100000', '25000'][i] || `${50000 + (i * 10000)}`; break;
+              default: row[header] = `Exemplo ${i + 1}`;
+            }
+          }
+        });
+        
+        sampleData.push(row);
+      }
+
+      // Criar workbook
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(sampleData);
+
+      // Adicionar worksheet ao workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, entity === 'employees' ? 'Colaboradores' : 'Veículos');
+
+      // Gerar buffer
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+      // Configurar headers da resposta
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=template_${entity}_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+      // Enviar buffer
+      res.send(buffer);
+
+    } catch (error) {
+      console.error("Erro ao gerar template:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro interno do servidor" 
+      });
+    }
+  });
+  
   // Configurar multer para upload de arquivos
   const upload = multer({ 
     dest: 'uploads/',

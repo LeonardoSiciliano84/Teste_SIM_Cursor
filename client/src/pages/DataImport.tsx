@@ -144,7 +144,7 @@ export default function DataImport() {
     importMutation.mutate(formData);
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     if (!selectedEntity || selectedFields.length === 0) {
       toast({
         title: "Selecione os campos",
@@ -154,68 +154,42 @@ export default function DataImport() {
       return;
     }
 
-    // Criar um template XLSX de exemplo
-    const entityFields = FIELD_DEFINITIONS[selectedEntity as keyof typeof FIELD_DEFINITIONS];
-    const selectedFieldsData = entityFields.fields.filter(field => selectedFields.includes(field.key));
-    
-    // Criar dados de exemplo para demonstrar o formato
-    const headers = selectedFieldsData.map(field => field.label);
-    let exampleRow: string[] = [];
-    
-    if (selectedEntity === 'employees') {
-      exampleRow = headers.map(header => {
-        switch (header) {
-          case 'Nome': return 'João Silva Santos';
-          case 'CPF': return '12345678901';
-          case 'Cargo': return 'Motorista';
-          case 'Departamento': return 'Operacional';
-          case 'Telefone': return '(11) 99999-9999';
-          case 'Email': return 'joao.silva@felka.com.br';
-          case 'Matrícula': return 'EMP001';
-          case 'Data de Admissão': return '01/01/2024';
-          case 'Salário': return '3500.00';
-          case 'Endereço': return 'Rua das Flores, 123';
-          default: return 'Exemplo';
-        }
+    try {
+      // Fazer requisição direta para dados binários
+      const response = await fetch(`/api/template/${selectedEntity}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ fields: selectedFields }),
+        credentials: "include",
       });
-    } else if (selectedEntity === 'vehicles') {
-      exampleRow = headers.map(header => {
-        switch (header) {
-          case 'Placa': return 'ABC-1234';
-          case 'Marca': return 'Mercedes-Benz';
-          case 'Modelo': return 'Actros';
-          case 'Chassi': return '9BM979018LB123456';
-          case 'RENAVAM': return '12345678901';
-          case 'Ano de Fabricação': return '2020';
-          case 'Ano do Modelo': return '2020';
-          case 'Tipo de Veículo': return 'Caminhão';
-          case 'Classificação': return 'Pesado';
-          case 'Capacidade de Carga': return '15000';
-          case 'Capacidade do Tanque': return '300';
-          case 'KM Atual': return '50000';
-          default: return 'Exemplo';
-        }
+
+      if (!response.ok) {
+        throw new Error(`Erro: ${response.status}`);
+      }
+      
+      // Obter dados binários
+      const blob = await response.blob();
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `template_${selectedEntity}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Template baixado",
+        description: "Template Excel (.xlsx) com dados de exemplo baixado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro no download",
+        description: "Não foi possível baixar o template. Tente novamente.",
+        variant: "destructive",
       });
     }
-
-    // Criar conteúdo Excel-like mas simples para download
-    const xlsxContent = [
-      headers.join('\t'), // Cabeçalho separado por tab
-      exampleRow.join('\t') // Linha de exemplo separada por tab
-    ].join('\n');
-    
-    const blob = new Blob([xlsxContent], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `template_${selectedEntity}.xlsx`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-
-    toast({
-      title: "Template baixado",
-      description: "Arquivo template Excel (.xlsx) baixado com sucesso.",
-    });
   };
 
   const resetImport = () => {
