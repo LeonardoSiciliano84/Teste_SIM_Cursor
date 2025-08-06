@@ -85,7 +85,6 @@ export default function PreventiveMaintenance() {
     mutationFn: async (data: ScheduleMaintenanceData) => {
       return apiRequest('/api/preventive-maintenance/schedule', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
     },
