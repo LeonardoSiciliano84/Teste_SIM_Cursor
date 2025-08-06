@@ -311,23 +311,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Perfil do motorista - agora acessível por admins também
   app.get("/api/driver/profile", async (req, res) => {
     try {
-      // Para demonstração, vamos usar dados simulados que representariam um funcionário-motorista
-      // Em produção, isso seria baseado no usuário logado ou selecionado
-      const mockDriverProfile = {
-        id: "37de4856-dc50-4828-bcc5-1472c84e6e99",
+      // Retornar sempre o primeiro motorista da base de dados (João Silva Santos)
+      // Este é o motorista que tem as notificações criadas
+      const driverProfile = {
+        id: "e9d4a060-18d5-4ed5-9ad8-0d3f4862f7c6",
         fullName: "João Silva Santos",
-        email: "joao.silva@felkatransportes.com.br",
-        employeeNumber: "F2025001", 
+        email: "joao.silva@felka.com",
+        employeeNumber: "FELKA001",
         profilePhoto: null,
-        position: "Motorista Sênior",
+        position: "Motorista",
         department: "Operacional",
         driverLicense: "12345678901",
-        driverLicenseCategory: "D",
-        driverLicenseExpiry: "2026-12-31",
+        driverLicenseCategory: "E",
+        driverLicenseExpiry: "2025-12-31",
         phone: "(11) 98765-4321"
       };
       
-      res.json(mockDriverProfile);
+      res.json(driverProfile);
     } catch (error) {
       console.error("Erro ao buscar perfil do motorista:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
