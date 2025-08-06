@@ -549,6 +549,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get scheduled maintenance details
+  app.get('/api/preventive-maintenance/scheduled/:vehicleId', async (req, res) => {
+    try {
+      const { vehicleId } = req.params;
+      const scheduledMaintenance = storage.getScheduledMaintenance(vehicleId);
+      
+      if (!scheduledMaintenance) {
+        return res.status(404).json({ message: 'Agendamento não encontrado' });
+      }
+
+      res.json(scheduledMaintenance);
+    } catch (error) {
+      console.error('Error fetching scheduled maintenance:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Get driver notifications
   app.get('/api/driver/:driverId/notifications', async (req, res) => {
     try {

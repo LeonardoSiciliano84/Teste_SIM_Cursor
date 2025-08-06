@@ -3499,10 +3499,21 @@ export class MemStorage implements IStorage {
         const currentKm = lastMaintenanceKm + Math.floor(Math.random() * 15000);
         const kmToNextMaintenance = (lastMaintenanceKm + maintenanceInterval) - currentKm;
         
-        let status: 'em_dia' | 'programar_revisao' | 'em_revisao';
+        // Verificar se veículo já tem agendamento
+        const hasScheduled = Array.from(this.driverNotifications.values())
+          .find(notification => 
+            notification.vehicleId === vehicle.id && 
+            notification.type === 'preventive_maintenance' &&
+            notification.status !== 'completed'
+          );
+
+        let status: 'em_dia' | 'programar_revisao' | 'em_revisao' | 'agendado';
         let priority: number;
         
-        if (kmToNextMaintenance < 0) {
+        if (hasScheduled) {
+          status = 'agendado';
+          priority = 0; // Prioridade especial para agendados
+        } else if (kmToNextMaintenance < 0) {
           status = 'em_revisao';
           priority = 1; // Máxima prioridade
         } else if (kmToNextMaintenance >= 2000 && kmToNextMaintenance <= 3000) {
@@ -3527,7 +3538,8 @@ export class MemStorage implements IStorage {
           priority,
           name: vehicle.name,
           brand: vehicle.brand,
-          model: vehicle.model
+          model: vehicle.model,
+          scheduledMaintenance: hasScheduled || null
         };
       });
 
