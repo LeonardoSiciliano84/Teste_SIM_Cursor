@@ -2053,8 +2053,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const selectedFields = JSON.parse(req.body.fields);
       
-      // Ler arquivo Excel
-      const workbook = XLSX.readFile(req.file.path);
+      // Ler arquivo Excel usando Buffer
+      const fs = require('fs');
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(worksheet);
@@ -2133,8 +2135,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const selectedFields = JSON.parse(req.body.fields);
       
-      // Ler arquivo Excel
-      const workbook = XLSX.readFile(req.file.path);
+      // Ler arquivo Excel usando Buffer
+      const fs = require('fs');
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(worksheet);
