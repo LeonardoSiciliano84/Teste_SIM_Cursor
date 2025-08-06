@@ -592,6 +592,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============= NOVAS ROTAS PARA MANUTENÇÃO PREVENTIVA BASEADA EM KM =============
+
+  // Get preventive maintenance records
+  app.get('/api/preventive-maintenance/records', async (req, res) => {
+    try {
+      const records = await storage.getPreventiveMaintenanceRecords();
+      res.json(records);
+    } catch (error) {
+      console.error('Error fetching preventive maintenance records:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Get preventive maintenance records for a specific vehicle
+  app.get('/api/preventive-maintenance/records/:vehicleId', async (req, res) => {
+    try {
+      const { vehicleId } = req.params;
+      const records = await storage.getVehiclePreventiveMaintenanceRecords(vehicleId);
+      res.json(records);
+    } catch (error) {
+      console.error('Error fetching vehicle preventive maintenance records:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Create new preventive maintenance record
+  app.post('/api/preventive-maintenance/records', async (req, res) => {
+    try {
+      const recordData = req.body;
+      
+      if (!recordData.vehicleId || !recordData.maintenanceKm || !recordData.maintenanceDate || !recordData.serviceType) {
+        return res.status(400).json({ 
+          message: 'Campos obrigatórios: vehicleId, maintenanceKm, maintenanceDate, serviceType' 
+        });
+      }
+
+      const newRecord = await storage.createPreventiveMaintenanceRecord(recordData);
+      res.json(newRecord);
+    } catch (error) {
+      console.error('Error creating preventive maintenance record:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Get driver checklists
+  app.get('/api/driver-checklists', async (req, res) => {
+    try {
+      const checklists = await storage.getDriverChecklists();
+      res.json(checklists);
+    } catch (error) {
+      console.error('Error fetching driver checklists:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Get driver checklists for a specific vehicle
+  app.get('/api/driver-checklists/:vehicleId', async (req, res) => {
+    try {
+      const { vehicleId } = req.params;
+      const checklists = await storage.getVehicleChecklists(vehicleId);
+      res.json(checklists);
+    } catch (error) {
+      console.error('Error fetching vehicle checklists:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Create new driver checklist (from driver portal)
+  app.post('/api/driver-checklists', async (req, res) => {
+    try {
+      const checklistData = req.body;
+      
+      if (!checklistData.vehicleId || !checklistData.driverId || !checklistData.currentKm) {
+        return res.status(400).json({ 
+          message: 'Campos obrigatórios: vehicleId, driverId, currentKm' 
+        });
+      }
+
+      const newChecklist = await storage.createDriverChecklist(checklistData);
+      res.json(newChecklist);
+    } catch (error) {
+      console.error('Error creating driver checklist:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Get driver notifications
   app.get('/api/driver/:driverId/notifications', async (req, res) => {
     try {

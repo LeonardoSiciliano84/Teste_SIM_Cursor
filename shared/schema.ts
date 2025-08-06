@@ -1635,8 +1635,43 @@ export const maintenanceCosts = pgTable("maintenance_costs", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Nova tabela para controle de manutenção preventiva baseada em quilometragem
+export const preventiveMaintenanceRecords = pgTable("preventive_maintenance_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vehicleId: varchar("vehicle_id").references(() => vehicles.id).notNull(),
+  osNumber: varchar("os_number").notNull(), // Número da OS
+  maintenanceKm: integer("maintenance_km").notNull(), // KM no momento da manutenção
+  maintenanceDate: timestamp("maintenance_date").notNull(),
+  location: varchar("location").notNull(), // 'oficina_interna' | 'oficina_externa'
+  description: text("description"),
+  servicesPerformed: text("services_performed"),
+  notes: text("notes"),
+  performedBy: varchar("performed_by"), // Mecânico/responsável
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Nova tabela para registrar checklists de motoristas (atualização de KM)
+export const driverChecklists = pgTable("driver_checklists", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vehicleId: varchar("vehicle_id").references(() => vehicles.id).notNull(),
+  driverId: varchar("driver_id").references(() => drivers.id).notNull(),
+  currentKm: integer("current_km").notNull(), // KM atual informado pelo motorista
+  checklistDate: timestamp("checklist_date").notNull(),
+  observations: text("observations"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export type MaintenanceCost = typeof maintenanceCosts.$inferSelect;
 export type InsertMaintenanceCost = typeof maintenanceCosts.$inferInsert;
+
+// Tipos para as novas tabelas
+export type PreventiveMaintenanceRecord = typeof preventiveMaintenanceRecords.$inferSelect;
+export type InsertPreventiveMaintenanceRecord = typeof preventiveMaintenanceRecords.$inferInsert;
+
+export type DriverChecklist = typeof driverChecklists.$inferSelect;
+export type InsertDriverChecklist = typeof driverChecklists.$inferInsert;
 
 
 

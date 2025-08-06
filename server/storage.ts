@@ -52,6 +52,10 @@ import {
   type InsertMaintenanceRequest,
   type MaintenanceCost,
   type InsertMaintenanceCost,
+  type PreventiveMaintenanceRecord,
+  type InsertPreventiveMaintenanceRecord,
+  type DriverChecklist,
+  type InsertDriverChecklist,
   // Tipos do módulo de almoxarifado
   type CentralWarehouseMaterial,
   type InsertCentralWarehouseMaterial,
@@ -268,6 +272,18 @@ export interface IStorage {
   createMaintenanceCost(cost: InsertMaintenanceCost): Promise<MaintenanceCost>;
   getVehicleMaintenanceCosts(vehicleId: string): Promise<MaintenanceCost[]>;
 
+  // Preventive Maintenance Record methods
+  getPreventiveMaintenanceRecords(): Promise<PreventiveMaintenanceRecord[]>;
+  getVehiclePreventiveMaintenanceRecords(vehicleId: string): Promise<PreventiveMaintenanceRecord[]>;
+  createPreventiveMaintenanceRecord(record: InsertPreventiveMaintenanceRecord): Promise<PreventiveMaintenanceRecord>;
+  getLastPreventiveMaintenanceRecord(vehicleId: string): Promise<PreventiveMaintenanceRecord | undefined>;
+
+  // Driver Checklist methods
+  getDriverChecklists(): Promise<DriverChecklist[]>;
+  getVehicleChecklists(vehicleId: string): Promise<DriverChecklist[]>;
+  createDriverChecklist(checklist: InsertDriverChecklist): Promise<DriverChecklist>;
+  getLastVehicleChecklist(vehicleId: string): Promise<DriverChecklist | undefined>;
+
   // ============= WAREHOUSE MODULE =============
   // Central Warehouse Material methods
   getCentralWarehouseMaterials(): Promise<CentralWarehouseMaterial[]>;
@@ -404,6 +420,9 @@ export class MemStorage implements IStorage {
     this.maintenanceCosts = new Map();
     this.tires = new Map();
     this.tireMovements = new Map();
+    // Novos Maps para manutenção preventiva baseada em KM
+    this.preventiveMaintenanceRecords = new Map();
+    this.driverChecklists = new Map();
     // Módulo de almoxarifado
     this.centralWarehouseMaterials = new Map();
     this.centralWarehouseEntries = new Map();
@@ -912,6 +931,90 @@ export class MemStorage implements IStorage {
 
     pranchaServicesData.forEach(service => {
       this.pranchaServices.set(service.id, service);
+    });
+
+    // Dados de teste para registros de manutenção preventiva baseada em KM
+    const preventiveMaintenanceRecordsData = [
+      {
+        id: "record-1",
+        vehicleId: "81330557-eaa3-4bc8-923d-cf46d5a39346", // FLK-2023
+        maintenanceDate: "2024-12-15",
+        maintenanceKm: 145000,
+        serviceType: "Manutenção Preventiva M1",
+        description: "Troca de óleo, filtros e revisão geral - Ordem 1",
+        performedBy: "João Silva - Mecânico",
+        location: "Oficina Interna",
+        nextMaintenanceDue: 155000, // próxima aos 155.000 km
+        ordem: 1,
+        categoria: "M1",
+        cost: 850.00,
+        notes: "Veículo em boas condições. Próxima manutenção em 10.000 km."
+      },
+      {
+        id: "record-2", 
+        vehicleId: "19b7fb3a-4f2b-4c8a-8e1a-2d3f4e5f6a7b", // FLK-2024
+        maintenanceDate: "2024-11-20",
+        maintenanceKm: 98000,
+        serviceType: "Manutenção Preventiva M2",
+        description: "Revisão completa de freios e suspensão - Ordem 2",
+        performedBy: "Carlos Mendes - Mecânico",
+        location: "Oficina Externa",
+        nextMaintenanceDue: 108000,
+        ordem: 2,
+        categoria: "M2",
+        cost: 1200.00,
+        notes: "Substituição de pastilhas de freio. Sistema ok."
+      }
+    ];
+
+    preventiveMaintenanceRecordsData.forEach(record => {
+      this.preventiveMaintenanceRecords.set(record.id, record);
+    });
+
+    // Dados de teste para checklists dos motoristas
+    const driverChecklistsData = [
+      {
+        id: "checklist-1",
+        vehicleId: "81330557-eaa3-4bc8-923d-cf46d5a39346", // FLK-2023
+        driverId: "424f6444-a35e-4826-b7f9-346eb17af884", // João Carlos
+        driverName: "João Carlos Santos",
+        checkDate: "2025-01-06",
+        currentKm: 149800,
+        fuelLevel: 85,
+        oilLevel: "normal",
+        brakeFluid: "normal",
+        tireCondition: "boa",
+        lightsWorking: true,
+        documentationOk: true,
+        cleanlinessOk: true,
+        issues: "",
+        priority: "normal",
+        status: "concluido",
+        notes: "Veículo em ótimas condições para viagem."
+      },
+      {
+        id: "checklist-2",
+        vehicleId: "19b7fb3a-4f2b-4c8a-8e1a-2d3f4e5f6a7b", // FLK-2024
+        driverId: "f8e7d6c5-b4a3-9281-7f6e-5d4c3b2a1908", // Carlos Roberto
+        driverName: "Carlos Roberto Lima",
+        checkDate: "2025-01-05",
+        currentKm: 102500,
+        fuelLevel: 70,
+        oilLevel: "baixo",
+        brakeFluid: "normal",
+        tireCondition: "regular",
+        lightsWorking: true,
+        documentationOk: true,
+        cleanlinessOk: false,
+        issues: "Nível de óleo baixo, pneu dianteiro direito com desgaste",
+        priority: "media",
+        status: "pendente_manutencao",
+        notes: "Requer atenção na próxima parada para reposição de óleo."
+      }
+    ];
+
+    driverChecklistsData.forEach(checklist => {
+      this.driverChecklists.set(checklist.id, checklist);
     });
 
   }
@@ -3493,14 +3596,24 @@ export class MemStorage implements IStorage {
       // Buscar veículos ativos do banco de dados
       const vehiclesList = await db.select().from(vehicles).where(eq(vehicles.status, 'ativo'));
       
-      const vehiclesWithMaintenance = vehiclesList.map(vehicle => {
-        // Simular dados de manutenção preventiva baseado na quilometragem configurada
-        const maintenanceInterval = vehicle.preventiveMaintenanceKm || 10000; // Use a quilometragem configurada ou 10.000 km padrão
-        const lastMaintenanceKm = Math.floor(Math.random() * 50000) + 100000;
-        const currentKm = lastMaintenanceKm + Math.floor(Math.random() * 15000);
-        const kmToNextMaintenance = (lastMaintenanceKm + maintenanceInterval) - currentKm;
+      const vehiclesWithMaintenance = await Promise.all(vehiclesList.map(async vehicle => {
+        // 1. Obter intervalo de manutenção configurado para o veículo
+        const maintenanceInterval = vehicle.preventiveMaintenanceKm || 10000;
         
-        // Verificar se veículo já tem agendamento
+        // 2. Buscar última manutenção preventiva registrada
+        const lastMaintenanceRecord = await this.getLastPreventiveMaintenanceRecord(vehicle.id);
+        const lastMaintenanceKm = lastMaintenanceRecord?.maintenanceKm || 0;
+        const lastMaintenanceDate = lastMaintenanceRecord?.maintenanceDate;
+        
+        // 3. Buscar último checklist (KM atual informado pelo motorista)
+        const lastChecklist = await this.getLastVehicleChecklist(vehicle.id);
+        const currentKm = lastChecklist?.currentKm || lastMaintenanceKm + Math.floor(Math.random() * 8000); // Mock se não há checklist
+        
+        // 4. Calcular próxima revisão = Km da última revisão + intervalo de revisão
+        const nextMaintenanceKm = lastMaintenanceKm + maintenanceInterval;
+        const kmToNextMaintenance = nextMaintenanceKm - currentKm;
+        
+        // 5. Verificar se veículo já tem agendamento
         const hasScheduled = Array.from(this.driverNotifications.values())
           .find(notification => 
             notification.vehicleId === vehicle.id && 
@@ -3508,6 +3621,7 @@ export class MemStorage implements IStorage {
             notification.status !== 'completed'
           );
 
+        // 6. Aplicar critérios de status baseados na quilometragem restante
         let status: 'em_dia' | 'programar_revisao' | 'em_revisao' | 'agendado';
         let priority: number;
         
@@ -3515,45 +3629,55 @@ export class MemStorage implements IStorage {
           status = 'agendado';
           priority = 0; // Prioridade especial para agendados
         } else if (kmToNextMaintenance < 0) {
-          status = 'em_revisao';
+          status = 'em_revisao'; // Valor negativo = Vencido
           priority = 1; // Máxima prioridade
-        } else if (kmToNextMaintenance >= 2000 && kmToNextMaintenance <= 3000) {
-          status = 'programar_revisao';
-          priority = 2; // Prioridade média
+        } else if (kmToNextMaintenance > 0 && kmToNextMaintenance <= 2000) {
+          status = 'em_revisao'; // Abaixo de 2.000 km = Em revisão
+          priority = 1;
+        } else if (kmToNextMaintenance > 2000 && kmToNextMaintenance <= 3000) {
+          status = 'programar_revisao'; // Entre 2.000 e 3.000 km = Agendar revisão
+          priority = 2;
         } else {
-          status = 'em_dia';
-          priority = 3; // Menor prioridade
+          status = 'em_dia'; // Acima de 3.000 km = Em dia
+          priority = 3;
         }
 
-        // Buscar histórico de manutenção do veículo
+        // 7. Buscar histórico de manutenção do veículo (mantém compatibilidade com sistema anterior)
         const vehicleHistory = this.maintenanceHistory.get(vehicle.id) || [];
-        const lastMaintenance = vehicleHistory.length > 0 ? vehicleHistory[vehicleHistory.length - 1] : null;
+        const oldLastMaintenance = vehicleHistory.length > 0 ? vehicleHistory[vehicleHistory.length - 1] : null;
         
-        // Determinar próxima ordem e categoria
-        const nextMaintenance = this.getNextMaintenanceInfo(lastMaintenance);
+        // 8. Determinar próxima ordem e categoria (sistema anterior)
+        const nextMaintenance = this.getNextMaintenanceInfo(oldLastMaintenance);
 
         return {
           id: vehicle.id,
           plate: vehicle.plate || 'N/A',
           vehicleType: vehicle.vehicleType || 'Caminhão',
           classification: vehicle.classification || 'N/A',
-          lastMaintenanceDate: lastMaintenance?.maintenanceDate || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+          
+          // Dados da nova lógica baseada em KM
+          lastMaintenanceDate: lastMaintenanceDate?.toISOString() || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
           lastMaintenanceKm,
           currentKm,
+          nextMaintenanceKm,
           kmToNextMaintenance,
           maintenanceInterval,
           status,
           priority,
+          
+          // Dados básicos do veículo
           name: vehicle.name,
           brand: vehicle.brand,
           model: vehicle.model,
           scheduledMaintenance: hasScheduled || null,
-          lastOrdem: lastMaintenance?.ordem || null,
-          lastCategoria: lastMaintenance?.categoria || null,
+          
+          // Compatibilidade com sistema anterior (ordem/categoria)
+          lastOrdem: oldLastMaintenance?.ordem || null,
+          lastCategoria: oldLastMaintenance?.categoria || null,
           nextOrdem: nextMaintenance.ordem,
           nextCategoria: nextMaintenance.categoria
         };
-      });
+      }));
 
       // Ordenar por prioridade: Em revisão, Programar revisão, Em dia
       return vehiclesWithMaintenance.sort((a, b) => {
@@ -3783,6 +3907,67 @@ Em caso de dúvidas, entrar em contato com o setor de Frota e Manutenção.`,
   // Método para buscar histórico de manutenção de um veículo
   getMaintenanceHistory(vehicleId: string) {
     return this.maintenanceHistory.get(vehicleId) || [];
+  }
+
+  // ============= NOVOS MÉTODOS PARA MANUTENÇÃO PREVENTIVA BASEADA EM KM =============
+  
+  // Maps para as novas funcionalidades
+  private preventiveMaintenanceRecords = new Map<string, PreventiveMaintenanceRecord>();
+  private driverChecklists = new Map<string, DriverChecklist>();
+
+  // Preventive Maintenance Record methods
+  async getPreventiveMaintenanceRecords(): Promise<PreventiveMaintenanceRecord[]> {
+    return Array.from(this.preventiveMaintenanceRecords.values());
+  }
+
+  async getVehiclePreventiveMaintenanceRecords(vehicleId: string): Promise<PreventiveMaintenanceRecord[]> {
+    return Array.from(this.preventiveMaintenanceRecords.values())
+      .filter(record => record.vehicleId === vehicleId)
+      .sort((a, b) => new Date(b.maintenanceDate).getTime() - new Date(a.maintenanceDate).getTime());
+  }
+
+  async createPreventiveMaintenanceRecord(record: InsertPreventiveMaintenanceRecord): Promise<PreventiveMaintenanceRecord> {
+    const newRecord: PreventiveMaintenanceRecord = {
+      id: randomUUID(),
+      ...record,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    this.preventiveMaintenanceRecords.set(newRecord.id, newRecord);
+    return newRecord;
+  }
+
+  async getLastPreventiveMaintenanceRecord(vehicleId: string): Promise<PreventiveMaintenanceRecord | undefined> {
+    const records = await this.getVehiclePreventiveMaintenanceRecords(vehicleId);
+    return records.length > 0 ? records[0] : undefined;
+  }
+
+  // Driver Checklist methods
+  async getDriverChecklists(): Promise<DriverChecklist[]> {
+    return Array.from(this.driverChecklists.values());
+  }
+
+  async getVehicleChecklists(vehicleId: string): Promise<DriverChecklist[]> {
+    return Array.from(this.driverChecklists.values())
+      .filter(checklist => checklist.vehicleId === vehicleId)
+      .sort((a, b) => new Date(b.checklistDate).getTime() - new Date(a.checklistDate).getTime());
+  }
+
+  async createDriverChecklist(checklist: InsertDriverChecklist): Promise<DriverChecklist> {
+    const newChecklist: DriverChecklist = {
+      id: randomUUID(),
+      ...checklist,
+      createdAt: new Date(),
+    };
+    
+    this.driverChecklists.set(newChecklist.id, newChecklist);
+    return newChecklist;
+  }
+
+  async getLastVehicleChecklist(vehicleId: string): Promise<DriverChecklist | undefined> {
+    const checklists = await this.getVehicleChecklists(vehicleId);
+    return checklists.length > 0 ? checklists[0] : undefined;
   }
 }
 

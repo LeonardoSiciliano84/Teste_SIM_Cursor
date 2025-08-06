@@ -44,6 +44,12 @@ FELKA Transportes is a comprehensive transport management system designed to man
 - **Mobile Responsive Menu:** Added mobile hamburger menu with overlay, touch-friendly interface for tablets/phones
 - **Visual Menu Indicators:** Implemented chevron icons, active state highlighting, and submenu visual separation
 - **Submenu Organization:** Dashboard subitems, Colaboradores with 5 subitems, Almoxarifado with Agendamento, Controle de Acesso with Portaria
+- **Mileage-Based Preventive Maintenance System:** Complete transition from classification-based to KM-based maintenance logic
+- **Automatic Status Calculation:** Dynamic status determination based on kilometers remaining (>3000=Em dia, 2000-3000=Agendar, 0-2000=Em revisão, <0=Vencido)
+- **KM-Based Maintenance Records:** New data structure for tracking maintenance history with kilometers, service types, and intervals
+- **Driver KM Checklists:** Implementation of driver checklist system with current mileage tracking and vehicle condition monitoring
+- **Enhanced API Endpoints:** New routes for preventive maintenance records, driver checklists, and KM-based vehicle tracking
+- **Test Data Infrastructure:** Complete sample data including maintenance records and driver checklists for testing the new system
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
