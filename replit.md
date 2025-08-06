@@ -54,6 +54,7 @@ FELKA Transportes is a comprehensive transport management system designed to man
 - **Import Validation System:** Comprehensive data validation with error reporting, duplicate detection, and field mapping interface
 - **Configuration Menu Addition:** Added "Configurações" menu section containing "Importação de Dados" functionality
 - **Excel Processing Backend:** Full backend implementation with multer file upload, XLSX processing, and storage integration
+- **Menu Reorganization (Janeiro 2025):** Moved "Importação de Dados" from Colaboradores to dedicated Configurações menu for better organization
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

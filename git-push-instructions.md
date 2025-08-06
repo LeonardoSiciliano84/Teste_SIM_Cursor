@@ -16,9 +16,21 @@ git status
 
 ### 2. Fazer o commit com descrição detalhada
 ```bash
-git commit -m "🚛 FELKA Transportes - Sistema Integrado v2.0
+git commit -m "🚛 FELKA Transportes - Sistema Integrado v2.1 - Importação de Dados
 
 ✨ Funcionalidades Implementadas:
+
+📊 SISTEMA DE IMPORTAÇÃO DE DADOS (NOVO):
+- Interface completa para importação via planilhas Excel (.xlsx)
+- Seleção de entidade: Colaboradores ou Frota de Veículos
+- Mapeamento automático de campos da planilha
+- Validação robusta de dados com prevenção de duplicatas
+- Verificação de CPF único para colaboradores
+- Verificação de placa única para veículos
+- Relatório detalhado de sucessos e erros na importação
+- Menu reorganizado: movido para nova seção 'Configurações'
+- Backend com processamento Excel usando multer e xlsx
+- Integração completa com sistema de storage existente
 
 🔧 MÓDULO DE MANUTENÇÃO COMPLETO:
 - Kanban 4 estágios (Aberto → Em Andamento → Aguardando → Concluído)
@@ -138,6 +150,7 @@ git push -u origin main
 - [x] Documentação técnica (replit.md)
 
 ### ✅ Funcionalidades documentadas:
+- [x] Sistema de Importação de Dados via Planilha (NOVO)
 - [x] Sistema de Manutenção com Kanban e Custos
 - [x] Módulo completo de Controle de Pneus
 - [x] Sistema de Controle de Acesso CPF/QR Code
@@ -145,6 +158,7 @@ git push -u origin main
 - [x] Gestão de Veículos e Motoristas
 - [x] Portais Mobile otimizados
 - [x] Sistema de relatórios PDF/XLSX
+- [x] Menu reorganizado com seção Configurações
 
 ### ✅ Especificações técnicas:
 - [x] Arquitetura completa documentada
