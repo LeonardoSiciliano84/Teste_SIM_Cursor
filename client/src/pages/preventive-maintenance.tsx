@@ -83,10 +83,7 @@ export default function PreventiveMaintenance() {
   // Mutation para agendar manutenção
   const scheduleMaintenanceMutation = useMutation({
     mutationFn: async (data: ScheduleMaintenanceData) => {
-      return apiRequest('/api/preventive-maintenance/schedule', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('/api/preventive-maintenance/schedule', 'POST', data);
     },
     onSuccess: () => {
       toast({
@@ -147,8 +144,8 @@ export default function PreventiveMaintenance() {
   const filteredVehicles = vehicles.filter(vehicle => {
     return (
       (!filters.vehicle || vehicle.plate.toLowerCase().includes(filters.vehicle.toLowerCase())) &&
-      (!filters.vehicleType || vehicle.vehicleType === filters.vehicleType) &&
-      (!filters.status || vehicle.status === filters.status)
+      (!filters.vehicleType || filters.vehicleType === 'all' || vehicle.vehicleType === filters.vehicleType) &&
+      (!filters.status || filters.status === 'all' || vehicle.status === filters.status)
     );
   });
 
@@ -229,7 +226,7 @@ export default function PreventiveMaintenance() {
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="Caminhão">Caminhão</SelectItem>
                   <SelectItem value="Carreta">Carreta</SelectItem>
                   <SelectItem value="Bitrem">Bitrem</SelectItem>
@@ -244,7 +241,7 @@ export default function PreventiveMaintenance() {
                   <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="programar">Programar revisão</SelectItem>
                   <SelectItem value="em_revisao">Em revisão</SelectItem>
                   <SelectItem value="vencido">Vencido</SelectItem>
