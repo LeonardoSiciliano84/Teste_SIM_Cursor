@@ -33,6 +33,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 interface DriverInfo {
   id: string;
@@ -73,7 +74,7 @@ export default function DriverPortal() {
     })),
     defaultValues: {
       vehicleId: "",
-      driverName: driverInfo?.fullName || "",
+      driverName: "",
       description: "",
     }
   });
@@ -139,6 +140,27 @@ export default function DriverPortal() {
   const { toast } = useToast();
   const { user } = useAuth();
   const isAdminView = user?.role === 'admin';
+  const queryClient = useQueryClient();
+
+  // Obter informações do motorista logado
+  const { data: driverInfo, isLoading: driverLoading } = useQuery<DriverInfo>({
+    queryKey: ["/api/driver/profile"],
+    retry: false,
+  });
+
+  // Verificar serviço ativo do motorista ao carregar
+  const { data: activeServiceData, refetch: refetchActiveService } = useQuery({
+    queryKey: [`/api/driver/${driverInfo?.id}/active-service`],
+    enabled: !!driverInfo?.id,
+    retry: false,
+  });
+
+  // Atualizar formulário quando driverInfo estiver disponível
+  useEffect(() => {
+    if (driverInfo?.fullName) {
+      maintenanceForm.setValue("driverName", driverInfo.fullName);
+    }
+  }, [driverInfo?.fullName, maintenanceForm]);
 
   // Dados mock para Ordens de Coleta
   const ordensColeta = [
@@ -182,19 +204,6 @@ export default function DriverPortal() {
       observacoes: "Carga pesada, verificar distribuição"
     }
   ];
-  
-  // Obter informações do motorista logado
-  const { data: driverInfo, isLoading: driverLoading } = useQuery<DriverInfo>({
-    queryKey: ["/api/driver/profile"],
-    retry: false,
-  });
-
-  // Verificar serviço ativo do motorista ao carregar
-  const { data: activeServiceData, refetch: refetchActiveService } = useQuery({
-    queryKey: [`/api/driver/${driverInfo?.id}/active-service`],
-    enabled: !!driverInfo?.id,
-    retry: false,
-  });
 
   // Função para calcular dias de serviço ativo
   const getActiveDays = () => {
