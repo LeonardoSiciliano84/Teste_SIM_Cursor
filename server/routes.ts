@@ -515,6 +515,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get vehicles for preventive maintenance
+  app.get('/api/preventive-maintenance/vehicles', async (req, res) => {
+    try {
+      const vehicles = storage.getPreventiveMaintenanceVehicles();
+      res.json(vehicles);
+    } catch (error) {
+      console.error('Error fetching preventive maintenance vehicles:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Schedule preventive maintenance
+  app.post('/api/preventive-maintenance/schedule', async (req, res) => {
+    try {
+      const { vehicleId, driverId, location, scheduledDate } = req.body;
+      
+      if (!vehicleId || !driverId || !location || !scheduledDate) {
+        return res.status(400).json({ message: 'Todos os campos são obrigatórios' });
+      }
+
+      const result = await storage.schedulePreventiveMaintenance({
+        vehicleId,
+        driverId,
+        location,
+        scheduledDate
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error scheduling preventive maintenance:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Get driver notifications
+  app.get('/api/driver/:driverId/notifications', async (req, res) => {
+    try {
+      const { driverId } = req.params;
+      const notifications = storage.getDriverNotifications(driverId);
+      res.json(notifications);
+    } catch (error) {
+      console.error('Error fetching driver notifications:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Mark notification as read
+  app.put('/api/driver/notifications/:notificationId/read', async (req, res) => {
+    try {
+      const { notificationId } = req.params;
+      const result = await storage.markNotificationAsRead(notificationId);
+      
+      if (!result) {
+        return res.status(404).json({ message: 'Notificação não encontrada' });
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Vehicle Exit Route
   app.post("/api/vehicles/exit", async (req, res) => {
     try {

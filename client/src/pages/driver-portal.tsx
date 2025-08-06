@@ -23,10 +23,16 @@ import {
   SelectTrigger,
   SelectValue 
 } from "@/components/ui/select";
-import { Search, User, Mail, Shield, Car, FileText, Download, AlertTriangle, CheckSquare, Wrench, Phone, Camera, MapPin, Clock, Truck, Fuel, Settings, Package, MessageSquare, Calendar, LogOut, Lock, UserCircle, ChevronDown } from "lucide-react";
+import { Search, User, Mail, Shield, Car, FileText, Download, AlertTriangle, CheckSquare, Wrench, Phone, Camera, MapPin, Clock, Truck, Fuel, Settings, Package, MessageSquare, Calendar, LogOut, Lock, UserCircle, ChevronDown, Bell } from "lucide-react";
 import { authManager, useAuth } from "@/lib/auth"; 
 import { useToast } from "@/hooks/use-toast";
 import { SinistroForm } from "@/components/sinistros/sinistro-form";
+import DriverNotifications from "@/components/driver-portal/DriverNotifications";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface DriverInfo {
   id: string;
@@ -52,6 +58,7 @@ export default function DriverPortal() {
   const [showPreChecklistWarning, setShowPreChecklistWarning] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   const [showMaintenanceRequest, setShowMaintenanceRequest] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   
   // Form para solicitação de manutenção (simplificado para motorista)
   const maintenanceForm = useForm<{
@@ -642,7 +649,16 @@ export default function DriverPortal() {
               <span className="text-xs text-center">Checklist</span>
             </Button>
 
-            {/* Botão 2: Solicitar Manutenção */}
+            {/* Botão 2: Notificações */}
+            <Button 
+              className="h-20 flex flex-col items-center justify-center bg-[#0C29AB] hover:bg-[#0C29AB]/90 text-white relative"
+              onClick={() => setShowNotifications(true)}
+            >
+              <Bell className="h-6 w-6 mb-1" />
+              <span className="text-xs text-center">Notificações</span>
+            </Button>
+
+            {/* Botão 3: Solicitar Manutenção */}
             <Button 
               className="h-20 flex flex-col items-center justify-center bg-blue-600 hover:bg-blue-700 text-white"
               onClick={() => setShowMaintenanceRequest(true)}
@@ -651,7 +667,7 @@ export default function DriverPortal() {
               <span className="text-xs text-center">Solicitar Manutenção</span>
             </Button>
 
-            {/* Botão 3: Comunicar Sinistro */}
+            {/* Botão 4: Comunicar Sinistro */}
             <SinistroForm 
               userInfo={{
                 id: driverInfo.id,
@@ -669,7 +685,7 @@ export default function DriverPortal() {
               }
             />
 
-            {/* Botão 4: Registrar Manutenção em Viagem */}
+            {/* Botão 5: Registrar Manutenção em Viagem */}
             <Button 
               className="h-20 flex flex-col items-center justify-center bg-purple-600 hover:bg-purple-700 text-white"
               onClick={() => {
@@ -686,6 +702,15 @@ export default function DriverPortal() {
             >
               <Wrench className="h-6 w-6 mb-1" />
               <span className="text-xs text-center">Manutenção Viagem</span>
+            </Button>
+
+            {/* Botão 6: Placeholder para futura funcionalidade */}
+            <Button 
+              className="h-20 flex flex-col items-center justify-center bg-gray-400 text-white"
+              disabled
+            >
+              <Settings className="h-6 w-6 mb-1" />
+              <span className="text-xs text-center">Em Breve</span>
             </Button>
           </div>
 
@@ -2085,6 +2110,26 @@ export default function DriverPortal() {
                   </div>
                 </div>
               </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Notificações */}
+        <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
+          <DialogContent className="max-w-4xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Bell className="w-5 h-5" />
+                Suas Notificações
+              </DialogTitle>
+              <DialogDescription>
+                Visualize e gerencie suas comunicações de manutenção e avisos importantes
+              </DialogDescription>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[60vh]">
+              {driverInfo?.id && (
+                <DriverNotifications driverId={driverInfo.id} />
+              )}
             </div>
           </DialogContent>
         </Dialog>

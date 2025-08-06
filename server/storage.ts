@@ -3467,6 +3467,142 @@ export class MemStorage implements IStorage {
     });
   }
 
+  // Sistema de notificações para motoristas
+  private driverNotifications = new Map<string, any>();
+
+  getPreventiveMaintenanceVehicles(): Array<any> {
+    // Mock data para veículos com controle de manutenção preventiva
+    const vehicles = Array.from(this.vehicles.values());
+    
+    return vehicles.map(vehicle => {
+      // Simular dados de manutenção preventiva
+      const lastMaintenanceKm = Math.floor(Math.random() * 50000) + 100000;
+      const currentKm = lastMaintenanceKm + Math.floor(Math.random() * 15000);
+      const maintenanceInterval = 10000; // 10.000 km entre manutenções
+      const kmToNextMaintenance = (lastMaintenanceKm + maintenanceInterval) - currentKm;
+      
+      let status: 'programar' | 'em_revisao' | 'vencido';
+      if (kmToNextMaintenance < 0) {
+        status = 'vencido';
+      } else if (kmToNextMaintenance <= 1000) {
+        status = 'em_revisao';
+      } else {
+        status = 'programar';
+      }
+
+      return {
+        id: vehicle.id,
+        plate: vehicle.placa || 'N/A',
+        vehicleType: vehicle.tipo || 'Caminhão',
+        classification: vehicle.classificacao || 'N/A',
+        lastMaintenanceDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+        lastMaintenanceKm,
+        currentKm,
+        kmToNextMaintenance,
+        maintenanceInterval,
+        status
+      };
+    });
+  }
+
+  async schedulePreventiveMaintenance(data: {
+    vehicleId: string;
+    driverId: string;
+    location: 'oficina_interna' | 'oficina_externa';
+    scheduledDate: string;
+  }) {
+    const vehicle = this.vehicles.get(data.vehicleId);
+    const driver = Array.from(this.employees.values()).find(emp => emp.id === data.driverId);
+    
+    if (!vehicle || !driver) {
+      throw new Error('Veículo ou motorista não encontrado');
+    }
+
+    // Verificar se já existe agendamento para este veículo
+    const existingSchedule = Array.from(this.driverNotifications.values())
+      .find(notification => 
+        notification.vehicleId === data.vehicleId && 
+        notification.type === 'preventive_maintenance' &&
+        notification.status !== 'completed'
+      );
+
+    if (existingSchedule) {
+      throw new Error('Este veículo já possui um agendamento de manutenção preventiva em aberto');
+    }
+
+    // Criar notificação para o motorista
+    const notificationId = randomUUID();
+    const locationText = data.location === 'oficina_interna' ? 'Oficina Interna' : 'Oficina Externa';
+    
+    const notification = {
+      id: notificationId,
+      driverId: data.driverId,
+      vehicleId: data.vehicleId,
+      type: 'preventive_maintenance',
+      title: 'Agendamento de Manutenção Preventiva',
+      message: `Prezado.
+
+Segue abaixo o agendamento de parada do veículo:
+
+Tipo de parada: Manutenção Preventiva
+Placa: ${vehicle.placa}
+Data: ${new Date(data.scheduledDate).toLocaleDateString('pt-BR')}
+Local: ${locationText}
+
+Deixar carreta no setor de manutenção para preventiva
+
+Observações Importantes:
+
+O setor logístico já está ciente da data. Contudo, solicitamos que o motorista confirme com o setor logístico um dia antes da parada.
+
+Não deixar itens pessoais no veículo, como celular, carteira, óculos, relógio, entre outros.
+
+${data.location === 'oficina_interna' ? 
+`Para manutenções realizadas na oficina interna:
+• Levar o veículo até a base de manutenção;
+• Retirar ou prender materiais que possam cair no painel durante o içamento da cabine;
+• Após a entrega do veículo, retornar à base 02 e dirigir-se à sala de espera dos motoristas.` :
+`Para manutenções realizadas externamente:
+• Levar o veículo até o local indicado;
+• Alinhar com o setor logístico sobre a permanência do motorista no fornecedor ou retorno à base.`
+}
+
+Em caso de dúvidas, entrar em contato com o setor de Frota e Manutenção.`,
+      scheduledDate: data.scheduledDate,
+      location: data.location,
+      vehiclePlate: vehicle.placa,
+      isRead: false,
+      status: 'scheduled',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    this.driverNotifications.set(notificationId, notification);
+
+    return {
+      success: true,
+      notificationId,
+      message: 'Manutenção preventiva agendada com sucesso'
+    };
+  }
+
+  getDriverNotifications(driverId: string): Array<any> {
+    return Array.from(this.driverNotifications.values())
+      .filter(notification => notification.driverId === driverId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async markNotificationAsRead(notificationId: string) {
+    const notification = this.driverNotifications.get(notificationId);
+    if (!notification) return null;
+
+    notification.isRead = true;
+    notification.updatedAt = new Date();
+    
+    this.driverNotifications.set(notificationId, notification);
+    return notification;
+  }
+
 }
 
 export const storage = new MemStorage();

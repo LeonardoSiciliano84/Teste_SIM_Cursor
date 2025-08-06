@@ -65,6 +65,7 @@ const navigation = [
     href: "/maintenance",
     icon: Wrench,
     children: [
+      { name: "Manutenção Preventiva", href: "/preventive-maintenance", icon: Calendar },
       { name: "Lançamento de Custos", href: "/maintenance/costs", icon: DollarSign },
       { name: "Controle de Pneus", href: "/maintenance/tires", icon: Circle },
       { name: "Controle por Veículo", href: "/maintenance/vehicles", icon: Car }
