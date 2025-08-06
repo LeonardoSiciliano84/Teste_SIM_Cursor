@@ -1991,6 +1991,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Validar campos obrigatórios
     if (!row['Placa'] && !row['placa'] && !row['plate']) {
       errors.push('Placa é obrigatória');
+    } else {
+      const placa = String(row['Placa'] || row['placa'] || row['plate'] || '').trim();
+      if (placa.length < 7) {
+        errors.push('Placa deve estar no formato ABC-1234 ou ABC1234');
+      }
     }
     
     if (!row['Marca'] && !row['marca'] && !row['brand']) {
@@ -1999,6 +2004,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     if (!row['Modelo'] && !row['modelo'] && !row['model']) {
       errors.push('Modelo é obrigatório');
+    }
+
+    // Validar anos se fornecidos
+    const anoFab = row['Ano de Fabricação'] || row['Ano de fabricação'] || row['manufactureYear'];
+    if (anoFab) {
+      const ano = parseInt(String(anoFab));
+      if (isNaN(ano) || ano < 1900 || ano > new Date().getFullYear() + 1) {
+        errors.push('Ano de fabricação inválido');
+      }
+    }
+
+    const anoModelo = row['Ano do Modelo'] || row['Ano modelo'] || row['modelYear'];
+    if (anoModelo) {
+      const ano = parseInt(String(anoModelo));
+      if (isNaN(ano) || ano < 1900 || ano > new Date().getFullYear() + 1) {
+        errors.push('Ano modelo inválido');
+      }
     }
 
     return errors;
@@ -2026,145 +2048,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   function convertVehicleData(row: any): any {
+    // Obter valores dos campos com múltiplas variações de nomes
+    const marca = row['Marca'] || row['marca'] || row['brand'] || '';
+    const modelo = row['Modelo'] || row['modelo'] || row['model'] || '';
+    const placa = String(row['Placa'] || row['placa'] || row['plate'] || '').toUpperCase().trim();
+    
+    // Processar anos com fallback seguro
+    const anoFabricacao = row['Ano de Fabricação'] || row['Ano de fabricação'] || row['Ano Fabricação'] || row['manufactureYear'] || row['ano_fabricacao'];
+    const anoModelo = row['Ano do Modelo'] || row['Ano Modelo'] || row['Ano modelo'] || row['modelYear'] || row['ano_modelo'];
+    
+    const currentYear = new Date().getFullYear();
+    const manufactureYear = anoFabricacao ? parseInt(String(anoFabricacao)) : currentYear;
+    const modelYear = anoModelo ? parseInt(String(anoModelo)) : manufactureYear;
+
     return {
-      name: `${row['Marca'] || row['marca'] || row['brand']} ${row['Modelo'] || row['modelo'] || row['model']}`,
-      plate: String(row['Placa'] || row['placa'] || row['plate']).toUpperCase(),
-      brand: row['Marca'] || row['marca'] || row['brand'] || '',
-      model: row['Modelo'] || row['modelo'] || row['model'] || '',
+      name: `${marca} ${modelo}`.trim(),
+      plate: placa,
+      brand: marca,
+      model: modelo,
       chassis: row['Chassi'] || row['chassis'] || null,
       renavam: row['RENAVAM'] || row['renavam'] || null,
-      manufactureYear: parseInt(String(row['Ano de Fabricação'] || row['manufactureYear'] || row['ano_fabricacao'] || new Date().getFullYear())) || new Date().getFullYear(),
-      modelYear: parseInt(String(row['Ano do Modelo'] || row['modelYear'] || row['ano_modelo'] || new Date().getFullYear())) || new Date().getFullYear(),
-      vehicleType: row['Tipo de Veículo'] || row['vehicleType'] || row['tipo'] || 'Caminhão',
-      classification: row['Classificação'] || row['classification'] || row['classificacao'] || 'Leve',
+      manufactureYear: isNaN(manufactureYear) ? currentYear : manufactureYear,
+      modelYear: isNaN(modelYear) ? (isNaN(manufactureYear) ? currentYear : manufactureYear) : modelYear,
+      vehicleType: row['Tipo de Veículo'] || row['Tipo de veiculo'] || row['Tipo'] || row['vehicleType'] || row['tipo'] || 'Caminhão',
+      classification: row['Classificação'] || row['Classificacao'] || row['classification'] || row['classificacao'] || 'Leve',
       loadCapacity: parseFloat(String(row['Capacidade de Carga'] || row['loadCapacity'] || '0').replace(/[^\d.,]/g, '').replace(',', '.')) || null,
       fuelTankCapacity: parseFloat(String(row['Capacidade do Tanque'] || row['fuelTankCapacity'] || '0').replace(/[^\d.,]/g, '').replace(',', '.')) || null,
-      purchaseDate: row['Data de Compra'] || row['purchaseDate'] || null,
-      purchaseValue: String(parseFloat(String(row['Valor de Compra'] || row['purchaseValue'] || '0').replace(/[^\d.,]/g, '').replace(',', '.')) || 0),
-      currentMileage: parseInt(String(row['KM Atual'] || row['currentMileage'] || '0').replace(/[^\d]/g, '')) || 0,
-      status: 'active'
-    };
-  }
-
-  // Função para validar dados de colaborador
-  function validateEmployeeData(row: any, rowIndex: number) {
-    const errors: string[] = [];
-    
-    // Validações obrigatórias
-    if (!row['Nome completo']) errors.push('Nome completo é obrigatório');
-    if (!row['CPF']) errors.push('CPF é obrigatório');
-    if (!row['Telefone']) errors.push('Telefone é obrigatório');
-    if (!row['Cargo']) errors.push('Cargo é obrigatório');
-    if (!row['Departamento']) errors.push('Departamento é obrigatório');
-    if (!row['Matrícula']) errors.push('Matrícula é obrigatória');
-    
-    // Validação de CPF (formato básico)
-    if (row['CPF']) {
-      const cpf = row['CPF'].toString().replace(/[^\d]/g, '');
-      if (cpf.length !== 11) {
-        errors.push('CPF deve ter 11 dígitos');
-      }
-    }
-    
-    // Validação de email (se fornecido)
-    if (row['E-mail']) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(row['E-mail'])) {
-        errors.push('E-mail inválido');
-      }
-    }
-    
-    return errors;
-  }
-
-  // Função para validar dados de veículo
-  function validateVehicleData(row: any, rowIndex: number) {
-    const errors: string[] = [];
-    
-    // Validações obrigatórias
-    if (!row['Placa']) errors.push('Placa é obrigatória');
-    if (!row['Marca']) errors.push('Marca é obrigatória');
-    if (!row['Modelo']) errors.push('Modelo é obrigatório');
-    if (!row['Ano de fabricação']) errors.push('Ano de fabricação é obrigatório');
-    if (!row['Ano modelo']) errors.push('Ano modelo é obrigatório');
-    if (!row['Tipo de veículo']) errors.push('Tipo de veículo é obrigatório');
-    if (!row['Classificação']) errors.push('Classificação é obrigatória');
-    
-    // Validação de placa (formato brasileiro)
-    if (row['Placa']) {
-      const plateRegex = /^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$/;
-      if (!plateRegex.test(row['Placa'].toString().toUpperCase())) {
-        errors.push('Placa deve estar no formato ABC-1234 ou ABC1D23');
-      }
-    }
-    
-    // Validação de anos
-    const currentYear = new Date().getFullYear();
-    if (row['Ano de fabricação']) {
-      const year = parseInt(row['Ano de fabricação']);
-      if (year < 1980 || year > currentYear + 1) {
-        errors.push('Ano de fabricação inválido');
-      }
-    }
-    
-    if (row['Ano modelo']) {
-      const year = parseInt(row['Ano modelo']);
-      if (year < 1980 || year > currentYear + 1) {
-        errors.push('Ano modelo inválido');
-      }
-    }
-    
-    return errors;
-  }
-
-  // Função para converter dados de colaborador para o formato do banco
-  function convertEmployeeData(row: any) {
-    return {
-      fullName: row['Nome completo'],
-      cpf: row['CPF']?.toString().replace(/[^\d]/g, ''),
-      rg: row['RG']?.toString(),
-      birthDate: row['Data de nascimento'] ? new Date(row['Data de nascimento']) : null,
-      phone: row['Telefone']?.toString(),
-      email: row['E-mail']?.toString(),
-      position: row['Cargo']?.toString(),
-      department: row['Departamento']?.toString(),
-      employeeNumber: row['Matrícula']?.toString(),
-      admissionDate: row['Data de admissão'] ? new Date(row['Data de admissão']) : null,
-      salary: row['Salário'] ? parseFloat(row['Salário']) : null,
-      address: row['Endereço']?.toString(),
-      nationality: row['Nacionalidade']?.toString() || 'Brasileira',
-      driverLicense: row['CNH']?.toString(),
-      driverLicenseCategory: row['Categoria CNH']?.toString(),
-      driverLicenseExpiry: row['Vencimento CNH'] ? new Date(row['Vencimento CNH']) : null,
-      status: 'ativo',
-      accessLevel: 'employee'
-    };
-  }
-
-  // Função para converter dados de veículo para o formato do banco
-  function convertVehicleData(row: any) {
-    const plate = row['Placa']?.toString().toUpperCase();
-    const brand = row['Marca']?.toString();
-    const model = row['Modelo']?.toString();
-    
-    return {
-      name: `${brand} ${model} - ${plate}`,
-      plate: plate,
-      brand: brand,
-      model: model,
-      chassis: row['Chassi']?.toString(),
-      renavam: row['RENAVAM']?.toString(),
-      manufactureYear: parseInt(row['Ano de fabricação']),
-      modelYear: parseInt(row['Ano modelo']),
-      vehicleType: row['Tipo de veículo']?.toString(),
-      classification: row['Classificação']?.toString(),
-      loadCapacity: row['Capacidade de carga (kg)'] ? parseFloat(row['Capacidade de carga (kg)']) : null,
-      fuelTankCapacity: row['Capacidade do tanque (L)'] ? parseFloat(row['Capacidade do tanque (L)']) : null,
-      fuelConsumption: row['Consumo (km/L)'] ? parseFloat(row['Consumo (km/L)']) : null,
-      preventiveMaintenanceKm: row['Intervalo de revisão (km)'] ? parseInt(row['Intervalo de revisão (km)']) : 15000,
-      purchaseDate: row['Data de compra'] ? new Date(row['Data de compra']) : null,
-      purchaseValue: row['Valor de compra'] ? parseFloat(row['Valor de compra']) : null,
-      currentLocation: row['Localização atual']?.toString() || 'Garagem Central',
+      fuelConsumption: parseFloat(String(row['Consumo (km/L)'] || row['Consumo'] || row['fuelConsumption'] || '0').replace(/[^\d.,]/g, '').replace(',', '.')) || null,
+      preventiveMaintenanceKm: parseInt(String(row['Intervalo de revisão (km)'] || row['Intervalo'] || row['preventiveMaintenanceKm'] || '15000').replace(/[^\d]/g, '')) || 15000,
+      purchaseDate: row['Data de compra'] || row['Data de Compra'] || row['purchaseDate'] || null,
+      purchaseValue: parseFloat(String(row['Valor de compra'] || row['Valor de Compra'] || row['purchaseValue'] || '0').replace(/[^\d.,]/g, '').replace(',', '.')) || null,
+      currentLocation: row['Localização atual'] || row['Localizacao'] || row['currentLocation'] || 'Garagem Central',
       status: 'ativo'
     };
   }
@@ -2285,9 +2199,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const rowNumber = i + 2; // +2 porque linha 1 é cabeçalho e índice começa em 0
 
         try {
+          // Debug: Log da linha sendo processada
+          console.log(`Processando linha ${rowNumber}:`, row);
+          
           // Validar dados
           const validationErrors = validateVehicleData(row, rowNumber);
           if (validationErrors.length > 0) {
+            console.log(`Erros de validação na linha ${rowNumber}:`, validationErrors);
             result.errors.push({
               row: rowNumber,
               error: validationErrors.join(', ')
