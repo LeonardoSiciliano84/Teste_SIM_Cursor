@@ -37,7 +37,7 @@ interface PreventiveMaintenanceVehicle {
   currentKm: number;
   kmToNextMaintenance: number;
   maintenanceInterval: number;
-  status: 'programar' | 'em_revisao' | 'vencido';
+  status: 'em_dia' | 'programar_revisao' | 'em_revisao';
 }
 
 interface Employee {
@@ -111,26 +111,26 @@ export default function PreventiveMaintenance() {
 
   const getStatusInfo = (status: string) => {
     switch (status) {
-      case 'programar':
-        return {
-          icon: CheckCircle,
-          label: 'Programar revisão',
-          color: 'bg-green-100 text-green-800',
-          description: '2.000 a 3.000 km para próxima preventiva'
-        };
       case 'em_revisao':
         return {
-          icon: AlertTriangle,
-          label: 'Em revisão',
-          color: 'bg-yellow-100 text-yellow-800',
-          description: 'Até 1.000 km restantes'
-        };
-      case 'vencido':
-        return {
           icon: XCircle,
-          label: 'Vencido',
+          label: 'Em revisão',
           color: 'bg-red-100 text-red-800',
-          description: 'Manutenção em atraso'
+          description: 'Manutenção vencida - Prioridade máxima'
+        };
+      case 'programar_revisao':
+        return {
+          icon: AlertTriangle,
+          label: 'Programar revisão',
+          color: 'bg-yellow-100 text-yellow-800',
+          description: '2.000 a 3.000 km para próxima preventiva'
+        };
+      case 'em_dia':
+        return {
+          icon: CheckCircle,
+          label: 'Em dia',
+          color: 'bg-green-100 text-green-800',
+          description: 'Mais de 3.000 km para próxima preventiva'
         };
       default:
         return {
@@ -254,9 +254,9 @@ export default function PreventiveMaintenance() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="programar">Programar revisão</SelectItem>
                   <SelectItem value="em_revisao">Em revisão</SelectItem>
-                  <SelectItem value="vencido">Vencido</SelectItem>
+                  <SelectItem value="programar_revisao">Programar revisão</SelectItem>
+                  <SelectItem value="em_dia">Em dia</SelectItem>
                 </SelectContent>
               </Select>
             </div>

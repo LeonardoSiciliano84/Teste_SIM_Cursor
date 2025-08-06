@@ -3492,20 +3492,25 @@ export class MemStorage implements IStorage {
       // Buscar veículos ativos do banco de dados
       const vehiclesList = await db.select().from(vehicles).where(eq(vehicles.status, 'ativo'));
       
-      return vehiclesList.map(vehicle => {
+      const vehiclesWithMaintenance = vehiclesList.map(vehicle => {
         // Simular dados de manutenção preventiva baseado na quilometragem configurada
         const maintenanceInterval = vehicle.preventiveMaintenanceKm || 10000; // Use a quilometragem configurada ou 10.000 km padrão
         const lastMaintenanceKm = Math.floor(Math.random() * 50000) + 100000;
         const currentKm = lastMaintenanceKm + Math.floor(Math.random() * 15000);
         const kmToNextMaintenance = (lastMaintenanceKm + maintenanceInterval) - currentKm;
         
-        let status: 'programar' | 'em_revisao' | 'vencido';
+        let status: 'em_dia' | 'programar_revisao' | 'em_revisao';
+        let priority: number;
+        
         if (kmToNextMaintenance < 0) {
-          status = 'vencido';
-        } else if (kmToNextMaintenance <= 1000) {
           status = 'em_revisao';
+          priority = 1; // Máxima prioridade
+        } else if (kmToNextMaintenance >= 2000 && kmToNextMaintenance <= 3000) {
+          status = 'programar_revisao';
+          priority = 2; // Prioridade média
         } else {
-          status = 'programar';
+          status = 'em_dia';
+          priority = 3; // Menor prioridade
         }
 
         return {
@@ -3519,10 +3524,20 @@ export class MemStorage implements IStorage {
           kmToNextMaintenance,
           maintenanceInterval,
           status,
+          priority,
           name: vehicle.name,
           brand: vehicle.brand,
           model: vehicle.model
         };
+      });
+
+      // Ordenar por prioridade: Em revisão, Programar revisão, Em dia
+      return vehiclesWithMaintenance.sort((a, b) => {
+        if (a.priority !== b.priority) {
+          return a.priority - b.priority;
+        }
+        // Se mesma prioridade, ordenar por quilometragem restante (menor primeiro)
+        return a.kmToNextMaintenance - b.kmToNextMaintenance;
       });
     } catch (error) {
       console.error('Erro ao buscar veículos para manutenção preventiva:', error);
