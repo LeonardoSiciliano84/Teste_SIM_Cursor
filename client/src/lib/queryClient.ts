@@ -7,15 +7,43 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Overloaded function to support both old and new signatures
 export async function apiRequest(
   url: string,
-  method: string,
-  data?: unknown | undefined,
+  methodOrOptions?: string | {
+    method?: string;
+    body?: any;
+    headers?: Record<string, string>;
+  },
+  data?: unknown
 ): Promise<any> {
+  let method = "GET";
+  let body: any = undefined;
+  let headers: Record<string, string> = {};
+
+  // Support old signature: apiRequest(url, method, data)
+  if (typeof methodOrOptions === "string") {
+    method = methodOrOptions;
+    body = data;
+  } else if (methodOrOptions) {
+    // New signature: apiRequest(url, options)
+    method = methodOrOptions.method || "GET";
+    body = methodOrOptions.body;
+    headers = methodOrOptions.headers || {};
+  }
+
+  // Se body for FormData, não definir Content-Type (deixar o navegador definir)
+  const isFormData = body instanceof FormData;
+  const requestHeaders = isFormData 
+    ? headers 
+    : body 
+    ? { "Content-Type": "application/json", ...headers }
+    : headers;
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    headers: requestHeaders,
+    body: isFormData ? body : body ? JSON.stringify(body) : undefined,
     credentials: "include",
   });
 
