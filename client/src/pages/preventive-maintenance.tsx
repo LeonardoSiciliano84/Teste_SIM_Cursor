@@ -32,6 +32,10 @@ interface PreventiveMaintenanceVehicle {
   plate: string;
   vehicleType: string;
   classification: string;
+  name?: string;
+  brand?: string;
+  model?: string;
+  priority?: number;
   lastMaintenanceDate?: string;
   lastMaintenanceKm?: number;
   currentKm: number;
@@ -39,6 +43,10 @@ interface PreventiveMaintenanceVehicle {
   maintenanceInterval: number;
   status: 'em_dia' | 'programar_revisao' | 'em_revisao' | 'agendado';
   scheduledMaintenance?: any;
+  lastOrdem?: number;
+  lastCategoria?: string;
+  nextOrdem?: number;
+  nextCategoria?: string;
 }
 
 interface Employee {
@@ -73,6 +81,8 @@ export default function PreventiveMaintenance() {
     newKm: '',
     maintenanceDate: '',
     location: '',
+    ordem: '',
+    categoria: '',
     notes: ''
   });
   
@@ -133,7 +143,7 @@ export default function PreventiveMaintenance() {
       queryClient.invalidateQueries({ queryKey: ['/api/preventive-maintenance/vehicles'] });
       setIsCompleteMaintenanceModalOpen(false);
       setSelectedScheduledVehicle(null);
-      setCompletionData({ newKm: '', maintenanceDate: '', location: '', notes: '' });
+      setCompletionData({ newKm: '', maintenanceDate: '', location: '', ordem: '', categoria: '', notes: '' });
     },
     onError: (error: any) => {
       toast({
@@ -219,16 +229,18 @@ export default function PreventiveMaintenance() {
       newKm: '',
       maintenanceDate: format(new Date(), 'yyyy-MM-dd'),
       location: '',
+      ordem: vehicle.nextOrdem?.toString() || '1',
+      categoria: vehicle.nextCategoria || 'M1',
       notes: ''
     });
     setIsCompleteMaintenanceModalOpen(true);
   };
 
   const handleCompleteMaintenanceSubmit = () => {
-    if (!selectedScheduledVehicle || !completionData.newKm || !completionData.maintenanceDate || !completionData.location) {
+    if (!selectedScheduledVehicle || !completionData.newKm || !completionData.maintenanceDate || !completionData.location || !completionData.ordem || !completionData.categoria) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios.",
+        description: "Preencha todos os campos obrigatórios, incluindo ordem e categoria M.",
         variant: "destructive",
       });
       return;
@@ -239,6 +251,8 @@ export default function PreventiveMaintenance() {
       newKm: parseInt(completionData.newKm),
       maintenanceDate: completionData.maintenanceDate,
       location: completionData.location,
+      ordem: parseInt(completionData.ordem),
+      categoria: completionData.categoria,
       notes: completionData.notes
     });
   };
@@ -378,7 +392,7 @@ export default function PreventiveMaintenance() {
                       </div>
 
                       {/* Dados de Manutenção */}
-                      <div className="grid grid-cols-3 gap-6">
+                      <div className="grid grid-cols-4 gap-6">
                         <div>
                           <p className="text-xs text-gray-500">Última Preventiva</p>
                           <p className="font-semibold">
@@ -390,6 +404,11 @@ export default function PreventiveMaintenance() {
                           <p className="text-xs text-gray-600">
                             {vehicle.lastMaintenanceKm ? `${vehicle.lastMaintenanceKm.toLocaleString()} km` : "N/A"}
                           </p>
+                          {vehicle.lastOrdem && vehicle.lastCategoria && (
+                            <p className="text-xs text-blue-600 font-medium">
+                              Ordem {vehicle.lastOrdem} • {vehicle.lastCategoria}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <p className="text-xs text-gray-500">KM Atual</p>
@@ -400,6 +419,13 @@ export default function PreventiveMaintenance() {
                           <p className={`font-semibold ${vehicle.kmToNextMaintenance < 0 ? 'text-red-600' : vehicle.kmToNextMaintenance <= 1000 ? 'text-yellow-600' : 'text-green-600'}`}>
                             {vehicle.kmToNextMaintenance < 0 ? 'VENCIDO' : `${vehicle.kmToNextMaintenance.toLocaleString()} km`}
                           </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Próxima Manutenção</p>
+                          <p className="font-semibold text-[#0C29AB]">
+                            Ordem {vehicle.nextOrdem || 1} • {vehicle.nextCategoria || 'M1'}
+                          </p>
+                          <p className="text-xs text-gray-600">Programada</p>
                         </div>
                       </div>
                     </div>
@@ -711,6 +737,38 @@ export default function PreventiveMaintenance() {
                       <SelectItem value="oficina_externa">Oficina Externa</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="ordem">Ordem *</Label>
+                    <Select value={completionData.ordem} onValueChange={(value) => setCompletionData(prev => ({ ...prev, ordem: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Ordem" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(num => (
+                          <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="categoria">Categoria M *</Label>
+                    <Select value={completionData.categoria} onValueChange={(value) => setCompletionData(prev => ({ ...prev, categoria: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="M1">M1</SelectItem>
+                        <SelectItem value="M2">M2</SelectItem>
+                        <SelectItem value="M3">M3</SelectItem>
+                        <SelectItem value="M4">M4</SelectItem>
+                        <SelectItem value="M5">M5</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div>

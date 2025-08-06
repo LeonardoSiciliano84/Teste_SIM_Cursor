@@ -3481,6 +3481,7 @@ export class MemStorage implements IStorage {
 
   // Sistema de notificações para motoristas
   private driverNotifications = new Map<string, any>();
+  private maintenanceHistory = new Map<string, any[]>();
 
   async getPreventiveMaintenanceVehicles(): Promise<Array<any>> {
     try {
@@ -3524,12 +3525,19 @@ export class MemStorage implements IStorage {
           priority = 3; // Menor prioridade
         }
 
+        // Buscar histórico de manutenção do veículo
+        const vehicleHistory = this.maintenanceHistory.get(vehicle.id) || [];
+        const lastMaintenance = vehicleHistory.length > 0 ? vehicleHistory[vehicleHistory.length - 1] : null;
+        
+        // Determinar próxima ordem e categoria
+        const nextMaintenance = this.getNextMaintenanceInfo(lastMaintenance);
+
         return {
           id: vehicle.id,
           plate: vehicle.plate || 'N/A',
           vehicleType: vehicle.vehicleType || 'Caminhão',
           classification: vehicle.classification || 'N/A',
-          lastMaintenanceDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+          lastMaintenanceDate: lastMaintenance?.maintenanceDate || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
           lastMaintenanceKm,
           currentKm,
           kmToNextMaintenance,
@@ -3539,7 +3547,11 @@ export class MemStorage implements IStorage {
           name: vehicle.name,
           brand: vehicle.brand,
           model: vehicle.model,
-          scheduledMaintenance: hasScheduled || null
+          scheduledMaintenance: hasScheduled || null,
+          lastOrdem: lastMaintenance?.ordem || null,
+          lastCategoria: lastMaintenance?.categoria || null,
+          nextOrdem: nextMaintenance.ordem,
+          nextCategoria: nextMaintenance.categoria
         };
       });
 
@@ -3680,6 +3692,8 @@ Em caso de dúvidas, entrar em contato com o setor de Frota e Manutenção.`,
     newKm: number;
     maintenanceDate: string;
     location: string;
+    ordem: number; // 1 a 12
+    categoria: string; // M1 a M5
     notes?: string;
   }) {
     console.log('Registrando manutenção realizada:', data);
@@ -3698,10 +3712,29 @@ Em caso de dúvidas, entrar em contato com o setor de Frota e Manutenção.`,
       scheduledMaintenance.completedAt = new Date().toISOString();
       scheduledMaintenance.completedKm = data.newKm;
       scheduledMaintenance.completionNotes = data.notes;
+      scheduledMaintenance.ordem = data.ordem;
+      scheduledMaintenance.categoria = data.categoria;
     }
 
-    // Aqui você poderia salvar no banco de dados um histórico de manutenções
-    // Por enquanto, vamos apenas simular que a manutenção foi registrada
+    // Registrar no histórico de manutenções do veículo
+    if (!this.maintenanceHistory) {
+      this.maintenanceHistory = new Map();
+    }
+    
+    const vehicleHistory = this.maintenanceHistory.get(data.vehicleId) || [];
+    vehicleHistory.push({
+      id: Math.random().toString(36).substr(2, 9),
+      vehicleId: data.vehicleId,
+      maintenanceDate: data.maintenanceDate,
+      km: data.newKm,
+      location: data.location,
+      ordem: data.ordem,
+      categoria: data.categoria,
+      notes: data.notes,
+      registeredAt: new Date().toISOString()
+    });
+    
+    this.maintenanceHistory.set(data.vehicleId, vehicleHistory);
     
     return {
       success: true,
@@ -3710,11 +3743,47 @@ Em caso de dúvidas, entrar em contato com o setor de Frota e Manutenção.`,
         id: vehicle.id,
         plate: vehicle.plate,
         newKm: data.newKm,
-        maintenanceDate: data.maintenanceDate
+        maintenanceDate: data.maintenanceDate,
+        lastOrdem: data.ordem,
+        lastCategoria: data.categoria
       }
     };
   }
 
+  // Método para determinar próxima ordem e categoria de manutenção
+  private getNextMaintenanceInfo(lastMaintenance: any) {
+    if (!lastMaintenance) {
+      // Primera manutenção
+      return { ordem: 1, categoria: 'M1' };
+    }
+
+    const { ordem, categoria } = lastMaintenance;
+
+    // Lógica para próxima ordem (1-12)
+    let nextOrdem = ordem + 1;
+    if (nextOrdem > 12) {
+      nextOrdem = 1; // Reinicia o ciclo
+    }
+
+    // Lógica para próxima categoria M (M1-M5)
+    // A cada 3 ordens, avança uma categoria M
+    let nextCategoria = categoria;
+    if (ordem % 3 === 0) {
+      const currentM = parseInt(categoria.replace('M', ''));
+      let nextM = currentM + 1;
+      if (nextM > 5) {
+        nextM = 1; // Reinicia o ciclo
+      }
+      nextCategoria = `M${nextM}`;
+    }
+
+    return { ordem: nextOrdem, categoria: nextCategoria };
+  }
+
+  // Método para buscar histórico de manutenção de um veículo
+  getMaintenanceHistory(vehicleId: string) {
+    return this.maintenanceHistory.get(vehicleId) || [];
+  }
 }
 
 export const storage = new MemStorage();

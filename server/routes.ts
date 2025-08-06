@@ -569,10 +569,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register completed maintenance
   app.post('/api/preventive-maintenance/complete', async (req, res) => {
     try {
-      const { vehicleId, newKm, maintenanceDate, location, notes } = req.body;
+      const { vehicleId, newKm, maintenanceDate, location, ordem, categoria, notes } = req.body;
       
-      if (!vehicleId || !newKm || !maintenanceDate || !location) {
-        return res.status(400).json({ message: 'Campos obrigatórios: vehicleId, newKm, maintenanceDate, location' });
+      if (!vehicleId || !newKm || !maintenanceDate || !location || !ordem || !categoria) {
+        return res.status(400).json({ message: 'Campos obrigatórios: vehicleId, newKm, maintenanceDate, location, ordem, categoria' });
       }
 
       const result = await storage.registerCompletedMaintenance({
@@ -580,6 +580,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newKm: parseInt(newKm),
         maintenanceDate,
         location,
+        ordem: parseInt(ordem),
+        categoria,
         notes
       });
 
