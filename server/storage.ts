@@ -1149,11 +1149,14 @@ export class MemStorage implements IStorage {
 
   // Employee methods
   async getEmployees(): Promise<Employee[]> {
-    // Popular dados de teste se não houver funcionários
-    if (this.employees.size === 0) {
-      await this.populateTestEmployees();
+    try {
+      const employeesFromDb = await db.select().from(employees);
+      console.log('Employees fetched from PostgreSQL:', employeesFromDb.length);
+      return employeesFromDb;
+    } catch (error) {
+      console.error('Erro ao buscar funcionários do PostgreSQL:', error);
+      return [];
     }
-    return Array.from(this.employees.values());
   }
 
   private async populateTestEmployees(): Promise<void> {
@@ -1261,7 +1264,13 @@ export class MemStorage implements IStorage {
   }
 
   async getEmployee(id: string): Promise<Employee | undefined> {
-    return this.employees.get(id);
+    try {
+      const [employee] = await db.select().from(employees).where(eq(employees.id, id));
+      return employee;
+    } catch (error) {
+      console.error('Erro ao buscar funcionário do PostgreSQL:', error);
+      return undefined;
+    }
   }
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
