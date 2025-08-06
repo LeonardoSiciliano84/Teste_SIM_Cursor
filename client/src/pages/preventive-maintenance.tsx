@@ -70,10 +70,15 @@ export default function PreventiveMaintenance() {
   const queryClient = useQueryClient();
 
   // Buscar veículos para manutenção preventiva
-  const { data: vehicles = [], isLoading } = useQuery<PreventiveMaintenanceVehicle[]>({
-    queryKey: ['/api/preventive-maintenance/vehicles', filters],
+  const { data: vehicles = [], isLoading, error } = useQuery<PreventiveMaintenanceVehicle[]>({
+    queryKey: ['/api/preventive-maintenance/vehicles'],
     refetchInterval: 60000, // Atualizar a cada minuto
   });
+
+  // Debug: Mostrar dados recebidos no console
+  console.log('Vehicles data:', vehicles);
+  console.log('Loading:', isLoading);
+  console.log('Error:', error);
 
   // Buscar funcionários/motoristas
   const { data: employees = [] } = useQuery<Employee[]>({
