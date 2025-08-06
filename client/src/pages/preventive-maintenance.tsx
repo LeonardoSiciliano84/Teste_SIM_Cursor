@@ -75,10 +75,7 @@ export default function PreventiveMaintenance() {
     refetchInterval: 60000, // Atualizar a cada minuto
   });
 
-  // Debug: Mostrar dados recebidos no console
-  console.log('Vehicles data:', vehicles);
-  console.log('Loading:', isLoading);
-  console.log('Error:', error);
+
 
   // Buscar funcionários/motoristas
   const { data: employees = [] } = useQuery<Employee[]>({
@@ -154,14 +151,18 @@ export default function PreventiveMaintenance() {
     );
   });
 
-  // Filtrar motoristas
+  // Filtrar motoristas - mostrar apenas funcionários que são motoristas
   const filteredDrivers = employees.filter(emp => 
-    emp.fullName.toLowerCase().includes(driverSearch.toLowerCase()) ||
-    emp.position.toLowerCase().includes('motorista')
+    emp.position.toLowerCase().includes('motorista') &&
+    emp.fullName.toLowerCase().includes(driverSearch.toLowerCase())
   );
 
   const handleSchedule = (vehicle: PreventiveMaintenanceVehicle) => {
     setSelectedVehicle(vehicle);
+    setSelectedDriver("");
+    setDriverSearch("");
+    setSelectedLocation("");
+    setSelectedDate(undefined);
     setIsScheduleModalOpen(true);
   };
 
@@ -376,24 +377,49 @@ export default function PreventiveMaintenance() {
                     className="pl-10"
                   />
                 </div>
-                {driverSearch && (
-                  <div className="mt-2 max-h-32 overflow-y-auto border rounded-md">
-                    {filteredDrivers.map((driver) => (
-                      <button
-                        key={driver.id}
-                        onClick={() => {
-                          setSelectedDriver(driver.id);
-                          setDriverSearch(driver.fullName);
-                        }}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <User className="w-4 h-4" />
-                        <div>
-                          <p className="font-medium">{driver.fullName}</p>
-                          <p className="text-xs text-gray-500">{driver.position}</p>
-                        </div>
-                      </button>
-                    ))}
+                {driverSearch && !selectedDriver && (
+                  <div className="mt-2 max-h-32 overflow-y-auto border rounded-md bg-white z-10">
+                    {filteredDrivers.length > 0 ? (
+                      filteredDrivers.map((driver) => (
+                        <button
+                          key={driver.id}
+                          onClick={() => {
+                            setSelectedDriver(driver.id);
+                            setDriverSearch(driver.fullName);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                          <User className="w-4 h-4" />
+                          <div>
+                            <p className="font-medium">{driver.fullName}</p>
+                            <p className="text-xs text-gray-500">{driver.position}</p>
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-gray-500 text-sm">
+                        Nenhum motorista encontrado
+                      </div>
+                    )}
+                  </div>
+                )}
+                {selectedDriver && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-800">{driverSearch}</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedDriver("");
+                        setDriverSearch("");
+                      }}
+                      className="h-6 w-6 p-0"
+                    >
+                      ×
+                    </Button>
                   </div>
                 )}
               </div>

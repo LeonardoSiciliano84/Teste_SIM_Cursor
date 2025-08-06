@@ -3524,8 +3524,9 @@ export class MemStorage implements IStorage {
     location: 'oficina_interna' | 'oficina_externa';
     scheduledDate: string;
   }) {
-    const vehicle = this.vehicles.get(data.vehicleId);
-    const driver = Array.from(this.employees.values()).find(emp => emp.id === data.driverId);
+    // Buscar veículo no banco de dados
+    const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, data.vehicleId));
+    const [driver] = await db.select().from(employees).where(eq(employees.id, data.driverId));
     
     if (!vehicle || !driver) {
       throw new Error('Veículo ou motorista não encontrado');
@@ -3558,7 +3559,7 @@ export class MemStorage implements IStorage {
 Segue abaixo o agendamento de parada do veículo:
 
 Tipo de parada: Manutenção Preventiva
-Placa: ${vehicle.placa}
+Placa: ${vehicle.plate}
 Data: ${new Date(data.scheduledDate).toLocaleDateString('pt-BR')}
 Local: ${locationText}
 
