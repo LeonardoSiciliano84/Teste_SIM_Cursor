@@ -58,8 +58,7 @@ const navigation = [
       { name: "Motoristas", href: "/drivers", icon: Truck },
       { name: "Ocorrências", href: "/occurrences", icon: FileText },
       { name: "Pessoas Externas", href: "/external-persons", icon: UserPlus },
-      { name: "Gestão de Prancha", href: "/prancha-management", icon: Package },
-      { name: "Importação de Dados", href: "/data-import", icon: Upload }
+      { name: "Gestão de Prancha", href: "/prancha-management", icon: Package }
     ]
   },
   {
@@ -88,6 +87,13 @@ const navigation = [
     children: [
       { name: "Admin - Logs de Acesso", href: "/access-control-admin", icon: BarChart3 },
       { name: "Portaria", href: "/security-guard", icon: ShieldCheck }
+    ]
+  },
+  {
+    name: "Configurações",
+    icon: Settings,
+    children: [
+      { name: "Importação de Dados", href: "/data-import", icon: Upload }
     ]
   },
   { name: "Portal Motorista", href: "/driver-portal", icon: Smartphone },
