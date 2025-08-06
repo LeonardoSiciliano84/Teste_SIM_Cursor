@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { loginSchema } from "@shared/schema";
 import multer from "multer";
 import * as XLSX from "xlsx";
+import { readFileSync, unlinkSync } from "fs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware para CORS
@@ -2054,8 +2055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const selectedFields = JSON.parse(req.body.fields);
       
       // Ler arquivo Excel usando Buffer
-      const fs = require('fs');
-      const fileBuffer = fs.readFileSync(req.file.path);
+      const fileBuffer = readFileSync(req.file.path);
       const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
@@ -2113,7 +2113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Limpar arquivo temporário
-      require('fs').unlinkSync(req.file.path);
+      unlinkSync(req.file.path);
 
       res.json(result);
 
@@ -2136,8 +2136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const selectedFields = JSON.parse(req.body.fields);
       
       // Ler arquivo Excel usando Buffer
-      const fs = require('fs');
-      const fileBuffer = fs.readFileSync(req.file.path);
+      const fileBuffer = readFileSync(req.file.path);
       const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
@@ -2195,7 +2194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Limpar arquivo temporário
-      require('fs').unlinkSync(req.file.path);
+      unlinkSync(req.file.path);
 
       res.json(result);
 
