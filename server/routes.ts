@@ -566,6 +566,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Register completed maintenance
+  app.post('/api/preventive-maintenance/complete', async (req, res) => {
+    try {
+      const { vehicleId, newKm, maintenanceDate, location, notes } = req.body;
+      
+      if (!vehicleId || !newKm || !maintenanceDate || !location) {
+        return res.status(400).json({ message: 'Campos obrigatórios: vehicleId, newKm, maintenanceDate, location' });
+      }
+
+      const result = await storage.registerCompletedMaintenance({
+        vehicleId,
+        newKm: parseInt(newKm),
+        maintenanceDate,
+        location,
+        notes
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error registering completed maintenance:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Get driver notifications
   app.get('/api/driver/:driverId/notifications', async (req, res) => {
     try {

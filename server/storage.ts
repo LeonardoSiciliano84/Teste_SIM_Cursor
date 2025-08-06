@@ -3664,6 +3664,57 @@ Em caso de dúvidas, entrar em contato com o setor de Frota e Manutenção.`,
     return notification;
   }
 
+  // Buscar agendamento de manutenção
+  getScheduledMaintenance(vehicleId: string) {
+    return Array.from(this.driverNotifications.values())
+      .find(notification => 
+        notification.vehicleId === vehicleId && 
+        notification.type === 'preventive_maintenance' &&
+        notification.status !== 'completed'
+      );
+  }
+
+  // Registrar nova manutenção preventiva realizada
+  async registerCompletedMaintenance(data: {
+    vehicleId: string;
+    newKm: number;
+    maintenanceDate: string;
+    location: string;
+    notes?: string;
+  }) {
+    console.log('Registrando manutenção realizada:', data);
+    
+    // Buscar veículo no banco
+    const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, data.vehicleId));
+    
+    if (!vehicle) {
+      throw new Error('Veículo não encontrado');
+    }
+
+    // Marcar agendamento como concluído se existir
+    const scheduledMaintenance = this.getScheduledMaintenance(data.vehicleId);
+    if (scheduledMaintenance) {
+      scheduledMaintenance.status = 'completed';
+      scheduledMaintenance.completedAt = new Date().toISOString();
+      scheduledMaintenance.completedKm = data.newKm;
+      scheduledMaintenance.completionNotes = data.notes;
+    }
+
+    // Aqui você poderia salvar no banco de dados um histórico de manutenções
+    // Por enquanto, vamos apenas simular que a manutenção foi registrada
+    
+    return {
+      success: true,
+      message: 'Manutenção registrada com sucesso',
+      vehicle: {
+        id: vehicle.id,
+        plate: vehicle.plate,
+        newKm: data.newKm,
+        maintenanceDate: data.maintenanceDate
+      }
+    };
+  }
+
 }
 
 export const storage = new MemStorage();

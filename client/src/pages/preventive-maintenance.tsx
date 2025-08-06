@@ -37,7 +37,8 @@ interface PreventiveMaintenanceVehicle {
   currentKm: number;
   kmToNextMaintenance: number;
   maintenanceInterval: number;
-  status: 'em_dia' | 'programar_revisao' | 'em_revisao';
+  status: 'em_dia' | 'programar_revisao' | 'em_revisao' | 'agendado';
+  scheduledMaintenance?: any;
 }
 
 interface Employee {
@@ -65,6 +66,15 @@ export default function PreventiveMaintenance() {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [driverSearch, setDriverSearch] = useState("");
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isViewScheduleModalOpen, setIsViewScheduleModalOpen] = useState(false);
+  const [isCompleteMaintenanceModalOpen, setIsCompleteMaintenanceModalOpen] = useState(false);
+  const [selectedScheduledVehicle, setSelectedScheduledVehicle] = useState<PreventiveMaintenanceVehicle | null>(null);
+  const [completionData, setCompletionData] = useState({
+    newKm: '',
+    maintenanceDate: '',
+    location: '',
+    notes: ''
+  });
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -109,8 +119,40 @@ export default function PreventiveMaintenance() {
     },
   });
 
+  // Mutation para registrar manutenção concluída
+  const completeMaintenanceMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest('/api/preventive-maintenance/complete', 'POST', data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Manutenção registrada",
+        description: "A manutenção foi registrada e o veículo voltou ao status 'Em dia'.",
+        variant: "default",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/preventive-maintenance/vehicles'] });
+      setIsCompleteMaintenanceModalOpen(false);
+      setSelectedScheduledVehicle(null);
+      setCompletionData({ newKm: '', maintenanceDate: '', location: '', notes: '' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao registrar",
+        description: error.message || "Não foi possível registrar a manutenção.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const getStatusInfo = (status: string) => {
     switch (status) {
+      case 'agendado':
+        return {
+          icon: CalendarIcon,
+          label: 'Agendado',
+          color: 'bg-blue-100 text-blue-800',
+          description: 'Manutenção preventiva agendada'
+        };
       case 'em_revisao':
         return {
           icon: XCircle,
@@ -164,6 +206,41 @@ export default function PreventiveMaintenance() {
     setSelectedLocation("");
     setSelectedDate(undefined);
     setIsScheduleModalOpen(true);
+  };
+
+  const handleViewSchedule = (vehicle: PreventiveMaintenanceVehicle) => {
+    setSelectedScheduledVehicle(vehicle);
+    setIsViewScheduleModalOpen(true);
+  };
+
+  const handleCompleteMaintenance = (vehicle: PreventiveMaintenanceVehicle) => {
+    setSelectedScheduledVehicle(vehicle);
+    setCompletionData({
+      newKm: '',
+      maintenanceDate: format(new Date(), 'yyyy-MM-dd'),
+      location: '',
+      notes: ''
+    });
+    setIsCompleteMaintenanceModalOpen(true);
+  };
+
+  const handleCompleteMaintenanceSubmit = () => {
+    if (!selectedScheduledVehicle || !completionData.newKm || !completionData.maintenanceDate || !completionData.location) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    completeMaintenanceMutation.mutate({
+      vehicleId: selectedScheduledVehicle.id,
+      newKm: parseInt(completionData.newKm),
+      maintenanceDate: completionData.maintenanceDate,
+      location: completionData.location,
+      notes: completionData.notes
+    });
   };
 
   const handleScheduleSubmit = () => {
@@ -254,6 +331,7 @@ export default function PreventiveMaintenance() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="agendado">Agendado</SelectItem>
                   <SelectItem value="em_revisao">Em revisão</SelectItem>
                   <SelectItem value="programar_revisao">Programar revisão</SelectItem>
                   <SelectItem value="em_dia">Em dia</SelectItem>
@@ -336,13 +414,34 @@ export default function PreventiveMaintenance() {
                         <p className="text-xs text-gray-500 mt-1">{statusInfo.description}</p>
                       </div>
                       
-                      <Button 
-                        onClick={() => handleSchedule(vehicle)}
-                        className="bg-[#0C29AB] hover:bg-[#0C29AB]/90"
-                      >
-                        <CalendarIcon className="w-4 h-4 mr-2" />
-                        Agendar
-                      </Button>
+                      {vehicle.status === 'agendado' ? (
+                        <div className="space-x-2">
+                          <Button 
+                            onClick={() => handleViewSchedule(vehicle)}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <CalendarIcon className="w-4 h-4 mr-2" />
+                            Ver Agendamento
+                          </Button>
+                          <Button 
+                            onClick={() => handleCompleteMaintenance(vehicle)}
+                            className="bg-green-600 hover:bg-green-700"
+                            size="sm"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Registrar Conclusão
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button 
+                          onClick={() => handleSchedule(vehicle)}
+                          className="bg-[#0C29AB] hover:bg-[#0C29AB]/90"
+                        >
+                          <CalendarIcon className="w-4 h-4 mr-2" />
+                          Agendar
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -498,6 +597,147 @@ export default function PreventiveMaintenance() {
                   className="flex-1 bg-[#0C29AB] hover:bg-[#0C29AB]/90"
                 >
                   {scheduleMaintenanceMutation.isPending ? "Agendando..." : "Agendar"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para Visualizar Agendamento */}
+      <Dialog open={isViewScheduleModalOpen} onOpenChange={setIsViewScheduleModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarIcon className="w-5 h-5 text-blue-600" />
+              Agendamento de Manutenção
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedScheduledVehicle && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h3 className="font-semibold text-blue-900">{selectedScheduledVehicle.plate}</h3>
+                <p className="text-sm text-blue-700">{selectedScheduledVehicle.vehicleType} • {selectedScheduledVehicle.classification}</p>
+              </div>
+
+              {selectedScheduledVehicle.scheduledMaintenance && (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium">Data Agendada</Label>
+                    <p className="text-sm">{format(new Date(selectedScheduledVehicle.scheduledMaintenance.scheduledDate), "dd/MM/yyyy", { locale: ptBR })}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Motorista</Label>
+                    <p className="text-sm">{selectedScheduledVehicle.scheduledMaintenance.driverName}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Local</Label>
+                    <p className="text-sm">{selectedScheduledVehicle.scheduledMaintenance.location === 'oficina_interna' ? 'Oficina Interna' : 'Oficina Externa'}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsViewScheduleModalOpen(false)}
+                  className="flex-1"
+                >
+                  Fechar
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setIsViewScheduleModalOpen(false);
+                    handleCompleteMaintenance(selectedScheduledVehicle);
+                  }}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  Registrar Conclusão
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para Registrar Conclusão */}
+      <Dialog open={isCompleteMaintenanceModalOpen} onOpenChange={setIsCompleteMaintenanceModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              Registrar Manutenção Concluída
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedScheduledVehicle && (
+            <div className="space-y-4">
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <h3 className="font-semibold text-green-900">{selectedScheduledVehicle.plate}</h3>
+                <p className="text-sm text-green-700">{selectedScheduledVehicle.vehicleType} • {selectedScheduledVehicle.classification}</p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="new-km">Nova Quilometragem *</Label>
+                  <Input
+                    id="new-km"
+                    type="number"
+                    placeholder="Ex: 150000"
+                    value={completionData.newKm}
+                    onChange={(e) => setCompletionData(prev => ({ ...prev, newKm: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="maintenance-date">Data da Manutenção *</Label>
+                  <Input
+                    id="maintenance-date"
+                    type="date"
+                    value={completionData.maintenanceDate}
+                    onChange={(e) => setCompletionData(prev => ({ ...prev, maintenanceDate: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="location">Local da Manutenção *</Label>
+                  <Select value={completionData.location} onValueChange={(value) => setCompletionData(prev => ({ ...prev, location: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o local" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="oficina_interna">Oficina Interna</SelectItem>
+                      <SelectItem value="oficina_externa">Oficina Externa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="notes">Observações</Label>
+                  <Input
+                    id="notes"
+                    placeholder="Observações sobre a manutenção realizada..."
+                    value={completionData.notes}
+                    onChange={(e) => setCompletionData(prev => ({ ...prev, notes: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCompleteMaintenanceModalOpen(false)}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleCompleteMaintenanceSubmit}
+                  disabled={completeMaintenanceMutation.isPending}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  {completeMaintenanceMutation.isPending ? "Registrando..." : "Registrar Conclusão"}
                 </Button>
               </div>
             </div>
