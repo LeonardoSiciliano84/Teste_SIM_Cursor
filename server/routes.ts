@@ -518,7 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get vehicles for preventive maintenance
   app.get('/api/preventive-maintenance/vehicles', async (req, res) => {
     try {
-      const vehicles = storage.getPreventiveMaintenanceVehicles();
+      const vehicles = await storage.getPreventiveMaintenanceVehicles();
       res.json(vehicles);
     } catch (error) {
       console.error('Error fetching preventive maintenance vehicles:', error);

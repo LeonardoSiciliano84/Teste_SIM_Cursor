@@ -3470,39 +3470,52 @@ export class MemStorage implements IStorage {
   // Sistema de notificações para motoristas
   private driverNotifications = new Map<string, any>();
 
-  getPreventiveMaintenanceVehicles(): Array<any> {
-    // Mock data para veículos com controle de manutenção preventiva
-    const vehicles = Array.from(this.vehicles.values());
-    
-    return vehicles.map(vehicle => {
-      // Simular dados de manutenção preventiva
-      const lastMaintenanceKm = Math.floor(Math.random() * 50000) + 100000;
-      const currentKm = lastMaintenanceKm + Math.floor(Math.random() * 15000);
-      const maintenanceInterval = 10000; // 10.000 km entre manutenções
-      const kmToNextMaintenance = (lastMaintenanceKm + maintenanceInterval) - currentKm;
+  async getPreventiveMaintenanceVehicles(): Promise<Array<any>> {
+    try {
+      // Importar a conexão do banco de dados
+      const { db } = await import('./db');
+      const { vehicles } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
       
-      let status: 'programar' | 'em_revisao' | 'vencido';
-      if (kmToNextMaintenance < 0) {
-        status = 'vencido';
-      } else if (kmToNextMaintenance <= 1000) {
-        status = 'em_revisao';
-      } else {
-        status = 'programar';
-      }
+      // Buscar veículos ativos do banco de dados
+      const vehiclesList = await db.select().from(vehicles).where(eq(vehicles.status, 'ativo'));
+      
+      return vehiclesList.map(vehicle => {
+        // Simular dados de manutenção preventiva baseado na quilometragem configurada
+        const maintenanceInterval = vehicle.preventiveMaintenanceKm || 10000; // Use a quilometragem configurada ou 10.000 km padrão
+        const lastMaintenanceKm = Math.floor(Math.random() * 50000) + 100000;
+        const currentKm = lastMaintenanceKm + Math.floor(Math.random() * 15000);
+        const kmToNextMaintenance = (lastMaintenanceKm + maintenanceInterval) - currentKm;
+        
+        let status: 'programar' | 'em_revisao' | 'vencido';
+        if (kmToNextMaintenance < 0) {
+          status = 'vencido';
+        } else if (kmToNextMaintenance <= 1000) {
+          status = 'em_revisao';
+        } else {
+          status = 'programar';
+        }
 
-      return {
-        id: vehicle.id,
-        plate: vehicle.placa || 'N/A',
-        vehicleType: vehicle.tipo || 'Caminhão',
-        classification: vehicle.classificacao || 'N/A',
-        lastMaintenanceDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-        lastMaintenanceKm,
-        currentKm,
-        kmToNextMaintenance,
-        maintenanceInterval,
-        status
-      };
-    });
+        return {
+          id: vehicle.id,
+          plate: vehicle.plate || 'N/A',
+          vehicleType: vehicle.vehicleType || 'Caminhão',
+          classification: vehicle.classification || 'N/A',
+          lastMaintenanceDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+          lastMaintenanceKm,
+          currentKm,
+          kmToNextMaintenance,
+          maintenanceInterval,
+          status,
+          name: vehicle.name,
+          brand: vehicle.brand,
+          model: vehicle.model
+        };
+      });
+    } catch (error) {
+      console.error('Erro ao buscar veículos para manutenção preventiva:', error);
+      return [];
+    }
   }
 
   async schedulePreventiveMaintenance(data: {
