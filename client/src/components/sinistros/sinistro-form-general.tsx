@@ -11,8 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, Camera, Upload } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AlertTriangle, Camera, Upload, Check, ChevronsUpDown, Car } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 // Componente para seleção de colaboradores
 function EmployeeSelect({ onValueChange, value }: { onValueChange: (value: string) => void; value: string }) {
@@ -35,6 +38,104 @@ function EmployeeSelect({ onValueChange, value }: { onValueChange: (value: strin
         ))}
       </SelectContent>
     </Select>
+  );
+}
+
+// Componente para seleção de veículos
+function VehicleSelect({ onValueChange, value }: { onValueChange: (value: string) => void; value: string }) {
+  const [open, setOpen] = useState(false);
+  const [manualInput, setManualInput] = useState(false);
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ["/api/vehicles"],
+  });
+
+  const selectedVehicle = (vehicles as any[]).find((vehicle: any) => vehicle.plate === value);
+
+  return (
+    <div className="space-y-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between"
+            >
+              {value ? (
+                <div className="flex items-center">
+                  <Car className="mr-2 h-4 w-4" />
+                  {selectedVehicle ? (
+                    <span>{selectedVehicle.plate} - {selectedVehicle.brand} {selectedVehicle.model}</span>
+                  ) : (
+                    <span>{value}</span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-muted-foreground">Selecione um veículo...</span>
+              )}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0">
+          <Command>
+            <CommandInput placeholder="Buscar veículo por placa..." />
+            <CommandList>
+              <CommandEmpty>Nenhum veículo encontrado.</CommandEmpty>
+              <CommandGroup>
+                {(vehicles as any[]).map((vehicle: any) => (
+                  <CommandItem
+                    key={vehicle.id}
+                    value={vehicle.plate}
+                    onSelect={() => {
+                      onValueChange(vehicle.plate);
+                      setOpen(false);
+                      setManualInput(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === vehicle.plate ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <div className="flex items-center">
+                      <Car className="mr-2 h-4 w-4" />
+                      <span className="font-mono">{vehicle.plate}</span>
+                      <span className="ml-2 text-muted-foreground">
+                        - {vehicle.brand} {vehicle.model}
+                      </span>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      
+      <div className="flex items-center space-x-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setManualInput(!manualInput)}
+          className="text-xs"
+        >
+          {manualInput ? "Usar busca" : "Inserir manualmente"}
+        </Button>
+      </div>
+      
+      {manualInput && (
+        <Input
+          placeholder="Digite a placa (ex: ABC-1234)"
+          value={value}
+          onChange={(e) => onValueChange(e.target.value)}
+          className="mt-2"
+        />
+      )}
+    </div>
   );
 }
 
@@ -205,9 +306,7 @@ export function SinistroFormGeneral({ userInfo, trigger }: SinistroFormGeneralPr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Placa do Veículo (se aplicável)</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="ABC-1234" />
-                    </FormControl>
+                    <VehicleSelect onValueChange={field.onChange} value={field.value} />
                     <FormMessage />
                   </FormItem>
                 )}

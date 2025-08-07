@@ -1,246 +1,162 @@
-# FELKA Transportes - Sistema de Gestão Integrado
+# Sistema de Gestão de Transportes - Felka
 
-## 🚛 Visão Geral
+Sistema completo de gestão de frotas, motoristas, manutenção e controle de acesso para empresas de transporte.
 
-Sistema abrangente de gestão de transportes desenvolvido para a FELKA Transportes, oferecendo controle completo de veículos, motoristas, rotas, reservas e análises. Construído com React no frontend e Express.js no backend, apresenta uma interface moderna usando shadcn/ui e Drizzle ORM para funcionalidades CRUD completas.
+## 🚀 Funcionalidades
 
-## 🎯 Funcionalidades Principais
+- **Dashboard** - Visão geral da frota e indicadores
+- **Gestão de Veículos** - Cadastro, edição e monitoramento
+- **Motoristas** - Controle de motoristas e documentos
+- **Manutenção** - Agendamento e controle de manutenção preventiva
+- **Controle de Acesso** - Sistema de portaria com QR Code
+- **Almoxarifado** - Gestão de estoque e materiais
+- **Sinistros** - Registro e acompanhamento de ocorrências
+- **Portal do Motorista** - Interface específica para motoristas
+- **Importação de Dados** - Importação em lote via Excel
 
-### 🚗 Gestão de Veículos
-- **CRUD Completo**: Cadastro, edição e exclusão de veículos
-- **Informações Detalhadas**: Dados principais, financeiros, documentação e técnicos organizados em abas
-- **Controle de Documentos**: Upload e gerenciamento de documentos com rastreamento de vencimento
-- **Relatórios PDF**: Geração de relatórios com marca FELKA e dados corporativos
-- **Exportação XLSX**: Relatórios exportáveis em formato Excel
+## 🛠️ Tecnologias
 
-### 👥 Gestão de RH e Departamento Pessoal
-- **Cadastro Completo de Colaboradores**: Dados pessoais, profissionais e documentos
-- **Gestão de Documentos**: Controle de vencimentos com alertas visuais
-- **Sistema de Ocorrências**: Advertências, suspensões, atestados médicos com geração de PDF
-- **Portal do Motorista**: Interface mobile otimizada para motoristas
-- **Controle de Acesso**: Sistema baseado em CPF e QR Code
-
-### 🔧 Sistema de Manutenção Integrado
-- **Kanban de Processos**: Fluxo completo em 4 estágios (Aberto → Em Andamento → Aguardando → Concluído)
-- **Lançamento de Custos**: Sistema completo com 8 classificações predefinidas
-- **Controle de Pneus**: Módulo integrado para gestão completa do ciclo de vida dos pneus
-- **Rastreabilidade Total**: Histórico completo de todas as operações
-
-### 🛞 Módulo de Controle de Pneus
-- **Dashboard Dinâmico**: Indicadores em tempo real (Total, Em Uso, Recapagem, Alertas)
-- **Cadastro de Pneus**: Número do fogo, marca, modelo, medida, tipo, valor de compra
-- **Movimentações**: Entrada, instalação, rodízio, recapagem, descarte, venda, perda
-- **Sistema de Rodízios**: Controle de trocas entre eixos e lados
-- **Gestão de Recapagens**: Controle de vida útil e empresas recapadoras
-- **Alertas Automáticos**: Sistema de notificações para rodízios e recapagens necessárias
-- **Relatórios Exportáveis**: Dados em formato XLSX com filtros configuráveis
-
-### 🚪 Controle de Acesso
-- **Sistema CPF/QR Code**: Substituição completa do reconhecimento facial
-- **Gestão de Visitantes**: Busca e cadastro baseado em CPF
-- **Controle de Funcionários**: QR Code automático para todos os colaboradores
-- **Portal do Segurança**: Interface mobile otimizada para operações de portaria
-- **Controle de Veículos**: Entrada e saída de veículos com rastreamento completo
-- **Logs Detalhados**: Histórico completo de acessos separado por abas
-
-### 📊 Dashboard e Analytics
-- **KPIs em Tempo Real**: Veículos, motoristas, rotas ativas
-- **Gráficos de Receita**: Análise mensal e tendências
-- **Estatísticas de Manutenção**: OS abertas, em andamento, concluídas
-- **Indicadores de Pneus**: Status, alertas e movimentações
-
-## 🏗️ Arquitetura Técnica
-
-### Frontend
-- **Framework**: React 18 com TypeScript
-- **Build Tool**: Vite
-- **UI Library**: shadcn/ui (baseado em Radix UI)
-- **Estilização**: Tailwind CSS
-- **Gerenciamento de Estado**: TanStack Query
-- **Roteamento**: Wouter
-- **Formulários**: React Hook Form com validação Zod
-
-### Backend
-- **Framework**: Express.js com TypeScript
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Shadcn UI
+- **Backend**: Node.js, Express, TypeScript
+- **Banco de Dados**: PostgreSQL (Neon)
 - **ORM**: Drizzle ORM
-- **Banco de Dados**: PostgreSQL (configurado para Neon serverless)
-- **Sessões**: PostgreSQL session store com connect-pg-simple
-- **Padrão API**: Endpoints REST
+- **Autenticação**: Sistema próprio com sessões
+- **Upload**: Multer para arquivos
 
-### Banco de Dados
-#### Tabelas Principais:
-- **users**: Sistema de usuários com roles (admin, user, driver)
-- **vehicles**: Gestão completa de veículos
-- **drivers**: Cadastro de motoristas
-- **employees**: Sistema de RH completo
-- **maintenance_requests**: Ordens de serviço de manutenção
-- **cost_entries**: Lançamentos de custos de manutenção
-- **tires**: Cadastro de pneus
-- **tire_movements**: Movimentações de pneus
-- **tire_rotations**: Rodízios de pneus
-- **tire_alerts**: Sistema de alertas automáticos
-- **access_logs**: Logs de controle de acesso
-- **vehicle_access_logs**: Controle de entrada/saída de veículos
+## 📋 Pré-requisitos
 
-## 🎨 Identidade Visual
-
-- **Cor Corporativa**: #0C29AB (Azul FELKA)
-- **Logo**: Implementação do cabeçalho oficial FELKA em PDFs
-- **Idioma**: Português Brasileiro
-- **Padrão de Documentos**: Cabeçalho timbrado da empresa em todos os relatórios
-
-## 📋 Funcionalidades Recentes (Janeiro 2025)
-
-### ✅ Sistema de Controle de Acesso Completo
-- Substituição total do reconhecimento facial por sistema CPF/QR Code
-- Remoção completa de dependências face-api.js
-- Portal do segurança mobile-otimizado
-- Controle integrado de veículos
-
-### ✅ Módulo de Manutenção Aprimorado
-- Sistema Kanban com 4 estágios funcionais
-- Lançamento de custos com 8 classificações
-- Cálculo automático de valores (quantidade × preço unitário)
-- Remoção da aba almoxarifado conforme solicitação
-
-### ✅ Módulo de Controle de Pneus
-- Sistema completo seguindo especificações PRD
-- Dashboard com indicadores dinâmicos
-- 6 sub-abas organizadas: Dashboard, Cadastro, Movimentações, Rodízios, Recapagens, Alertas
-- Schema completo no banco de dados
-- Sistema de alertas automáticos
-- Rastreabilidade total do ciclo de vida
-
-### ✅ Portal do Motorista
-- Interface mobile otimizada
-- Gestão de serviços de prancha persistentes
-- Acesso para admins com banner de supervisão
-- Sistema de comunicação para manutenção
-
-## 🚀 Como Executar
-
-### Pré-requisitos
 - Node.js 18+
-- PostgreSQL
-- Variáveis de ambiente configuradas (DATABASE_URL, etc.)
+- npm ou yarn
+- PostgreSQL (ou Neon Database)
 
-### Instalação
+## 🔧 Instalação
+
+1. **Clone o repositório**
 ```bash
-# Clone o repositório
-git clone [URL_DO_REPOSITORIO]
-cd felka-transport-system
+git clone <url-do-repositorio>
+cd Teste_SIM_Cursor
+```
 
-# Instale as dependências
+2. **Instale as dependências**
+```bash
 npm install
+```
 
-# Configure o banco de dados
-npm run db:push
+3. **Configure as variáveis de ambiente**
+```bash
+# Crie um arquivo .env na raiz do projeto
+DATABASE_URL="postgresql://user:password@localhost:5432/database_name"
+PORT=3000
+NODE_ENV=development
+```
 
-# Execute em desenvolvimento
+## 🚀 Execução
+
+### Modo Desenvolvimento
+
+**Linux/Mac:**
+```bash
+# Configure as variáveis de ambiente
+export DATABASE_URL="postgresql://user:password@localhost:5432/testdb"
+export PORT="3000"
+export NODE_ENV="development"
+
+# Execute o servidor
 npm run dev
 ```
 
-### Variáveis de Ambiente Necessárias
-```env
-DATABASE_URL=postgresql://[conexao_postgresql]
-PGHOST=localhost
-PGPORT=5432
-PGDATABASE=felka_db
-PGUSER=postgres
-PGPASSWORD=sua_senha
+**Windows:**
+```bash
+# Configure as variáveis de ambiente
+$env:DATABASE_URL="postgresql://user:password@localhost:5432/testdb"
+$env:PORT="3000"
+$env:NODE_ENV="development"
+
+# Execute o servidor
+npm run dev:win
 ```
+
+### Modo Produção
+
+**Linux/Mac:**
+```bash
+# Build do projeto
+npm run build
+
+# Execute o servidor
+npm start
+```
+
+**Windows:**
+```bash
+# Build do projeto
+npm run build
+
+# Execute o servidor
+npm run start:win
+```
+
+## 🌐 Acesso
+
+- **URL**: http://localhost:3000
+- **Credenciais de Teste**:
+  - Admin: admin@felka.com / admin123
+  - Motorista: joao.silva@felka.com / driver123
 
 ## 📁 Estrutura do Projeto
 
 ```
-felka-transport-system/
 ├── client/                 # Frontend React
 │   ├── src/
 │   │   ├── components/     # Componentes reutilizáveis
 │   │   ├── pages/         # Páginas da aplicação
-│   │   ├── hooks/         # Custom hooks
-│   │   └── lib/           # Utilitários
-├── server/                # Backend Express
-│   ├── routes.ts         # Rotas da API
-│   ├── storage.ts        # Interface de armazenamento
+│   │   ├── lib/           # Utilitários e configurações
+│   │   └── hooks/         # Custom hooks
+├── server/                 # Backend Express
+│   ├── routes.ts          # Rotas da API
+│   ├── storage.ts         # Lógica de dados
 │   └── db.ts             # Configuração do banco
-├── shared/               # Código compartilhado
-│   └── schema.ts         # Schemas Drizzle e validações Zod
-├── migrations/           # Migrações do banco
-└── uploads/             # Arquivos uploadados
+├── shared/                # Schemas compartilhados
+└── migrations/            # Migrações do banco
 ```
 
-## 🔐 Sistema de Autenticação
+## 🔐 Autenticação
 
-- **Autenticação baseada em sessão**
-- **Roles de usuário**: admin, user, driver
-- **Controle de acesso baseado em roles**
-- **Rotas protegidas**
+O sistema possui três níveis de acesso:
+- **Admin**: Acesso completo ao sistema
+- **User**: Acesso limitado às funcionalidades básicas
+- **Driver**: Acesso apenas ao portal do motorista
 
-## 📊 Relatórios e Exportações
+## 📊 APIs Principais
 
-- **Formato PDF**: Relatórios com marca FELKA e cabeçalho timbrado
-- **Formato XLSX**: Todas as exportações de dados
-- **Filtros Configuráveis**: Por período, status, tipo, etc.
-- **Dados Autênticos**: Sem uso de dados mock ou sintéticos
+- `GET /api/dashboard/stats` - Estatísticas do dashboard
+- `GET /api/vehicles` - Lista de veículos
+- `GET /api/drivers` - Lista de motoristas
+- `GET /api/employees` - Lista de funcionários
+- `POST /api/access-control/qrcode` - Controle de acesso via QR Code
 
-## 🔧 Manutenção e Pneus
+## 🚨 Troubleshooting
 
-### Sistema Kanban de Manutenção
-1. **Aberto**: Solicitações aguardando início
-2. **Em Andamento**: Manutenções em execução
-3. **Aguardando**: Pendências externas
-4. **Concluído**: Serviços finalizados
+### Problemas Comuns
 
-### Classificações de Custos
-1. Mecânica
-2. Elétrica  
-3. Estrutural
-4. Acessórios
-5. Pintura
-6. Freio
-7. Ar-condicionado
-8. Lanternagem
+1. **Erro de conexão com banco**
+   - Verifique se a DATABASE_URL está configurada
+   - Certifique-se de que o PostgreSQL está rodando
 
-### Controle de Pneus
-- **Número do Fogo**: Código único e permanente
-- **Tipos**: Direcional, Tração, Arrasto, Misto
-- **Status**: Ativo, Em Uso, Recapagem, Perda, Vendido, Descartado
-- **Movimentações**: Entrada, Instalação, Rodízio, Recapagem, Descarte, Venda, Perda
-- **Alertas Automáticos**: Job diário às 03:00 para verificar limites
+2. **Erro ENOTSUP no Windows**
+   - O servidor foi configurado para usar localhost ao invés de 0.0.0.0
 
-## 📱 Interfaces Mobile
+3. **Porta já em uso**
+   - Altere a variável PORT para uma porta disponível
 
-- **Portal do Motorista**: Interface touch-friendly para motoristas
-- **Portal do Segurança**: Interface otimizada para controle de acesso
-- **Design Responsivo**: Adaptação automática para diferentes tamanhos de tela
+## 📝 Licença
 
-## 🎯 Próximos Passos
+Este projeto está sob a licença MIT.
 
-- Implementação de APIs para conectividade com sistemas externos
-- Sistema de notificações push
-- Relatórios avançados com BI
-- Integração com sistemas de telemetria
-- App mobile nativo
+## 🤝 Contribuição
 
-## 📞 Suporte
-
-Sistema desenvolvido especificamente para FELKA Transportes com foco em:
-- **Usabilidade**: Interface intuitiva em português brasileiro
-- **Confiabilidade**: Dados autênticos e rastreabilidade completa
-- **Escalabilidade**: Arquitetura preparada para crescimento
-- **Manutenibilidade**: Código organizado e documentado
-
-## 🏆 Padrões de Qualidade
-
-- **TypeScript**: Tipagem forte em todo o projeto
-- **Validação Zod**: Schemas validados no frontend e backend
-- **Componentização**: Componentes reutilizáveis e modulares
-- **Responsividade**: Interface adaptativa para todos os dispositivos
-- **Acessibilidade**: Componentes com suporte a screen readers
-- **Performance**: Otimizado com lazy loading e cache inteligente
-
----
-
-**Desenvolvido com ❤️ para FELKA Transportes**  
-*Sistema integrado de gestão de transportes - Janeiro 2025*
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
