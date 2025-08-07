@@ -55,6 +55,7 @@ FELKA Transportes is a comprehensive transport management system designed to man
 - **Configuration Menu Addition:** Added "Configurações" menu section containing "Importação de Dados" functionality
 - **Excel Processing Backend:** Full backend implementation with multer file upload, XLSX processing, and storage integration
 - **Menu Reorganization (Janeiro 2025):** Moved "Importação de Dados" from Colaboradores to dedicated Configurações menu for better organization
+- **Vehicle System Restoration (07/01/2025):** Restored original VehicleList component-based navigation architecture with 3 enhanced visualization tabs (Grid, Table, Classification) while preserving all existing functionality
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
