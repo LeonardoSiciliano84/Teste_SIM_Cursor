@@ -36,6 +36,7 @@ import DataImport from "@/pages/DataImport";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import VehicleEdit from "@/components/vehicles/vehicle-edit";
+import { VehicleDetailsPage } from "@/pages/vehicle-details";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -43,6 +44,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/vehicles" component={Vehicles} />
+      <Route path="/vehicles/:id" component={VehicleDetailsPage} />
       <Route path="/vehicles/edit/:id">
         {(params) => (
           <VehicleEdit 

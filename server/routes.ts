@@ -300,6 +300,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Buscar veículo por ID
+  app.get("/api/vehicles/:id", async (req, res) => {
+    try {
+      const vehicle = await storage.getVehicle(req.params.id);
+      if (!vehicle) {
+        return res.status(404).json({ message: "Veículo não encontrado" });
+      }
+      res.json(vehicle);
+    } catch (error) {
+      console.error("Erro ao buscar veículo:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   // Listar motoristas
   app.get("/api/drivers", async (req, res) => {
     try {
