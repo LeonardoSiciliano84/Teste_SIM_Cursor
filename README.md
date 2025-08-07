@@ -1,246 +1,171 @@
-# FELKA Transportes - Sistema de Gestão Integrado
+# FELKA Transportes - Sistema Integrado de Gestão
 
-## 🚛 Visão Geral
+## 📋 Visão Geral
 
-Sistema abrangente de gestão de transportes desenvolvido para a FELKA Transportes, oferecendo controle completo de veículos, motoristas, rotas, reservas e análises. Construído com React no frontend e Express.js no backend, apresenta uma interface moderna usando shadcn/ui e Drizzle ORM para funcionalidades CRUD completas.
+O FELKA Transportes é um sistema completo de gestão empresarial desenvolvido especificamente para empresas de transporte e logística. O sistema integra todas as operações essenciais em uma plataforma moderna e intuitiva.
 
-## 🎯 Funcionalidades Principais
+## 🚀 Funcionalidades Principais
 
-### 🚗 Gestão de Veículos
-- **CRUD Completo**: Cadastro, edição e exclusão de veículos
-- **Informações Detalhadas**: Dados principais, financeiros, documentação e técnicos organizados em abas
-- **Controle de Documentos**: Upload e gerenciamento de documentos com rastreamento de vencimento
-- **Relatórios PDF**: Geração de relatórios com marca FELKA e dados corporativos
-- **Exportação XLSX**: Relatórios exportáveis em formato Excel
+### 👥 Gestão de Recursos Humanos
+- **Cadastro Completo de Colaboradores**: Dados pessoais, profissionais e documentação
+- **Gestão de Ocorrências**: Advertências, suspensões, atestados médicos
+- **Controle de Documentos**: Rastreamento de vencimentos e notificações automáticas
+- **Gestão de Pessoas Externas**: Sistema para terceiros, clientes e seguranças
 
-### 👥 Gestão de RH e Departamento Pessoal
-- **Cadastro Completo de Colaboradores**: Dados pessoais, profissionais e documentos
-- **Gestão de Documentos**: Controle de vencimentos com alertas visuais
-- **Sistema de Ocorrências**: Advertências, suspensões, atestados médicos com geração de PDF
-- **Portal do Motorista**: Interface mobile otimizada para motoristas
-- **Controle de Acesso**: Sistema baseado em CPF e QR Code
+### 🚛 Gestão de Veículos
+- **Cadastro Detalhado**: Informações técnicas, financeiras e documentação
+- **3 Visualizações**: Grade (cards), Lista (tabela) e Classificação (agrupada)
+- **Controle Financeiro**: Progresso de pagamentos e valores FIPE
+- **Relatórios em PDF**: Fichas completas com identidade visual FELKA
 
-### 🔧 Sistema de Manutenção Integrado
-- **Kanban de Processos**: Fluxo completo em 4 estágios (Aberto → Em Andamento → Aguardando → Concluído)
-- **Lançamento de Custos**: Sistema completo com 8 classificações predefinidas
-- **Controle de Pneus**: Módulo integrado para gestão completa do ciclo de vida dos pneus
-- **Rastreabilidade Total**: Histórico completo de todas as operações
+### 🔧 Manutenção Preventiva
+- **Sistema Baseado em Quilometragem**: Status automático por KM rodados
+- **Controle de Custos**: 8 categorias predefinidas (Mecânica, Elétrica, etc.)
+- **Gestão de Pneus**: Controle completo do ciclo de vida dos pneus
+- **Check-lists de Motoristas**: Monitoramento de condições dos veículos
 
-### 🛞 Módulo de Controle de Pneus
-- **Dashboard Dinâmico**: Indicadores em tempo real (Total, Em Uso, Recapagem, Alertas)
-- **Cadastro de Pneus**: Número do fogo, marca, modelo, medida, tipo, valor de compra
-- **Movimentações**: Entrada, instalação, rodízio, recapagem, descarte, venda, perda
-- **Sistema de Rodízios**: Controle de trocas entre eixos e lados
-- **Gestão de Recapagens**: Controle de vida útil e empresas recapadoras
-- **Alertas Automáticos**: Sistema de notificações para rodízios e recapagens necessárias
-- **Relatórios Exportáveis**: Dados em formato XLSX com filtros configuráveis
-
-### 🚪 Controle de Acesso
+### 🔐 Controle de Acesso
 - **Sistema CPF/QR Code**: Substituição completa do reconhecimento facial
-- **Gestão de Visitantes**: Busca e cadastro baseado em CPF
-- **Controle de Funcionários**: QR Code automático para todos os colaboradores
-- **Portal do Segurança**: Interface mobile otimizada para operações de portaria
-- **Controle de Veículos**: Entrada e saída de veículos com rastreamento completo
-- **Logs Detalhados**: Histórico completo de acessos separado por abas
+- **Gestão de Visitantes**: Busca e cadastro por CPF
+- **Portal do Segurança**: Interface mobile otimizada para tablets
+- **Logs Completos**: Rastreamento de entradas/saídas
 
-### 📊 Dashboard e Analytics
-- **KPIs em Tempo Real**: Veículos, motoristas, rotas ativas
-- **Gráficos de Receita**: Análise mensal e tendências
-- **Estatísticas de Manutenção**: OS abertas, em andamento, concluídas
-- **Indicadores de Pneus**: Status, alertas e movimentações
+### 📅 Agendamento de Cargas
+- **Interface Visual**: Calendário interativo com slots de tempo
+- **Gestão de Horários**: Controle de disponibilidade em tempo real
+- **Notificações**: Email automático para clientes e gestores
+- **Política de Cancelamento**: Janela de 3 horas para alterações
 
-## 🏗️ Arquitetura Técnica
+### 📊 Dashboard e Relatórios
+- **KPIs em Tempo Real**: Indicadores principais da operação
+- **Visualizações Dinâmicas**: Gráficos e métricas atualizadas
+- **Exportações**: XLSX para dados e PDF com identidade FELKA
+- **TV Smart**: Módulo otimizado para displays grandes
+
+### 📂 Importação de Dados
+- **Planilhas Excel**: Sistema completo de validação e importação
+- **Mapeamento de Campos**: Interface intuitiva para configuração
+- **Validação Robusta**: Detecção de duplicatas e erros
+
+## 🛠️ Tecnologias Utilizadas
 
 ### Frontend
-- **Framework**: React 18 com TypeScript
-- **Build Tool**: Vite
-- **UI Library**: shadcn/ui (baseado em Radix UI)
-- **Estilização**: Tailwind CSS
-- **Gerenciamento de Estado**: TanStack Query
-- **Roteamento**: Wouter
-- **Formulários**: React Hook Form com validação Zod
+- **React 18** + TypeScript
+- **Vite** para build otimizado
+- **shadcn/ui** + Tailwind CSS para interface moderna
+- **TanStack Query** para gerenciamento de estado
+- **Wouter** para roteamento
+- **React Hook Form** + Zod para formulários
 
 ### Backend
-- **Framework**: Express.js com TypeScript
-- **ORM**: Drizzle ORM
-- **Banco de Dados**: PostgreSQL (configurado para Neon serverless)
-- **Sessões**: PostgreSQL session store com connect-pg-simple
-- **Padrão API**: Endpoints REST
+- **Express.js** + TypeScript
+- **Drizzle ORM** para banco de dados
+- **PostgreSQL** (Neon serverless)
+- **Multer** para upload de arquivos
+- **PDFKit** para geração de relatórios
 
-### Banco de Dados
-#### Tabelas Principais:
-- **users**: Sistema de usuários com roles (admin, user, driver)
-- **vehicles**: Gestão completa de veículos
-- **drivers**: Cadastro de motoristas
-- **employees**: Sistema de RH completo
-- **maintenance_requests**: Ordens de serviço de manutenção
-- **cost_entries**: Lançamentos de custos de manutenção
-- **tires**: Cadastro de pneus
-- **tire_movements**: Movimentações de pneus
-- **tire_rotations**: Rodízios de pneus
-- **tire_alerts**: Sistema de alertas automáticos
-- **access_logs**: Logs de controle de acesso
-- **vehicle_access_logs**: Controle de entrada/saída de veículos
+### Infraestrutura
+- **Replit** para desenvolvimento e hosting
+- **PostgreSQL** para persistência de dados
+- **Sistema de sessões** baseado em PostgreSQL
 
 ## 🎨 Identidade Visual
 
-- **Cor Corporativa**: #0C29AB (Azul FELKA)
-- **Logo**: Implementação do cabeçalho oficial FELKA em PDFs
-- **Idioma**: Português Brasileiro
-- **Padrão de Documentos**: Cabeçalho timbrado da empresa em todos os relatórios
+- **Cor Principal**: #0C29AB (Azul FELKA)
+- **Logo Corporativa**: Aplicada em todos os PDFs e documentos
+- **Interface Consistente**: Padrão visual em todo o sistema
+- **Responsivo**: Otimizado para desktop, tablet e mobile
 
-## 📋 Funcionalidades Recentes (Janeiro 2025)
+## 📱 Portais Específicos
 
-### ✅ Sistema de Controle de Acesso Completo
-- Substituição total do reconhecimento facial por sistema CPF/QR Code
-- Remoção completa de dependências face-api.js
-- Portal do segurança mobile-otimizado
-- Controle integrado de veículos
+### Portal do Motorista
+- **Seleção de Veículo**: Interface touch-friendly
+- **Gestão de Pranchas**: Sistema persistente de serviços
+- **Documentos**: Acesso a documentação do veículo
+- **Comunicação**: Canal direto com manutenção
 
-### ✅ Módulo de Manutenção Aprimorado
-- Sistema Kanban com 4 estágios funcionais
-- Lançamento de custos com 8 classificações
-- Cálculo automático de valores (quantidade × preço unitário)
-- Remoção da aba almoxarifado conforme solicitação
+### Portal do Segurança
+- **Controle de Acesso**: Interface mobile otimizada
+- **Gestão de Veículos**: Entrada/saída do pátio
+- **Visitantes**: Cadastro e controle de terceiros
+- **Logs em Tempo Real**: Monitoramento de acessos
 
-### ✅ Módulo de Controle de Pneus
-- Sistema completo seguindo especificações PRD
-- Dashboard com indicadores dinâmicos
-- 6 sub-abas organizadas: Dashboard, Cadastro, Movimentações, Rodízios, Recapagens, Alertas
-- Schema completo no banco de dados
-- Sistema de alertas automáticos
-- Rastreabilidade total do ciclo de vida
+## 🏗️ Arquitetura do Sistema
 
-### ✅ Portal do Motorista
-- Interface mobile otimizada
-- Gestão de serviços de prancha persistentes
-- Acesso para admins com banner de supervisão
-- Sistema de comunicação para manutenção
+```
+├── client/          # Frontend React
+│   ├── src/
+│   │   ├── components/  # Componentes reutilizáveis
+│   │   ├── pages/       # Páginas da aplicação
+│   │   ├── hooks/       # Custom hooks
+│   │   └── lib/         # Utilitários
+├── server/          # Backend Express
+│   ├── routes.ts    # Rotas da API
+│   ├── storage.ts   # Camada de dados
+│   └── db.ts        # Configuração do banco
+├── shared/          # Código compartilhado
+│   └── schema.ts    # Esquemas do banco de dados
+└── migrations/      # Migrações do banco
+```
 
 ## 🚀 Como Executar
 
 ### Pré-requisitos
 - Node.js 18+
 - PostgreSQL
-- Variáveis de ambiente configuradas (DATABASE_URL, etc.)
+- Conta no Replit (recomendado)
 
 ### Instalação
 ```bash
 # Clone o repositório
-git clone [URL_DO_REPOSITORIO]
-cd felka-transport-system
+git clone https://github.com/LeonardoSiciliano84/Teste_SIM_Cursor.git
+cd Teste_SIM_Cursor
 
 # Instale as dependências
 npm install
 
-# Configure o banco de dados
+# Configure as variáveis de ambiente
+cp .env.example .env
+# Edite o arquivo .env com suas configurações
+
+# Execute as migrações
 npm run db:push
 
-# Execute em desenvolvimento
+# Inicie o servidor
 npm run dev
 ```
 
-### Variáveis de Ambiente Necessárias
+## 📝 Configuração
+
+### Variáveis de Ambiente
 ```env
-DATABASE_URL=postgresql://[conexao_postgresql]
-PGHOST=localhost
-PGPORT=5432
-PGDATABASE=felka_db
-PGUSER=postgres
-PGPASSWORD=sua_senha
+DATABASE_URL=sua_url_do_postgresql
+SESSION_SECRET=sua_chave_secreta_de_sessao
 ```
 
-## 📁 Estrutura do Projeto
+### Banco de Dados
+O sistema utiliza PostgreSQL com Drizzle ORM. As tabelas são criadas automaticamente na primeira execução.
 
-```
-felka-transport-system/
-├── client/                 # Frontend React
-│   ├── src/
-│   │   ├── components/     # Componentes reutilizáveis
-│   │   ├── pages/         # Páginas da aplicação
-│   │   ├── hooks/         # Custom hooks
-│   │   └── lib/           # Utilitários
-├── server/                # Backend Express
-│   ├── routes.ts         # Rotas da API
-│   ├── storage.ts        # Interface de armazenamento
-│   └── db.ts             # Configuração do banco
-├── shared/               # Código compartilhado
-│   └── schema.ts         # Schemas Drizzle e validações Zod
-├── migrations/           # Migrações do banco
-└── uploads/             # Arquivos uploadados
-```
+## 🔄 Atualizações Recentes (Janeiro 2025)
 
-## 🔐 Sistema de Autenticação
-
-- **Autenticação baseada em sessão**
-- **Roles de usuário**: admin, user, driver
-- **Controle de acesso baseado em roles**
-- **Rotas protegidas**
-
-## 📊 Relatórios e Exportações
-
-- **Formato PDF**: Relatórios com marca FELKA e cabeçalho timbrado
-- **Formato XLSX**: Todas as exportações de dados
-- **Filtros Configuráveis**: Por período, status, tipo, etc.
-- **Dados Autênticos**: Sem uso de dados mock ou sintéticos
-
-## 🔧 Manutenção e Pneus
-
-### Sistema Kanban de Manutenção
-1. **Aberto**: Solicitações aguardando início
-2. **Em Andamento**: Manutenções em execução
-3. **Aguardando**: Pendências externas
-4. **Concluído**: Serviços finalizados
-
-### Classificações de Custos
-1. Mecânica
-2. Elétrica  
-3. Estrutural
-4. Acessórios
-5. Pintura
-6. Freio
-7. Ar-condicionado
-8. Lanternagem
-
-### Controle de Pneus
-- **Número do Fogo**: Código único e permanente
-- **Tipos**: Direcional, Tração, Arrasto, Misto
-- **Status**: Ativo, Em Uso, Recapagem, Perda, Vendido, Descartado
-- **Movimentações**: Entrada, Instalação, Rodízio, Recapagem, Descarte, Venda, Perda
-- **Alertas Automáticos**: Job diário às 03:00 para verificar limites
-
-## 📱 Interfaces Mobile
-
-- **Portal do Motorista**: Interface touch-friendly para motoristas
-- **Portal do Segurança**: Interface otimizada para controle de acesso
-- **Design Responsivo**: Adaptação automática para diferentes tamanhos de tela
-
-## 🎯 Próximos Passos
-
-- Implementação de APIs para conectividade com sistemas externos
-- Sistema de notificações push
-- Relatórios avançados com BI
-- Integração com sistemas de telemetria
-- App mobile nativo
+- ✅ Sistema de veículos restaurado com navegação baseada em componentes
+- ✅ 3 abas de visualização implementadas (Grade, Lista, Classificação)
+- ✅ Controle de acesso completo com CPF/QR Code
+- ✅ Módulo de agendamento de cargas finalizado
+- ✅ Sistema de importação via planilhas Excel
+- ✅ Manutenção preventiva baseada em quilometragem
+- ✅ Gestão completa de pneus e custos
+- ✅ Portal do segurança mobile-friendly
+- ✅ Menu hierárquico com responsividade
 
 ## 📞 Suporte
 
-Sistema desenvolvido especificamente para FELKA Transportes com foco em:
-- **Usabilidade**: Interface intuitiva em português brasileiro
-- **Confiabilidade**: Dados autênticos e rastreabilidade completa
-- **Escalabilidade**: Arquitetura preparada para crescimento
-- **Manutenibilidade**: Código organizado e documentado
+Para suporte técnico ou dúvidas sobre o sistema, entre em contato através dos canais oficiais da FELKA Transportes.
 
-## 🏆 Padrões de Qualidade
+## 📄 Licença
 
-- **TypeScript**: Tipagem forte em todo o projeto
-- **Validação Zod**: Schemas validados no frontend e backend
-- **Componentização**: Componentes reutilizáveis e modulares
-- **Responsividade**: Interface adaptativa para todos os dispositivos
-- **Acessibilidade**: Componentes com suporte a screen readers
-- **Performance**: Otimizado com lazy loading e cache inteligente
+Sistema proprietário da FELKA Transportes. Todos os direitos reservados.
 
 ---
 
-**Desenvolvido com ❤️ para FELKA Transportes**  
-*Sistema integrado de gestão de transportes - Janeiro 2025*
+**FELKA Transportes** - Tecnologia a serviço da logística
