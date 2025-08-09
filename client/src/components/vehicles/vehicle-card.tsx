@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Hash, Calendar, User, MapPin } from "lucide-react";
-import type { Vehicle, Driver } from "@shared/schema";
+import type { Vehicle, Driver } from "../../types/mock";
 
 interface VehicleCardProps {
   vehicle: Vehicle;

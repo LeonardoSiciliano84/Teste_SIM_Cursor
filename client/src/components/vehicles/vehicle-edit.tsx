@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarDays, Upload, DollarSign, FileText, Settings, ArrowLeft } from "lucide-react";
-import { insertVehicleSchema, type Vehicle } from "@shared/schema";
+import { insertVehicleSchema, type Vehicle } from "../../types/mock";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 

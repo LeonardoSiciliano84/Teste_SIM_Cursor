@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { EmployeeForm } from "@/components/employees/employee-form";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { type Employee } from "@shared/schema";
+import { type Employee } from "../types/mock";
 
 export function EmployeeEditPage() {
   const { id } = useParams();
