@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { type User } from "@shared/schema";
+import { type User } from "../types/mock";
 
 export interface AuthState {
   user: User | null;
