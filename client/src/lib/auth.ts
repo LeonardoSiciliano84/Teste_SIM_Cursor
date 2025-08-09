@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { type User } from "@shared/schema";
+import { type User } from "../types/mock";
 
 export interface AuthState {
   user: User | null;
@@ -13,6 +13,12 @@ class AuthManager {
   constructor() {
     // Tentar restaurar sessão do localStorage na inicialização
     this.restoreSession();
+    
+    // Escutar eventos de mudança de autenticação para modo demo
+    window.addEventListener('authChange', (event: any) => {
+      this.currentUser = event.detail;
+      this.notify();
+    });
   }
 
   getState(): AuthState {

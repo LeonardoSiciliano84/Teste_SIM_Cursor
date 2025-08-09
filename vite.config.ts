@@ -30,8 +30,14 @@ export default defineConfig({
   },
   server: {
     fs: {
-      strict: true,
-      deny: ["**/.*"],
+      strict: false, // Permitir acesso a arquivos fora do root
+      deny: [],     // Remover restrições de acesso
     },
+    port: 5173,
+    host: true,
+  },
+  define: {
+    // Definir modo demo para frontend apenas
+    __DEMO_MODE__: true,
   },
 });

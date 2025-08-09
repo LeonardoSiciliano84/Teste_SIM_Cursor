@@ -45,7 +45,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ExternalPersonForm } from "@/components/employees/external-person-form";
-import type { ExternalPerson } from "@shared/schema";
+import type { ExternalPerson } from "../types/mock";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 

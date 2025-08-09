@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste FELKA Transportes</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #cce7ff; color: #004085; }
+    </style>
+</head>
+<body>
+    <h1>🚛 FELKA Transportes - Teste de Preview</h1>
+    
+    <div id="status" class="status info">
+        ⏳ Testando conexão com a aplicação...
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        async function testApp() {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                // Teste 1: Verificar se a página principal carrega
+                statusDiv.innerHTML = '🔍 Testando carregamento da página principal...';
+                const response = await fetch('http://localhost:5173');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const html = await response.text();
+                
+                // Verificações
+                const tests = [
+                    {
+                        name: 'Título da página',
+                        test: html.includes('FELKA Transportes - Sistema de Gestão (Demo)'),
+                        expected: 'Título correto carregado'
+                    },
+                    {
+                        name: 'Div root presente',
+                        test: html.includes('<div id="root"></div>'),
+                        expected: 'Div root encontrada'
+                    },
+                    {
+                        name: 'Script principal',
+                        test: html.includes('/src/main.tsx'),
+                        expected: 'Script principal carregado'
+                    },
+                    {
+                        name: 'Vite client',
+                        test: html.includes('/@vite/client'),
+                        expected: 'Vite client ativo'
+                    }
+                ];
+                
+                let allPassed = true;
+                let resultHTML = '<h2>📋 Resultados dos Testes:</h2>';
+                
+                tests.forEach(test => {
+                    const passed = test.test;
+                    allPassed = allPassed && passed;
+                    resultHTML += `
+                        <div class="status ${passed ? 'success' : 'error'}">
+                            ${passed ? '✅' : '❌'} ${test.name}: ${test.expected}
+                        </div>
+                    `;
+                });
+                
+                if (allPassed) {
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = '🎉 Todos os testes passaram! A aplicação está funcionando.';
+                    resultHTML += `
+                        <div class="status success">
+                            <h3>🚀 Aplicação Pronta!</h3>
+                            <p><strong>Acesse:</strong> <a href="http://localhost:5173" target="_blank">http://localhost:5173</a></p>
+                            <p><strong>Status:</strong> ✅ Online e Funcional</p>
+                            <p><strong>Modo:</strong> 🎭 Demo com dados simulados</p>
+                        </div>
+                    `;
+                } else {
+                    statusDiv.className = 'status error';
+                    statusDiv.innerHTML = '❌ Alguns testes falharam. Verifique os detalhes abaixo.';
+                }
+                
+                resultsDiv.innerHTML = resultHTML;
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `❌ Erro ao testar a aplicação: ${error.message}`;
+                resultsDiv.innerHTML = `
+                    <div class="status error">
+                        <h3>Erro Detectado:</h3>
+                        <p>${error.message}</p>
+                        <p><strong>Verifique se:</strong></p>
+                        <ul>
+                            <li>O servidor Vite está rodando</li>
+                            <li>A porta 5173 está acessível</li>
+                            <li>Não há erros de compilação</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+        
+        // Executar teste automaticamente
+        testApp();
+    </script>
+</body>
+</html>

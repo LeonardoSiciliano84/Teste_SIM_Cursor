@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { Vehicle, Driver } from "@shared/schema";
+import type { Vehicle, Driver } from "../../types/mock";
 
 export default function VehicleStatus() {
   const { data: vehicles, isLoading: vehiclesLoading } = useQuery<Vehicle[]>({

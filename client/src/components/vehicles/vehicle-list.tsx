@@ -24,7 +24,7 @@ import {
   List,
   BarChart3
 } from "lucide-react";
-import { type Vehicle } from "@shared/schema";
+import { type Vehicle } from "../../types/mock";
 import { useToast } from "@/hooks/use-toast";
 import VehicleForm from "./vehicle-form";
 import VehicleDetails from "./vehicle-details";
