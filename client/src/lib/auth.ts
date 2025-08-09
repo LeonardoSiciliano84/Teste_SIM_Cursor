@@ -13,6 +13,12 @@ class AuthManager {
   constructor() {
     // Tentar restaurar sessão do localStorage na inicialização
     this.restoreSession();
+    
+    // Escutar eventos de mudança de autenticação para modo demo
+    window.addEventListener('authChange', (event: any) => {
+      this.currentUser = event.detail;
+      this.notify();
+    });
   }
 
   getState(): AuthState {

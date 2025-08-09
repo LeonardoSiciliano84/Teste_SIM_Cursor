@@ -80,12 +80,7 @@ export const setupMockApi = () => {
     
     // Interceptar dashboard stats
     if (url.includes('/api/dashboard/stats')) {
-      return new Response(JSON.stringify({
-        activeVehicles: 15,
-        totalDrivers: 32,
-        todayTrips: 8,
-        monthlyRevenue: 125000
-      }), {
+      return new Response(JSON.stringify(mockDashboardStats), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -93,7 +88,7 @@ export const setupMockApi = () => {
     
     // Interceptar veículos
     if (url.includes('/api/vehicles')) {
-      return new Response(JSON.stringify(mockVehicles), {
+      return new Response(JSON.stringify(expandedMockVehicles), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -121,10 +116,86 @@ export const setupMockApi = () => {
   };
 };
 
+// Dados mock mais completos para demonstração
+const mockDashboardStats = {
+  activeVehicles: 24,
+  totalDrivers: 45,
+  todayTrips: 12,
+  monthlyRevenue: 350000,
+  weeklyTrips: [
+    { day: 'Seg', trips: 8 },
+    { day: 'Ter', trips: 12 },
+    { day: 'Qua', trips: 10 },
+    { day: 'Qui', trips: 15 },
+    { day: 'Sex', trips: 18 },
+    { day: 'Sáb', trips: 6 },
+    { day: 'Dom', trips: 3 }
+  ],
+  revenueChart: [
+    { month: 'Jan', revenue: 280000 },
+    { month: 'Fev', revenue: 320000 },
+    { month: 'Mar', revenue: 350000 },
+    { month: 'Abr', revenue: 310000 },
+    { month: 'Mai', revenue: 380000 },
+    { month: 'Jun', revenue: 350000 }
+  ]
+};
+
+// Extender dados de veículos
+const expandedMockVehicles: Vehicle[] = [
+  {
+    id: "vehicle-1",
+    name: "Scania R450 - Transportes",
+    plate: "ABC-1234",
+    brand: "Scania",
+    model: "R450",
+    vehicleType: "Tração",
+    classification: "Pesado",
+    status: "Ativo",
+    driverId: "driver-1",
+    currentKm: 125000,
+    lastMaintenanceKm: 120000,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "vehicle-2",
+    name: "Volvo FH540 - Logística",
+    plate: "DEF-5678",
+    brand: "Volvo",
+    model: "FH540",
+    vehicleType: "Tração",
+    classification: "Pesado",
+    status: "Manutenção",
+    currentKm: 98000,
+    lastMaintenanceKm: 95000,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "vehicle-3",
+    name: "Mercedes Actros - Cargas",
+    plate: "GHI-9012",
+    brand: "Mercedes-Benz",
+    model: "Actros 2646",
+    vehicleType: "Tração",
+    classification: "Pesado",
+    status: "Ativo",
+    driverId: "driver-2",
+    currentKm: 87000,
+    lastMaintenanceKm: 85000,
+    createdAt: new Date().toISOString()
+  }
+];
+
 // Auto-login para demo
 export const setupAutoLogin = () => {
   setTimeout(() => {
     localStorage.setItem('felka_auth_user', JSON.stringify(mockUser));
-    window.dispatchEvent(new Event('storage'));
+    
+    // Disparar evento customizado para notificar mudança de auth
+    const authEvent = new CustomEvent('authChange', { detail: mockUser });
+    window.dispatchEvent(authEvent);
+    
+    console.log('🚀 FELKA Transportes - Demo Mode Ativo');
+    console.log('👤 Usuário logado automaticamente:', mockUser.name);
   }, 100);
 };
