@@ -18,7 +18,7 @@ Sistema completo de gestão de frotas, motoristas, manutenção e controle de ac
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Shadcn UI
 - **Backend**: Node.js, Express, TypeScript
-- **Banco de Dados**: PostgreSQL (Neon)
+- **Banco de Dados**: PostgreSQL (Supabase)
 - **ORM**: Drizzle ORM
 - **Autenticação**: Sistema próprio com sessões
 - **Upload**: Multer para arquivos
@@ -27,7 +27,7 @@ Sistema completo de gestão de frotas, motoristas, manutenção e controle de ac
 
 - Node.js 18+
 - npm ou yarn
-- PostgreSQL (ou Neon Database)
+- PostgreSQL (ou Supabase Database)
 
 ## 🔧 Instalação
 
@@ -45,7 +45,7 @@ npm install
 3. **Configure as variáveis de ambiente**
 ```bash
 # Crie um arquivo .env na raiz do projeto
-DATABASE_URL="postgresql://user:password@localhost:5432/database_name"
+DATABASE_URL="postgresql://postgres.project-id:your-password@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
 PORT=3000
 NODE_ENV=development
 ```
