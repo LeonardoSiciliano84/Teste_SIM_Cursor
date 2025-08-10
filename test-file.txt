@@ -1,0 +1,3 @@
+Este é um arquivo de teste para demonstrar o git commit.
+Data: $(date)
+Branch: cursor/fa-a-um-git-commit-fed8
