@@ -11,7 +11,7 @@ if (!process.env.DATABASE_URL) {
 // Configuração para Supabase
 const client = postgres(process.env.DATABASE_URL, {
   prepare: false,
-  ssl: 'require'
+  ssl: process.env.NODE_ENV === 'production' ? 'require' : 'prefer'
 });
 
 export const db = drizzle(client, { schema });
