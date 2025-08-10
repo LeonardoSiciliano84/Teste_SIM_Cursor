@@ -1,0 +1,9 @@
+{
+  "name": "client",
+  "private": true,
+  "scripts": {
+    "build": "vite build"
+  }
+}
+
+
