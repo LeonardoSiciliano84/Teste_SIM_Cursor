@@ -1,6 +1,7 @@
 {
-  "name": "rest-express",
+  "name": "felka-transport-system",
   "version": "1.0.0",
+  "description": "Sistema completo de gestão de transportes para FELKA Transportes",
   "type": "module",
   "license": "MIT",
   "scripts": {

@@ -1,4 +1,4 @@
-# Sistema de Gestão de Transportes - Felka
+# Sistema de Gestão de Transportes - FELKA
 
 Sistema completo de gestão de frotas, motoristas, manutenção e controle de acesso para empresas de transporte.
 
@@ -34,7 +34,7 @@ Sistema completo de gestão de frotas, motoristas, manutenção e controle de ac
 1. **Clone o repositório**
 ```bash
 git clone <url-do-repositorio>
-cd Teste_SIM_Cursor
+cd sim_felka_cursor_diretorio
 ```
 
 2. **Instale as dependências**
