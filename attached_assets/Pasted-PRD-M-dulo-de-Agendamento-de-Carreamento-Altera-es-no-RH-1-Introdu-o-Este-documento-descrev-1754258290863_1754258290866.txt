@@ -1,0 +1,46 @@
+PRD - Módulo de Agendamento de Carreamento + Alterações no RH
+1. Introdução
+Este documento descreve o escopo, funcionalidades e requisitos do novo módulo de Agendamento de Carreamento, bem como as alterações necessárias no módulo de RH do Sistema Integrado de Manutenção FELKA (SIM-FELKA).
+2. Módulo de Agendamento de Carreamento
+2.1 Objetivo
+Permitir que clientes agendem serviços de carreamento de forma simples e digital, com controle de disponibilidade, confirmação automática e gestão de status pelo gestor do armazém.
+2.2 Funcionalidades do Cliente
+- Visualização de calendário com dias passados inativos e futuros destacados.
+- Seleção de um ou vários horários disponíveis para o mesmo dia.
+- Exibição lateral dos horários com status (Disponível: verde / Ocupado: cinza).
+- Botão 'Agendar' visível após seleção dos horários.
+- Popup de confirmação com resumo e botão 'Confirmar'.
+- Envio de e-mails de confirmação para cliente e gestor.
+- Seção 'Meus Agendamentos' com botão 'Cancelar' (ativo até 3h antes).
+- Cancelamento via popup simples com botão de confirmação.
+2.3 Funcionalidades do Gestor
+- Calendário com visualização de dias e horários.
+- Liberação manual de horários por dia.
+- Botão 'Programar Semana Liberada' para liberar semana útil com intervalo pré-definido.
+- Lista de agendamentos com nome, empresa, agendador, data, hora e status.
+- Ações: 'Concluir' e 'Cancelar' (com popup e observação obrigatória).
+2.4 Requisitos Funcionais
+RF044: Cliente pode selecionar vários horários antes de confirmar o agendamento.
+RF045: Envio de e-mails automáticos após agendamento.
+RF046: Botão de cancelamento do cliente só está ativo até 3h antes.
+RF047: Gestor pode cancelar com observação obrigatória.
+RF048: Programação de semana libera dias úteis automaticamente.
+RF049: Popup de confirmação em todas as ações críticas.
+2.5 Requisitos Não-Funcionais
+RNF019: Interface responsiva para dispositivos móveis.
+RNF020: Feedback visual e sonoro nas ações.
+RNF021: Validação automática para status e bloqueio de cancelamentos fora do prazo.
+3. Alterações no Módulo de RH
+3.1 Nova Funcionalidade: Cadastro de Pessoas Externas
+O sistema permitirá cadastrar pessoas externas à empresa diretamente pelo módulo de RH.
+Tipos de cadastro externo:
+- Cliente: nome, e-mail, nome da empresa, telefone.
+- Terceirizado / Prestador: nome, documento, empresa terceirizada (opcional), documentos básicos.
+Permissões automáticas por tipo:
+- Cliente: acesso apenas à Página de Agendamento de Carreamento.
+- Porteiro (Terceirizado): acesso apenas ao Módulo de Controle de Acesso.
+3.2 Requisitos Funcionais Adicionais
+RF050: Cadastro de pessoas externas com tipos distintos (cliente, terceirizado).
+RF051: Formulários simplificados com campos mínimos obrigatórios.
+RF052: Permissões automáticas conforme o tipo de vínculo externo.
+RF053: Cadastros externos não afetam relatórios e métricas internas do RH.

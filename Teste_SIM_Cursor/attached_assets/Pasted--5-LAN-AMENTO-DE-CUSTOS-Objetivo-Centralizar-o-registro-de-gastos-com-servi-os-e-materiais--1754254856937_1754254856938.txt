@@ -1,0 +1,57 @@
+💰 5. LANÇAMENTO DE CUSTOS
+🎯 Objetivo:
+Centralizar o registro de gastos com serviços e materiais da frota, integrando automaticamente com o histórico de manutenção.
+📋 Formulário de Lançamento:
+•	Nº da nota fiscal
+•	Data da nota
+•	Nome do fornecedor (vinculado à tabela de fornecedores)
+•	Placa (opcional, se aplicável)
+•	Tipo: Preventiva ou Corretiva
+•	Descrição do serviço ou material
+•	Classificação: pré-definida (dropdown)
+•	Quantidade, valor unitário, valor total
+•	Upload do documento
+Se o serviço ainda não estiver no sistema:
+•	Gera entrada automática no histórico de manutenções
+________________________________________
+📊 6. CLASSIFICAÇÕES PRÉ-DEFINIDAS
+a. Grupos de Registro
+Grupo	Setor	Centro de Custo
+Combustível	Frota	Combustível
+Compra de Peças / Baterias	Manutenção	Peças / Acessórios / Lubrificantes
+Contratos	Frota	Monitoramento / Desempenho / Seguro / Licenciamento
+Serviços Internos/Externos	Manutenção	Mão de obra - Manutenção Corretiva / Preventiva
+Pneus	Manutenção	Pneus / Reformas / Rodízios
+Lavagens / Pintura / Oficina	Manutenção	Serviços diversos da oficina
+b. Classificação da Manutenção (Dropdown em todo o módulo)
+•	Mecânica
+•	Elétrica
+•	Estrutural
+•	Acessórios
+•	Pintura
+•	Freio
+•	Ar-condicionado
+•	Lanternagem
+________________________________________
+📈 7. CONTROLE DE CUSTO POR VEÍCULO
+Tela de Análise por Placa:
+•	Placa
+•	Tipo e classificação
+•	KM total rodado (soma dos checklists)
+•	Custo total acumulado
+•	CPK (Custo por KM rodado)
+•	Gráfico e filtros:
+o	Por período (mês/ano)
+o	Por tipo de manutenção
+o	Por centro de custo
+________________________________________
+🧠 8. Recursos Inteligentes e Boas Práticas Embutidas
+•	Numeração automática de O.S. sequencial com prefixo por ano
+•	Validações automáticas de campos obrigatórios
+•	Uploads obrigatórios em fases críticas
+•	Contador de dias parados visível para logística e manutenção
+•	Classificação padronizada de serviços e peças
+•	Integração entre motorista, manutenção e financeiro
+•	Geração de PDF de O.S., fichas e relatórios
+•	Exportações em Excel em todas as telas gerenciais
+•	Logs de ação com nome do usuário, data e IP (rastreamento e auditoria)

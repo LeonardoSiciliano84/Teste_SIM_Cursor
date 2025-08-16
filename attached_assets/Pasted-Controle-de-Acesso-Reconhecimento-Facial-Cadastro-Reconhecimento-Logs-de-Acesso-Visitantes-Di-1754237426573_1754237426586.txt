@@ -1,0 +1,204 @@
+Controle de Acesso - Reconhecimento Facial
+Cadastro
+Reconhecimento
+Logs de Acesso
+Visitantes
+Diagnóstico
+Diagnóstico de Compatibilidade da Câmera
+Ferramenta abrangente para testar compatibilidade da câmera entre diferentes navegadores e dispositivos
+Iniciar Diagnóstico
+Informações do Navegador
+Navegador: Chrome 138
+Plataforma: Win32
+Resolução: 1536x864
+Pixel Ratio: 1.25
+Touch: Não
+Conexão: 4g
+Resultados dos Testes
+Suporte MediaDevices API
+TESTANDO
+Verificando suporte à API MediaDevices...
+
+Suporte MediaDevices API
+OK
+MediaDevices API totalmente suportada
+
+Enumeração de Dispositivos
+TESTANDO
+Listando dispositivos de mídia disponíveis...
+
+Enumeração de Dispositivos
+OK
+1 câmera(s) encontrada(s)
+
+Total: 3 dispositivos (1 câmeras, 1 microfones)
+
+Detalhes técnicos
+{
+  "videoDevices": 1,
+  "audioDevices": 1,
+  "total": 3
+}
+Acesso à Câmera
+TESTANDO
+Testando acesso básico à câmera...
+
+Acesso à Câmera
+OK
+Acesso à câmera concedido
+
+Resolução: 640x480, Frame rate: 30fps
+
+Detalhes técnicos
+{
+  "settings": {
+    "aspectRatio": 1.3333333333333333,
+    "brightness": 0,
+    "colorTemperature": 4600,
+    "contrast": 16,
+    "deviceId": "919de7a661d9efea78c8b7bca338f68e616f2917fab1361864c92aae41a65144",
+    "exposureMode": "continuous",
+    "exposureTime": 312.5,
+    "facingMode": "user",
+    "frameRate": 30,
+    "groupId": "dce70d188028e4641da45b78d61d76a5fd2d5101c082be1978f73274d24dd47a",
+    "height": 480,
+    "resizeMode": "none",
+    "saturation": 64,
+    "sharpness": 2,
+    "whiteBalanceMode": "continuous",
+    "width": 640
+  },
+  "capabilities": {
+    "aspectRatio": {
+      "max": 1280,
+      "min": 0.001388888888888889
+    },
+    "brightness": {
+      "max": 64,
+      "min": -64,
+      "step": 1
+    },
+    "colorTemperature": {
+      "max": 6500,
+      "min": 2800,
+      "step": 1
+    },
+    "contrast": {
+      "max": 95,
+      "min": 0,
+      "step": 1
+    },
+    "deviceId": "919de7a661d9efea78c8b7bca338f68e616f2917fab1361864c92aae41a65144",
+    "exposureMode": [
+      "continuous",
+      "manual"
+    ],
+    "exposureTime": {
+      "max": 2500,
+      "min": 9.765625,
+      "step": 9.765625
+    },
+    "facingMode": [
+      "user"
+    ],
+    "frameRate": {
+      "max": 30,
+      "min": 0
+    },
+    "groupId": "dce70d188028e4641da45b78d61d76a5fd2d5101c082be1978f73274d24dd47a",
+    "height": {
+      "max": 720,
+      "min": 1
+    },
+    "resizeMode": [
+      "none",
+      "crop-and-scale"
+    ],
+    "saturation": {
+      "max": 100,
+      "min": 0,
+      "step": 1
+    },
+    "sharpness": {
+      "max": 7,
+      "min": 0,
+      "step": 1
+    },
+    "whiteBalanceMode": [
+      "continuous",
+      "manual"
+    ],
+    "width": {
+      "max": 1280,
+      "min": 1
+    }
+  }
+}
+Reprodução de Vídeo
+TESTANDO
+Testando reprodução de vídeo em tempo real...
+
+Reprodução de Vídeo
+OK
+Vídeo reproduzindo corretamente
+
+Dimensões do vídeo: 640x480
+
+Detalhes técnicos
+{
+  "width": 640,
+  "height": 480
+}
+Suporte a Resoluções
+TESTANDO
+Testando diferentes resoluções de vídeo...
+
+Suporte a Resoluções
+OK
+3 resoluções suportadas
+
+QVGA, VGA, HD
+
+Detalhes técnicos
+[
+  {
+    "name": "QVGA",
+    "width": 320,
+    "height": 240
+  },
+  {
+    "name": "VGA",
+    "width": 640,
+    "height": 480
+  },
+  {
+    "name": "HD",
+    "width": 1280,
+    "height": 720
+  }
+]
+Suporte a Restrições
+TESTANDO
+Testando suporte a restrições avançadas...
+
+Suporte a Restrições
+OK
+3 restrições suportadas
+
+facingMode, frameRate, aspectRatio
+
+Detalhes técnicos
+[
+  "facingMode",
+  "frameRate",
+  "aspectRatio"
+]
+Dispositivos Detectados
+audioinput (...)Microfone
+...
+HD User Facing (0408:a061)Câmera
+919de7a6...
+audiooutput (...)audiooutput
+...
+Dicas: Para melhor compatibilidade, use Chrome ou Firefox atualizados. Certifique-se de que as permissões de câmera estão habilitadas e que nenhum outro aplicativo está usando a câmera.

@@ -1,0 +1,147 @@
+PRD - Módulo de Manutenção Preventiva
+
+1. Objetivo
+
+Desenvolver um módulo completo de Controle e Agendamento de Manutenção Preventiva para gestão de frota, que permita:
+
+Visualizar o status de manutenção de todos os veículos.
+
+Agendar manutenções preventivas diretamente pela interface.
+
+Enviar comunicação automatizada para o motorista.
+
+2. Escopo
+
+O módulo terá duas áreas principais:
+
+Controle de Manutenções Preventivas
+
+Agendamento e Comunicação de Preventiva ao Motorista
+
+3. Controle de Manutenções Preventivas
+
+3.1 Lista de Veículos
+
+Exibição em lista com os seguintes campos:
+
+Placa do veículo
+
+Tipo do veículo
+
+Classificação do veículo
+
+3.2 Campos de Controle
+
+Data da última preventiva
+
+KM da última preventiva
+
+KM/h restante para próxima preventiva
+
+Status visual da preventiva
+
+3.3 Status Visual
+
+Baseado em:
+
+Dados da última manutenção registrada
+
+KM informado no checklist
+
+Intervalo de manutenção cadastrado por veículo
+
+Indicadores:
+
+✅ Programar revisão: de 2.000 a 3.000 km para o próximo serviço
+
+⚠️ Em revisão: até 1.000 km restantes
+
+❌ Vencido: quando o KM estiver negativo
+
+3.4 Filtros
+
+Veículo
+
+Tipo de veículo
+
+Status da manutenção
+
+4. Agendamento e Comunicação de Preventiva ao Motorista
+
+4.1 Ação "Agendar"
+
+Na frente das informações de cada veículo, adicionar um botão "Agendar".
+
+Ao clicar, abrir um formulário em modal com os seguintes campos:
+
+4.2 Formulário de Agendamento
+
+Searchbox para seleção do motorista (integrado com o cadastro de colaboradores).
+
+Dropdown para seleção do local da manutenção:
+
+Oficina Interna
+
+Oficina Externa
+
+Campo de seleção de data para a data da manutenção.
+
+Botão "Agendar".
+
+4.3 Envio de Comunicação
+
+Ao clicar em Agendar, o sistema deve enviar uma mensagem automática para o módulo "Portal do Motorista" com o seguinte texto:
+
+Prezado.
+
+Segue abaixo o agendamento de parada do veículo:
+
+Tipo de parada: Manutenção Preventiva
+
+Placa: [PLACA]
+
+Data: [DATA SELECIONADA]
+
+Local: [LOCAL SELECIONADO]
+
+Deixar carreta no setor de manutenção para preventiva
+
+Observações Importantes:
+
+O setor logístico já está ciente da data. Contudo, solicitamos que o motorista confirme com o setor logístico um dia antes da parada.
+
+Não deixar itens pessoais no veículo, como celular, carteira, óculos, relógio, entre outros.
+
+Para manutenções realizadas na oficina interna:
+
+Levar o veículo até a base de manutenção;
+
+Retirar ou prender materiais que possam cair no painel durante o içamento da cabine;
+
+Após a entrega do veículo, retornar à base 02 e dirigir-se à sala de espera dos motoristas.
+
+Para manutenções realizadas externamente:
+
+Levar o veículo até o local indicado;
+
+Alinhar com o setor logístico sobre a permanência do motorista no fornecedor ou retorno à base.
+
+Em caso de dúvidas, entrar em contato com o setor de Frota e Manutenção.
+
+5. Considerações Técnicas
+
+O sistema deve validar se a placa já possui um agendamento em aberto para evitar agendamentos duplicados.
+
+O envio da mensagem para o Portal do Motorista deve ser em tempo real após o agendamento.
+
+Registrar no histórico do veículo o agendamento realizado.
+
+6. Integrações
+
+Cadastro de veículos.
+
+Cadastro de colaboradores.
+
+Checklist de veículos.
+
+Histórico de manutenção.

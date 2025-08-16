@@ -1,0 +1,115 @@
+ PRD – Importação de Dados via Planilha no Sistema
+📌 Visão Geral
+Permitir ao usuário importar dados em lote (em planilhas .xlsx) para alimentar os bancos de dados do sistema, como Colaboradores e Frota, sem a necessidade de cadastro individual manual.
+
+🎯 Objetivo
+Facilitar o processo de alimentação inicial ou manutenção periódica de grandes volumes de dados nos bancos principais da aplicação (ex: Frota e Colaboradores), com verificação automática de conformidade da planilha e importação segura.
+
+👤 Usuário-alvo
+Administradores do sistema
+
+Gestores de frota ou RH
+
+Desenvolvedores ou operadores do Replit
+
+📂 Funcionalidade: Tela de Importação de Dados
+1. Seleção do Banco de Dados
+Interface com dropdown ou botões para o usuário escolher qual entidade deseja importar dados:
+
+Colaboradores
+
+Frota
+
+2. Visualização dos Campos Esperados
+Após a seleção, exibir todos os campos esperados para o banco escolhido.
+
+Cada campo terá uma caixa de seleção (checkbox) ao lado para o usuário indicar quais colunas da planilha pretende importar.
+
+3. Regras da Planilha
+A primeira linha da planilha deve conter o cabeçalho com os nomes exatos dos campos selecionados.
+
+Exemplo:
+
+Campos selecionados: Placa, Modelo, Ano de fabricação
+
+Cabeçalho da planilha: Placa | Modelo | Ano de fabricação
+
+4. Upload e Validação
+Botão para envio da planilha (.xlsx)
+
+A lógica de backend deve:
+
+Validar se os nomes dos campos do cabeçalho coincidem com os campos selecionados
+
+Caso falhe: exibir mensagem de erro clara, listando as divergências
+
+Caso esteja correto: importar os dados para o banco selecionado
+
+5. Pós-Upload
+Exibir resumo da importação:
+
+Número de registros importados com sucesso
+
+Registros com erro (se houver), listando o motivo
+
+Caso não haja erros, exibir mensagem de sucesso e botão para "Finalizar".
+
+📊 Exemplo de Campos por Banco
+a) Colaboradores
+Campo	Tipo de dado
+Nome completo	Texto
+CPF	Texto
+RG	Texto
+Data de nascimento	Data
+Cargo	Texto
+Matrícula	Texto
+Telefone	Texto
+E-mail	Texto
+Data de admissão	Data
+
+b) Frota
+Campo	Tipo de dado
+Placa	Texto
+Marca	Texto
+Modelo	Texto
+Ano de fabricação	Número
+Ano modelo	Número
+Cor	Texto
+Tipo de veículo	Texto
+Chassi	Texto
+Km atual	Número
+Intervalo de revisão (km)	Número
+
+🔐 Validações Obrigatórias
+Não aceitar planilhas sem cabeçalho
+
+Validar campos obrigatórios
+
+Validar formatos de CPF, data, número, e-mail, etc.
+
+Evitar duplicatas baseando-se em campos-chave (ex: CPF ou Placa)
+
+📌 Considerações Técnicas
+Formato aceito: .xlsx
+
+Backend pode usar biblioteca como pandas, openpyxl ou similar
+
+Frontend deve usar formulário simples com drag-and-drop ou botão de upload
+
+O banco de dados pode ser Supabase ou o banco do Replit (deve ser decidido conforme arquitetura)
+
+📅 Cronograma sugerido
+Etapa	Tempo estimado
+Criação da interface (frontend)	1 dia
+Validação do arquivo	1 dia
+Integração com banco de dados	1 a 2 dias
+Testes finais e ajustes	1 dia
+
+✅ Critérios de Aceitação
+O sistema deve impedir o upload de arquivos inválidos
+
+Os campos devem ser importados corretamente para o banco
+
+A mensagem de erro ou sucesso deve ser clara
+
+A experiência deve ser simples para usuários leigos

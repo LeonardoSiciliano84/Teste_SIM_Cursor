@@ -1,0 +1,56 @@
+Sistema de Gestão de Veículos – FELKA Transportes
+1. Cadastro Completo de Veículos
+•	Registro detalhado de cada veículo da frota, com os seguintes campos:
+o	Identificação básica: Placa, Marca, Modelo, RENAVAM, Chassi, Ano Modelo, Ano de Fabricação
+o	Tipo de Veículo: Tração, Semirreboque, Equipamento
+o	Classificação: Passeio, Moto, Empilhadeira, Utilitário, Guindaste, Toco, Truck, Truck Munck, Cavalo Mecânico Truck (CM Truck), Cavalo Mecânico Toco (CM Toco), VUC, Carreta 14m, Carreta Extensiva, Carreta Vanderleia, Prancha
+o	Incluir opção de selecionar intervalo de km para revisão preventiva ( ex. 10.000, 20.000, 30.000km, sendo para equipamento em horas a cada 250 horas, e Truck Munck a cada 6 meses) 
+o	E incluir intervalo para o próximo rodizio de pneus ) segundo o mesmo 10.000, 20.000, 30.000, 40.000)
+2. Aba: Informações Financeiras
+•	Detalhamento completo da aquisição do veículo:
+o	Data de compra
+o	Valor total da compra
+o	Instituição financeira (Banco)
+o	Tipo de contrato: CDC, Leasing, Consórcio
+o	Número do contrato
+o	Anexo digital do contrato
+o	Quantidade e valor das parcelas
+o	Cálculo automático:
+	Valor total pago até o momento
+	Valor de compra sem juros
+	Valor total de juros pagos
+o	Barra de progresso (%) indicando o percentual de quitação do financiamento, com base na data de compra e o mês atual
+3. Aba: Documentação do Veículo
+•	Upload e gestão dos documentos obrigatórios:
+o	CRLV
+o	Certificação do Tacógrafo
+o	Registro ANTT
+o	Apólice e valor do seguro
+•	Gestão de vencimentos dos documentos com alertas por e-mail e no sistema
+4. Integração com Tabela FIPE
+•	Importação de tabelas FIPE por tipo e modelo de veículo
+•	Botão “Atualizar FIPE” para cálculo automático do valor atualizado do veículo
+•	Comparativo do valor atual vs. valor de compra
+5. Aba: Informações Técnicas Complementares
+•	Dados físicos e operacionais do veículo:
+o	Fotos do veículo
+o	Largura da carroceria
+o	Altura do chão ao assoalho
+o	Comprimento da carroceria (em caso de baú ou sider)
+o	Capacidade de carga (em kg ou toneladas)
+o	Capacidade do tanque de combustível
+o	Média de consumo (km/L)
+6. Tela Geral da Frota
+•	Visualização em tabela com todos os veículos cadastrados
+•	Exibição da barra de progresso de pagamento de cada veículo
+•	Filtros por tipo, status e percentual quitado
+7. Funcionalidades Adicionais
+•	Exportações e Relatórios:
+o	Geração de ficha em PDF com todas as informações detalhadas de cada veículo
+o	Exportação completa para planilha .xlsx com os dados de todos os veículos
+•	Gestão de Status:
+o	Desativação de veículos com campo obrigatório para descrição do motivo
+o	Reativação com motivo registrado
+•	Gerenciamento e Edição:
+o	Permissão para editar todas as informações dos veículos
+o	Possibilidade de reanexar documentos atualizados
